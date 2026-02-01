@@ -1,20 +1,18 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+
 import { Button } from "@/components/ui/button";
-import { Lock, Mail, Loader2, User } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { FieldValues, SubmitHandler, useForm, Controller } from "react-hook-form";
-import Image from "next/image";
-import footerbg from "../../../../public/footerbg.png";
-import footerIcon from "../../../../public/footericon.png";
-import footerRightImage from "../../../../public/Image (2).png";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { login } from "@/src/services/auth";
 
 const LoginForm = () => {
   const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  
   const form = useForm({
     defaultValues: {
       email: "",
@@ -35,130 +33,100 @@ const LoginForm = () => {
     });
   };
 
-  return (
-    <div className="flex h-screen w-full">
-      {/* Left Side - Login Form - 50% width */}
-      <div className="flex flex-col items-center justify-center w-full lg:w-1/2 bg-white px-8">
-        <div className="w-full max-w-md">
-          {/* User Icon */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="bg-[#1F2937] rounded-full w-20 h-20 flex items-center justify-center mb-4">
-              <User className="text-white" size={40} strokeWidth={2.5} />
-            </div>
-            <h2 className="text-2xl font-bold text-black tracking-[0.25em]">LOGIN</h2>
-          </div>
+  const handleCancel = () => {
+    form.reset();
+  };
 
-          {/* Login Form */}
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-5 w-full"
-          >
-            {/* Email Input */}
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#FFF5EB] p-4">
+      <div className="w-full max-w-md rounded-2xl bg-[#FEF6F0] p-8 shadow-sm">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-[#1E3A5F]">Log In</h1>
+          <p className="mt-2 text-sm text-[#1E3A5F]/70">
+            Student&apos;s Result Management System
+          </p>
+        </div>
+
+        {/* Login Form */}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          {/* Email Input */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-[#1E3A5F]">
+              Email
+            </label>
             <Controller
               name="email"
               control={form.control}
               render={({ field }) => (
-                <div className="flex items-center bg-white rounded-md shadow-md px-4 py-3 border border-gray-100">
-                  <Mail className="text-gray-400 mr-3" size={20} />
-                  <input
-                    {...field}
-                    type="email"
-                    placeholder="Email"
-                    className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 text-sm"
-                  />
-                </div>
+                <input
+                  {...field}
+                  type="email"
+                  placeholder="Enter your mail...."
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                />
               )}
             />
+          </div>
 
-            {/* Password Input */}
+          {/* Password Input */}
+          <div>
+            <label className="mb-2 block text-sm font-medium text-[#1E3A5F]">
+              Password
+            </label>
             <Controller
               name="password"
               control={form.control}
               render={({ field }) => (
-                <div className="flex items-center bg-white rounded-md shadow-md px-4 py-3 border border-gray-100">
-                  <Lock className="text-gray-400 mr-3" size={20} />
+                <div className="relative">
                   <input
                     {...field}
-                    type="password"
-                    placeholder="Password"
-                    className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 text-sm"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password...."
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#F97316] hover:text-[#EA580C]"
+                  >
+                    {showPassword ? (
+                      <Eye size={20} />
+                    ) : (
+                      <EyeOff size={20} />
+                    )}
+                  </button>
                 </div>
               )}
             />
+          </div>
 
-            {/* Login Button */}
+          {/* Buttons */}
+          <div className="flex gap-4 pt-2">
+            <Button
+              type="button"
+              onClick={handleCancel}
+              disabled={isPending}
+              className="flex-1 rounded-full border-2 border-[#F97316] bg-transparent py-3 font-semibold text-[#F97316] transition-all hover:bg-[#F97316]/10"
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
               disabled={isPending}
-              className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold py-3.5 rounded-md text-base shadow-lg transition-all duration-200 w-full mt-2"
+              className="flex-1 rounded-full bg-[#F97316] py-3 font-semibold text-white transition-all hover:bg-[#EA580C]"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="animate-spin mr-2" size={18} />
+                  <Loader2 className="mr-2 animate-spin" size={18} />
                   Logging in...
                 </>
               ) : (
-                "Login"
+                "Log In"
               )}
             </Button>
-          </form>
-        </div>
-      </div>
-
-      {/* Right Side - Gradient Background with Image - 50% width */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center p-8">
-        {/* Background Image */}
-        <Image
-          src={footerbg}
-          alt="Background"
-          fill
-          className="object-cover"
-          priority
-        />
-        
-        {/* Main Content Card - Full width and height */}
-        <div className="relative bg-white/20 backdrop-blur-sm rounded-[32px] shadow-2xl w-full h-full flex flex-col items-center justify-center p-12 z-10">
-          {/* Lightning Icon - Left side */}
-          <div className="absolute left-8 top-1/2 -translate-y-1/2 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg">
-            <Image
-              src={footerIcon}
-              alt="Icon"
-              width={28}
-              height={28}
-              className="object-contain"
-            />
           </div>
-
-          {/* Text Content */}
-          <div className="mb-8 text-center px-8">
-            <h3 className="text-white text-3xl font-bold leading-snug">
-              Very good works are waiting for you Login Now!!!
-            </h3>
-          </div>
-
-          {/* Image Container */}
-          <div className="relative w-full max-w-sm aspect-4/5 rounded-3xl overflow-hidden bg-linear-to-br from-orange-400 to-yellow-400 shadow-2xl">
-            <Image
-              src={footerRightImage}
-              alt="Happy person"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-
-          {/* Lightning Icon - Bottom right */}
-          <div className="absolute bottom-8 right-8 bg-white/70 backdrop-blur-sm rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
-            <Image
-              src={footerIcon}
-              alt="Icon"
-              width={24}
-              height={24}
-              className="object-contain"
-            />
-          </div>
-        </div>
+        </form>
       </div>
     </div>
   );
