@@ -20,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import logo from "../../../../public/hilful_fujul.png";
+import logo from "../../../../public/bright Academy.png";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useRouter } from "next/navigation";
 import { logout } from "@/src/services/auth";

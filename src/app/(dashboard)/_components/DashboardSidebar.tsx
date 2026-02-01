@@ -5,9 +5,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, LucideIcon } from "lucide-react";
 import React, { useState } from "react";
 import { NAV_ITEMS } from "@/src/constant/dashboardNavbar.constant";
+
+interface NavChild {
+  icon?: LucideIcon;
+  label: string;
+  href: string;
+}
+
+interface NavItem {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  children?: NavChild[];
+}
 
 interface SidebarProps {
   adminData?: any;
@@ -35,7 +48,7 @@ export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
     return href.replace(/^\/dashboard\/|^\//, '').replace(/\/$/, '');
   };
 
-  const filteredNavItems = NAV_ITEMS.filter((item) => {
+  const filteredNavItems = (NAV_ITEMS as NavItem[]).filter((item) => {
     const normalizedHref = normalizeHref(item.href);
     
     // Always show Dashboard and Log Out
@@ -83,7 +96,8 @@ export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
         <ScrollArea className="h-full">
           <div className={cn("grid gap-1", isMobile && "px-4")}>
             {filteredNavItems.length > 0 ? (
-              filteredNavItems.map((item) => {
+              filteredNavItems.map((navItem) => {
+                const item = navItem as NavItem;
                 const Icon = item.icon;
                 if (item.children && Array.isArray(item.children)) {
                   // Filter children based on allowed paths

@@ -10,7 +10,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const adminUsers = await getRoles([]);
-  console.log("see admin data==>", adminUsers?.data);
+  console.log("see admin data==>", adminUsers);
+//   console.log("see admin data==>", adminUsers?.daa);
 
   // Extract role data from API response
   const roleData = adminUsers?.data?.[0];
