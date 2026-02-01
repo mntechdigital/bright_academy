@@ -1,0 +1,115 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { ChevronDown, Eye, Menu } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import logo from "../../../../public/hilful_fujul.png";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useRouter } from "next/navigation";
+import { logout } from "@/src/services/auth";
+import { Sidebar } from "./DashboardSidebar";
+
+interface NavbarProps {
+  adminData: any;
+}
+
+export function Navbar({ adminData }: NavbarProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const res = await logout();
+    console.log("logout res==>",res);
+    router.push("/login");
+    router.refresh();
+  };
+
+  return (
+    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b bg-background px-4 shadow-sm">
+      <div className="flex items-center gap-4">
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          </SheetTrigger>
+          <VisuallyHidden>
+            <SheetTitle>This is the News Sidebar</SheetTitle>
+          </VisuallyHidden>
+          <SheetContent side="left" className="pt-10">
+            <Sidebar
+              adminData={adminData}
+              isMobile={true}
+              onNavItemClick={() => setIsMobileMenuOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+
+        <Link href="/dashboard" className="flex items-center">
+          <Image
+            src={logo || "/placeholder.svg"}
+            alt="Hilful Fujul Logo"
+            width={150}
+            height={40}
+            className="lg:h-10 lg:w-auto"
+            priority
+            unoptimized
+          />
+        </Link>
+      </div>
+      <div className="flex items-center max-sm:gap-1 gap-4">
+        <Link href="/#navbar">
+          <Button
+            variant="outline"
+            className="cursor-pointer flex items-center"
+          >
+            <Eye className="h-4 w-4" />{" "}
+            View Site
+          </Button>
+        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src="/placeholder.svg?height=32&width=32"
+                  alt="Admin"
+                />
+                <AvatarFallback>A</AvatarFallback>
+              </Avatar>
+              <span className="hidden sm:inline">Admin</span>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem className="cursor-pointer">
+              <Link href={`/dashboard/general-setting`}>Settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </header>
+  );
+}
