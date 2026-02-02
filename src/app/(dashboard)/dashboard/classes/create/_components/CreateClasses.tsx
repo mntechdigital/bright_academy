@@ -2,10 +2,15 @@
 
 import React, { useTransition } from "react";
 import Link from "next/link";
-import { useForm, Controller, SubmitHandler, FieldValues } from "react-hook-form";
+import {
+  useForm,
+  Controller,
+  SubmitHandler,
+} from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, ChevronRight, Plus, Loader2 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
+import { createClasses } from "@/src/services/classes";
 
 interface CreateClassFormValues {
   className: string;
@@ -21,17 +26,16 @@ const CreateClasses = () => {
   });
 
   const onSubmit: SubmitHandler<CreateClassFormValues> = async (data) => {
-    startTransition(async () => {
-      try {
-        // TODO: Replace with actual API call
-        console.log("Creating class:", data);
-        showSuccessToast("Class created successfully!");
-        form.reset();
-      } catch (error) {
-        console.error(error);
-        showErrorToast("Failed to create class");
-      }
-    });
+    const payload: CreateClassFormValues = {
+      ...data,
+    };
+    const res = await createClasses(payload);
+    if (res.statusCode === 201) {
+      showSuccessToast("Class created successfully!");
+      form.reset();
+    } else {
+      showErrorToast(res.message || "Failed to create class.");
+    }
   };
 
   return (
