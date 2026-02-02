@@ -2,13 +2,9 @@
 
 import React, { useTransition } from "react";
 import Link from "next/link";
-import {
-  useForm,
-  Controller,
-  SubmitHandler,
-} from "react-hook-form";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { LayoutDashboard, ChevronRight, Plus, Loader2, DoorOpenIcon } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { createClasses } from "@/src/services/classes";
 
@@ -26,16 +22,18 @@ const CreateClasses = () => {
   });
 
   const onSubmit: SubmitHandler<CreateClassFormValues> = async (data) => {
-    const payload: CreateClassFormValues = {
-      ...data,
-    };
-    const res = await createClasses(payload);
-    if (res.statusCode === 201) {
-      showSuccessToast("Class created successfully!");
-      form.reset();
-    } else {
-      showErrorToast(res.message || "Failed to create class.");
-    }
+    startTransition(async () => {
+      const payload: CreateClassFormValues = {
+        ...data,
+      };
+      const res = await createClasses(payload);
+      if (res.statusCode === 201) {
+        showSuccessToast("Class created successfully!");
+        form.reset();
+      } else {
+        showErrorToast(res.message || "Failed to create class.");
+      }
+    });
   };
 
   return (
@@ -51,7 +49,7 @@ const CreateClasses = () => {
         </Link>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <span className="flex items-center gap-1 text-foreground font-medium">
-          <LayoutDashboard className="h-4 w-4" />
+          <DoorOpenIcon className="h-4 w-4" />
           Add Class
         </span>
       </nav>
@@ -60,7 +58,7 @@ const CreateClasses = () => {
       <h1 className="text-2xl font-bold text-foreground mb-6">Create Class</h1>
 
       {/* Form */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-full">
         {/* Class Name Input */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -90,7 +88,7 @@ const CreateClasses = () => {
         <Button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-lg bg-[#F97316] py-3 font-semibold text-white transition-all hover:bg-[#EA580C] h-12"
+          className="w-full rounded-lg bg-[#F97316] py-3 font-semibold text-white transition-all hover:bg-[#EA580C] h-12 cursor-pointer"
         >
           {isPending ? (
             <>
