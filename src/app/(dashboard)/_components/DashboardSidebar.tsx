@@ -31,8 +31,27 @@ interface SidebarProps {
 export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
   const pathname = usePathname();
 
+  // Extract allowed paths from roleFeature and normalize them
+  const allowedPaths: string[] =
+    adminData?.role?.roleFeature?.map((feature: any) => {
+      // Normalize the path - remove leading/trailing slashes
+      const path = feature.path.replace(/^\/+|\/+$/g, '');
+      return path;
+    }) ?? [];
+
+  // console.log("Allowed Paths:", allowedPaths);
+  // console.log("Admin Data:", adminData);
+
+  // Helper function to normalize href for comparison
+  const normalizeHref = (href: string) => {
+    // Remove /dashboard/ prefix and leading/trailing slashes
+    return href.replace(/^\/dashboard\/|^\//, '').replace(/\/$/, '');
+  };
+
   // Show all nav items without role-based filtering
   const filteredNavItems = NAV_ITEMS as NavItem[];
+
+  // console.log("Filtered Nav Items:", filteredNavItems);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
