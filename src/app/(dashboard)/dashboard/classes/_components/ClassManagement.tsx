@@ -7,30 +7,20 @@ import {
   Edit2,
   HelpCircle,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import DeleteStdClassesDialog from "./DeleteStdClassesDialog";
 
-const ClassManagement = () => {
+const ClassManagement = ({
+  studentClassData = [],
+}: {
+  studentClassData?: any[];
+}) => {
+  console.log("see classes data==>", studentClassData);
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const classes = [
-    { id: 1, name: "Class 1", sectionA: 50, sectionB: 50 },
-    { id: 2, name: "Class 2", sectionA: 34, sectionB: 34 },
-    { id: 3, name: "Class 3", sectionA: 45, sectionB: 45 },
-    { id: 4, name: "Class 4", sectionA: 45, sectionB: 45 },
-    { id: 5, name: "Class 5", sectionA: 43, sectionB: 43 },
-    { id: 6, name: "Class 6", sectionA: 53, sectionB: 53 },
-    { id: 7, name: "Class 7", sectionA: 67, sectionB: 67 },
-    { id: 8, name: "Class 8", sectionA: 89, sectionB: 89 },
-    { id: 9, name: "Class 9", sectionA: 89, sectionB: 89 },
-    { id: 10, name: "Class 10", sectionA: 76, sectionB: 76 },
-  ];
-
-  const filteredClasses = classes.filter((cls) =>
-    cls.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredClasses = studentClassData.filter((cls) =>
+    cls.className.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -65,7 +55,10 @@ const ClassManagement = () => {
                 <Plus className="w-5 h-5" />
                 <span>Create Subject</span>
               </button>
-              <Link href="/dashboard/classes/create" className="flex items-center justify-center gap-2 px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors whitespace-nowrap text-base font-medium">
+              <Link
+                href="/dashboard/classes/create"
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors whitespace-nowrap text-base font-medium"
+              >
                 <Plus className="w-5 h-5" />
                 <span>Create Class</span>
               </Link>
@@ -108,80 +101,57 @@ const ClassManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredClasses.map((cls) => (
-                <tr key={cls.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
-                    {cls.name}
-                  </td>
-                  <td className="px-6 py-6">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
-                      <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
-                      A
-                    </span>
-                  </td>
-                  <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                    {cls.sectionA}
-                  </td>
-                  <td className="px-6 py-6">
-                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
-                      <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
-                      B
-                    </span>
-                  </td>
-                  <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                    {cls.sectionB}
-                  </td>
-                  <td className="px-6 py-6">
-                    <div className="flex items-center gap-4">
-                      <button className="text-orange-500 hover:text-orange-600 transition-colors">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                      <button className="text-purple-500 hover:text-purple-600 transition-colors">
-                        <Edit2 className="w-5 h-5" />
-                      </button>
-                    </div>
+              {filteredClasses.length > 0 ? (
+                filteredClasses.map((cls) => (
+                  <tr
+                    key={cls.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
+                      {cls.className || "N/A"}
+                    </td>
+                    <td className="px-6 py-6">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
+                        <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
+                        {cls.sections?.[0]?.sectionName || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
+                      {cls.sections?.[0]?.students?.length || "N/A"}
+                    </td>
+                    <td className="px-6 py-6">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
+                        <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
+                        {cls.sections?.[1]?.sectionName || "N/A"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
+                      {cls.sections?.[1]?.students?.length || "N/A"}
+                    </td>
+                    <td className="px-6 py-6">
+                      <div className="flex items-center gap-4">
+                        {/* Add DeleteServiceDialog or similar here if needed */}
+                        <DeleteStdClassesDialog id={cls.id} />
+                        
+                        <button className="text-purple-500 hover:text-purple-600 transition-colors">
+                          <Edit2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-12 text-center text-gray-500 text-base"
+                  >
+                    No classes found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="px-6 lg:px-12 py-6">
-          <div className="flex items-center justify-between">
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors font-medium">
-              <ChevronLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Previous</span>
-            </button>
-
-            <div className="flex items-center gap-2">
-              <button className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl bg-orange-500 text-white font-semibold text-base">
-                1
-              </button>
-              <button className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition-colors text-base">
-                2
-              </button>
-              <button className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition-colors text-base">
-                3
-              </button>
-              <span className="px-2 text-gray-400 text-base">...</span>
-              <button className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition-colors text-base">
-                8
-              </button>
-              <button className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition-colors text-base">
-                9
-              </button>
-              <button className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-700 font-medium transition-colors text-base">
-                10
-              </button>
-            </div>
-
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors font-medium">
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
         </div>
       </div>
     </div>
