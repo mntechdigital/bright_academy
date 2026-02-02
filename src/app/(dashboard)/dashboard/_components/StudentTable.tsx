@@ -160,7 +160,7 @@ export default function StudentTable() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="">
       <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
