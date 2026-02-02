@@ -66,7 +66,7 @@ export function Navbar({ adminData }: NavbarProps) {
         <Link href="/dashboard" className="flex items-center">
           <Image
             src={logo || "/placeholder.svg"}
-            alt="Hilful Fujul Logo"
+            alt="Bright Academy Logo"
             width={150}
             height={40}
             className="lg:h-10 lg:w-auto"

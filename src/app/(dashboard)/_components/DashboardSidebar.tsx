@@ -31,44 +31,8 @@ interface SidebarProps {
 export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
   const pathname = usePathname();
 
-  // Extract allowed paths from roleFeature and normalize them
-  const allowedPaths: string[] =
-    adminData?.role?.roleFeature?.map((feature: any) => {
-      // Normalize the path - remove leading/trailing slashes
-      const path = feature.path.replace(/^\/+|\/+$/g, '');
-      return path;
-    }) ?? [];
-
-  // console.log("Allowed Paths:", allowedPaths);
-  // console.log("Admin Data:", adminData);
-
-  // Helper function to normalize href for comparison
-  const normalizeHref = (href: string) => {
-    // Remove /dashboard/ prefix and leading/trailing slashes
-    return href.replace(/^\/dashboard\/|^\//, '').replace(/\/$/, '');
-  };
-
-  const filteredNavItems = (NAV_ITEMS as NavItem[]).filter((item) => {
-    const normalizedHref = normalizeHref(item.href);
-    
-    // Always show Dashboard and Log Out
-    if (item.href === "/dashboard" || item.label === "Log Out") return true;
-    
-    // Check if the item itself is allowed
-    if (allowedPaths.includes(normalizedHref)) return true;
-    
-    // If item has children, check if any child is allowed
-    if (item.children && Array.isArray(item.children)) {
-      return item.children.some((child: any) => {
-        const normalizedChildHref = normalizeHref(child.href);
-        return allowedPaths.includes(normalizedChildHref);
-      });
-    }
-    
-    return false;
-  });
-
-  // console.log("Filtered Nav Items:", filteredNavItems);
+  // Show all nav items without role-based filtering
+  const filteredNavItems = NAV_ITEMS as NavItem[];
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
@@ -100,13 +64,10 @@ export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
                 const item = navItem as NavItem;
                 const Icon = item.icon;
                 if (item.children && Array.isArray(item.children)) {
-                  // Filter children based on allowed paths
-                  const filteredChildren = item.children.filter((child: any) => {
-                    const normalizedChildHref = normalizeHref(child.href);
-                    return allowedPaths.includes(normalizedChildHref);
-                  });
+                  // Use all children
+                  const filteredChildren = item.children;
 
-                  // Don't show parent if no children are allowed
+                  // Don't show parent if no children
                   if (filteredChildren.length === 0) return null;
 
                   // Dropdown menu item
