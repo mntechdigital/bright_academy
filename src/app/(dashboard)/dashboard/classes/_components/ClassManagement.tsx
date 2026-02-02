@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import Link from "next/link";
 
 const ClassManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,10 +65,10 @@ const ClassManagement = () => {
                 <Plus className="w-5 h-5" />
                 <span>Create Subject</span>
               </button>
-              <button className="flex items-center justify-center gap-2 px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors whitespace-nowrap text-base font-medium">
+              <Link href="/dashboard/classes/create" className="flex items-center justify-center gap-2 px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors whitespace-nowrap text-base font-medium">
                 <Plus className="w-5 h-5" />
                 <span>Create Class</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
