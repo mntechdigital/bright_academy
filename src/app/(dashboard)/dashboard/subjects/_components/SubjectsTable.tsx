@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Search, Plus, Trash2, Edit2, HelpCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DeleteSubjectDialog from "./DeleteSubjectDialog";
 
 const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: any[] }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
-  const filteredClasses = subjectsData.filter((cls) =>
-    cls.className.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const search = formData.get("search") as string;
+    router.push(`/dashboard/subjects?search=${encodeURIComponent(search)}&page=1`);
+  };
 
   // Get maximum number of subjects across all classes for column headers
   const maxSubjects = Math.max(
@@ -31,16 +35,17 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: any[] }) => {
           </div>
           <div className="flex flex-col md:flex-row md:items-center gap-6 my-6">
             {/* Search Bar */}
-            <div className="relative w-full md:w-1/3">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search for subjects"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base placeholder:text-gray-400"
-              />
-            </div>
+            <form onSubmit={handleSearch} className="w-full md:w-1/3">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  name="search"
+                  placeholder="Search for subjects"
+                  className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base placeholder:text-gray-400"
+                />
+              </div>
+            </form>
             <div className="flex flex-wrap items-center gap-3 w-full md:w-2/3 md:justify-end">
               <Link
                 href="/dashboard/sections/create"
@@ -92,8 +97,8 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: any[] }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredClasses.length > 0 ? (
-                filteredClasses.map((cls) => (
+              {subjectsData.length > 0 ? (
+                subjectsData.map((cls) => (
                   <tr
                     key={cls._id}
                     className="hover:bg-gray-50 transition-colors"
