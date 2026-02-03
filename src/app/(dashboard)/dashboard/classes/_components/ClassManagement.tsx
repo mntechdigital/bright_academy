@@ -133,9 +133,9 @@ const ClassManagement = ({
                         {/* Add DeleteServiceDialog or similar here if needed */}
                         <DeleteStdClassesDialog id={cls.id} />
                         
-                        <button className="text-purple-500 hover:text-purple-600 transition-colors">
+                        <Link href={`/dashboard/classes/edit/${cls.id}`} className="text-purple-500 hover:text-purple-600 transition-colors">
                           <Edit2 className="w-5 h-5" />
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   </tr>

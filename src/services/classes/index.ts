@@ -42,10 +42,11 @@ export const getClassById = async (id: string) => {
   return await response;
 };
 
-export const updateClass = async (id: string, payload: FormData) => {
+export const updateClass = async (id: string, payload: Record<string, any>) => {
   const response = await apiRequest(`studentClasses/${id}`, {
     method: "PUT",
-    body: payload,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
     authRequired: true,
   });
 
