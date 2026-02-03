@@ -47,10 +47,13 @@ const ClassManagement = ({
               />
             </div>
             <div className="flex flex-wrap items-center gap-3 w-full md:w-2/3 md:justify-end">
-              <button className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium">
+                <Link
+                href="/dashboard/sections/create"
+                className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium"
+                >
                 <Plus className="w-5 h-5" />
                 <span>Create Section</span>
-              </button>
+                </Link>
               <button className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium">
                 <Plus className="w-5 h-5" />
                 <span>Create Subject</span>
