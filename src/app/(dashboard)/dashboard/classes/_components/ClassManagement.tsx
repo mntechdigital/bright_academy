@@ -47,17 +47,20 @@ const ClassManagement = ({
               />
             </div>
             <div className="flex flex-wrap items-center gap-3 w-full md:w-2/3 md:justify-end">
-                <Link
+              <Link
                 href="/dashboard/sections/create"
                 className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium"
-                >
+              >
                 <Plus className="w-5 h-5" />
                 <span>Create Section</span>
-                </Link>
-              <button className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium">
+              </Link>
+              <Link
+                href="/dashboard/subjects"
+                className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium"
+              >
                 <Plus className="w-5 h-5" />
                 <span>Create Subject</span>
-              </button>
+              </Link>
               <Link
                 href="/dashboard/classes/create"
                 className="flex items-center justify-center gap-2 px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors whitespace-nowrap text-base font-medium"
@@ -135,8 +138,11 @@ const ClassManagement = ({
                       <div className="flex items-center gap-4">
                         {/* Add DeleteServiceDialog or similar here if needed */}
                         <DeleteStdClassesDialog id={cls.id} />
-                        
-                        <Link href={`/dashboard/classes/edit/${cls.id}`} className="text-purple-500 hover:text-purple-600 transition-colors">
+
+                        <Link
+                          href={`/dashboard/classes/edit/${cls.id}`}
+                          className="text-purple-500 hover:text-purple-600 transition-colors"
+                        >
                           <Edit2 className="w-5 h-5" />
                         </Link>
                       </div>
