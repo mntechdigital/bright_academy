@@ -22,7 +22,7 @@ interface CreateSubjectFormValues {
 }
 
 interface ClassOption {
-  _id: string;
+  id: string;
   className: string;
 }
 
@@ -49,6 +49,7 @@ const CreateSubjectForm = () => {
 
   const onSubmit: SubmitHandler<CreateSubjectFormValues> = async (data) => {
     startTransition(async () => {
+      const selectedClass = classes.find(cls => cls.id === data.classId);
       const payload = {
         classId: data.classId,
         subjectName: data.subjectName,
@@ -77,7 +78,7 @@ const CreateSubjectForm = () => {
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <span className="flex items-center gap-1 text-foreground font-medium">
           <DoorOpenIcon className="h-4 w-4" />
-          Add Class
+          Add Subject
         </span>
       </nav>
 
@@ -103,7 +104,7 @@ const CreateSubjectForm = () => {
                 >
                   <option value="">Select Class</option>
                   {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>
+                    <option key={cls.id} value={String(cls.id)}>
                       {cls.className}
                     </option>
                   ))}
