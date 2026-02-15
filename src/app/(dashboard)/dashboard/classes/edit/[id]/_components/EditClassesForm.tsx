@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
@@ -12,41 +12,78 @@ import {
   Loader2,
   DoorOpenIcon,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getClassById, updateClass } from "@/src/services/classes";
+import { getSections } from "@/src/services/sections";
+import { getSubjects } from "@/src/services/subjects";
 
 interface EditClassFormValues {
   className: string;
+  sectionIds: string[];
+  subjectIds: string[];
+}
+
+interface SectionOption {
+  id: string;
+  sectionName: string;
+}
+
+interface SubjectOption {
+  id: string;
+  subjectName: string;
 }
 
 const EditClassesForm = ({ classId }: { classId: string }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [sections, setSections] = useState<SectionOption[]>([]);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
 
   const form = useForm<EditClassFormValues>({
     defaultValues: {
       className: "",
+      sectionIds: [],
+      subjectIds: [],
     },
   });
 
   useEffect(() => {
-    const fetchClass = async () => {
-      const res = await getClassById(classId);
-      if (res?.data) {
+    const fetchData = async () => {
+      // Fetch class data
+      const classRes = await getClassById(classId);
+      if (classRes?.data) {
         form.reset({
-          className: res.data.className || "",
+          className: classRes.data.className || "",
+          sectionIds: classRes.data.sectionIds || [],
+          subjectIds: classRes.data.subjectIds || [],
         });
       }
+
+      // Fetch sections
+      const sectionsRes = await getSections([]);
+      if (sectionsRes?.data?.data && Array.isArray(sectionsRes.data.data)) {
+        setSections(sectionsRes.data.data);
+      }
+
+      // Fetch subjects
+      const subjectsRes = await getSubjects([]);
+      if (subjectsRes?.data?.data && Array.isArray(subjectsRes.data.data)) {
+        setSubjects(subjectsRes.data.data);
+      }
     };
-    fetchClass();
+    fetchData();
   }, [classId, form]);
 
   const onSubmit: SubmitHandler<EditClassFormValues> = async (data) => {
     startTransition(async () => {
       const payload = {
         className: data.className,
+        sectionIds: data.sectionIds,
+        subjectIds: data.subjectIds,
       };
+      console.log("Update class payload:", payload);
 
       const res = await updateClass(classId, payload);
       if (res.statusCode === 200) {
@@ -104,6 +141,102 @@ const EditClassesForm = ({ classId }: { classId: string }) => {
                   placeholder="Class 6"
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                 />
+                {error && (
+                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Sections Multi-Select */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Sections
+          </label>
+          <Controller
+            name="sectionIds"
+            control={form.control}
+            render={({ field, fieldState: { error } }) => (
+              <div>
+                <div className="border border-gray-200 rounded-lg bg-white p-4">
+                  {sections.length > 0 ? (
+                    <div className="space-y-3">
+                      {sections.map((section) => (
+                        <div key={section.id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`section-${section.id}`}
+                            checked={field.value?.includes(section.id) || false}
+                            onChange={(e) => {
+                              const newValue = e.target.checked
+                                ? [...(field.value || []), section.id]
+                                : (field.value || []).filter((id) => id !== section.id);
+                              field.onChange(newValue);
+                            }}
+                            className="w-4 h-4 rounded border-gray-300 text-[#F97316] cursor-pointer"
+                          />
+                          <label
+                            htmlFor={`section-${section.id}`}
+                            className="ml-3 text-sm text-gray-700 cursor-pointer"
+                          >
+                            {section.sectionName}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No sections available</p>
+                  )}
+                </div>
+                {error && (
+                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Subjects Multi-Select */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Subjects
+          </label>
+          <Controller
+            name="subjectIds"
+            control={form.control}
+            render={({ field, fieldState: { error } }) => (
+              <div>
+                <div className="border border-gray-200 rounded-lg bg-white p-4">
+                  {subjects.length > 0 ? (
+                    <div className="space-y-3">
+                      {subjects.map((subject) => (
+                        <div key={subject.id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`subject-${subject.id}`}
+                            checked={field.value?.includes(subject.id) || false}
+                            onChange={(e) => {
+                              const newValue = e.target.checked
+                                ? [...(field.value || []), subject.id]
+                                : (field.value || []).filter((id) => id !== subject.id);
+                              field.onChange(newValue);
+                            }}
+                            className="w-4 h-4 rounded border-gray-300 text-[#F97316] cursor-pointer"
+                          />
+                          <label
+                            htmlFor={`subject-${subject.id}`}
+                            className="ml-3 text-sm text-gray-700 cursor-pointer"
+                          >
+                            {subject.subjectName}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No subjects available</p>
+                  )}
+                </div>
                 {error && (
                   <p className="mt-1 text-sm text-red-500">{error.message}</p>
                 )}
