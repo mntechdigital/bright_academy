@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { ReactNode, useState, useTransition } from "react";
 import {
   Dialog,
   DialogClose,
@@ -15,7 +15,12 @@ import { Button } from "@/components/ui/button";
 import { deleteSubject } from "@/src/services/subjects";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 
-const DeleteSubjectDialog = ({ id }: { id?: string }) => {
+interface DeleteSubjectDialogProps {
+  id?: string;
+  trigger?: ReactNode;
+}
+
+const DeleteSubjectDialog = ({ id, trigger }: DeleteSubjectDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -37,13 +42,15 @@ const DeleteSubjectDialog = ({ id }: { id?: string }) => {
     <div>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-8 p-0 text-red-400 cursor-pointer hover:text-red-600"
-          >
-            <Trash2 size={18} />
-          </Button>
+          {trigger || (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0 text-red-400 cursor-pointer hover:text-red-600"
+            >
+              <Trash2 size={18} />
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent className="bg-[#18181b] text-white border border-[#232326]">
           <DialogHeader>

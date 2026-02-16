@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, Plus, Edit2, HelpCircle } from "lucide-react";
+import { Search, Plus, Edit2, HelpCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DeleteSubjectDialog from "./DeleteSubjectDialog";
@@ -119,9 +119,6 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   Created At
                 </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Action
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -136,12 +133,20 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                     </td>
                     <td className="px-6 py-6 text-gray-600 text-base">
                       <div className="flex flex-wrap gap-2">
-                        {cls?.subjects?.map((subject, index) => (
+                        {cls?.subjects?.map((subject) => (
                           <span
                             key={subject.id}
-                            className="inline-flex items-center px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-sm font-medium"
+                            className="group inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-sm font-medium"
                           >
                             {subject.subjectName}
+                            <DeleteSubjectDialog
+                              id={subject.id}
+                              trigger={
+                                <button className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-200 transition-colors">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              }
+                            />
                           </span>
                         ))}
                       </div>
@@ -151,17 +156,7 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                         ? new Date(cls.createdAt).toLocaleDateString()
                         : "N/A"}
                     </td>
-                    <td className="px-6 py-6">
-                      <div className="flex items-center gap-4">
-                        <DeleteSubjectDialog id={cls.classId} />
-                        <Link
-                          href={`/dashboard/subjects/edit/${cls.classId}`}
-                          className="text-orange-500 hover:text-orange-600 transition-colors"
-                        >
-                          <Edit2 className="w-5 h-5" />
-                        </Link>
-                      </div>
-                    </td>
+                    
                   </tr>
                 ))
               ) : (
