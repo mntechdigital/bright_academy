@@ -20,6 +20,13 @@ interface Subject {
   updatedAt: string;
 }
 
+interface GroupedClass {
+  classId: string;
+  className: string;
+  subjects: Subject[];
+  createdAt: string;
+}
+
 const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
   const router = useRouter();
 
@@ -31,6 +38,26 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
       `/dashboard/subjects?search=${encodeURIComponent(search)}&page=1`,
     );
   };
+
+  // Group subjects by class
+  const groupedByClass = subjectsData.reduce<Record<string, GroupedClass>>(
+    (acc, subject) => {
+      const classId = subject.classId;
+      if (!acc[classId]) {
+        acc[classId] = {
+          classId,
+          className: subject.stdClass?.className || "N/A",
+          subjects: [],
+          createdAt: subject.createdAt,
+        };
+      }
+      acc[classId].subjects.push(subject);
+      return acc;
+    },
+    {},
+  );
+
+  const groupedData = Object.values(groupedByClass);
 
   return (
     <div className="">
@@ -87,7 +114,7 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                   </div>
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Subject Name
+                  Subjects
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   Created At
@@ -98,28 +125,37 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {subjectsData.length > 0 ? (
-                subjectsData.map((subject) => (
+              {groupedData.length > 0 ? (
+                groupedData.map((cls) => (
                   <tr
-                    key={subject.id}
+                    key={cls.classId}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
-                      {subject.stdClass?.className || "N/A"}
-                    </td>
                     <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
-                      {subject.subjectName || "N/A"}
+                      {cls.className}
+                    </td>
+                    <td className="px-6 py-6 text-gray-600 text-base">
+                      <div className="flex flex-wrap gap-2">
+                        {cls?.subjects?.map((subject, index) => (
+                          <span
+                            key={subject.id}
+                            className="inline-flex items-center px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-sm font-medium"
+                          >
+                            {subject.subjectName}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
-                      {subject.createdAt
-                        ? new Date(subject.createdAt).toLocaleDateString()
+                      {cls.createdAt
+                        ? new Date(cls.createdAt).toLocaleDateString()
                         : "N/A"}
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
-                        <DeleteSubjectDialog id={subject.id} />
+                        <DeleteSubjectDialog id={cls.classId} />
                         <Link
-                          href={`/dashboard/subjects/edit/${subject.id}`}
+                          href={`/dashboard/subjects/edit/${cls.classId}`}
                           className="text-orange-500 hover:text-orange-600 transition-colors"
                         >
                           <Edit2 className="w-5 h-5" />

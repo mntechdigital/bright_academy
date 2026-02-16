@@ -24,10 +24,10 @@ const SubjectsDashboardPage = async (props: {
       key: "page",
       value: page.toString(),
     },
-    {
-      key: "limit",
-      value: "4",
-    },
+    // {
+    //   key: "limit",
+    //   value: "10",
+    // },
   ];
   const subjectsData = await getSubjects(query);
   return (
