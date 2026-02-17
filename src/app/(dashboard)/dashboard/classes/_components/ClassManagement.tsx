@@ -22,6 +22,14 @@ const ClassManagement = ({
     cls.className.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  // Helper function to count students in a section
+  const getStudentCountBySection = (cls: any, sectionId: string) => {
+    if (!cls.students || !sectionId) return 0;
+    return cls.students.filter((student: any) => student.sectionId === sectionId).length;
+  };
+
+  console.log("see classes data==>",studentClassData)
+
   return (
     <div className="">
       <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm">
@@ -122,7 +130,7 @@ const ClassManagement = ({
                       </span>
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {cls.sections?.[0]?.students?.length || "N/A"}
+                      {cls.sections?.[0] ? getStudentCountBySection(cls, cls.sections[0].id) : "N/A"}
                     </td>
                     <td className="px-6 py-6">
                       <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
@@ -131,7 +139,7 @@ const ClassManagement = ({
                       </span>
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {cls.sections?.[1]?.students?.length || "N/A"}
+                      {cls.sections?.[1] ? getStudentCountBySection(cls, cls.sections[1].id) : "N/A"}
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">

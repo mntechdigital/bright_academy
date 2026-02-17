@@ -70,10 +70,10 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
       const payload = {
         name: data.studentName,
         classId: data.classId,
-        sectionId: data.sectionId || undefined,
+        sectionId: data.sectionId,
         parentPhone: data.parentPhone,
         address: data.address,
-        gender: data.gender || undefined,
+        gender: data.gender,
       };
 
       console.log("see student info==>", payload)
@@ -141,11 +141,12 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
         {/* Class Select */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Class
+            Class<span className="text-red-500">*</span>
           </label>
           <Controller
             name="classId"
             control={form.control}
+            rules={{ required: "Class is required" }}
             render={({ field, fieldState: { error } }) => (
               <div className="relative">
                 <select
@@ -172,11 +173,12 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
         {/* Section Select */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Section
+            Section<span className="text-red-500">*</span>
           </label>
           <Controller
             name="sectionId"
             control={form.control}
+            rules={{ required: "Section is required" }}
             render={({ field, fieldState: { error } }) => (
               <div className="relative">
                 <select
@@ -253,11 +255,12 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
         {/* Gender Select */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Gender
+            Gender<span className="text-red-500">*</span>
           </label>
           <Controller
             name="gender"
             control={form.control}
+            rules={{ required: "Gender is required" }}
             render={({ field, fieldState: { error } }) => (
               <div className="relative">
                 <select
