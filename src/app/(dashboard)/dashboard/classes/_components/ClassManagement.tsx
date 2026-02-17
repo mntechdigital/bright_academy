@@ -16,7 +16,6 @@ const ClassManagement = ({
 }: {
   studentClassData?: any[];
 }) => {
-  console.log("see classes data==>", studentClassData);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredClasses = studentClassData.filter((cls) =>
