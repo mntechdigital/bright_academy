@@ -42,11 +42,11 @@ export function Navbar({ adminData }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b bg-background px-4 shadow-sm">
+    <header className="sticky top-0 z-50 flex h-16 w-full items-center justify-between border-b bg-[#02182b] text-white px-4 shadow-sm">
       <div className="flex items-center gap-4">
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden">
+            <Button variant="ghost" size="icon" className="md:hidden text-white">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle menu</span>
             </Button>
@@ -79,15 +79,15 @@ export function Navbar({ adminData }: NavbarProps) {
         <Link href="/#navbar">
           <Button
             variant="outline"
-            className="cursor-pointer flex items-center"
+            className="cursor-pointer flex items-center bg-white text-black border-white hover:bg-gray-200"
           >
-            <Eye className="h-4 w-4" />{" "}
+            <Eye className="h-4 w-4 text-black" />{" "}
             View Site
           </Button>
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2">
+            <Button variant="ghost" className="flex items-center gap-2 text-white">
               <Avatar className="h-8 w-8">
                 <AvatarImage
                   src="/placeholder.svg?height=32&width=32"
@@ -96,7 +96,7 @@ export function Navbar({ adminData }: NavbarProps) {
                 <AvatarFallback>A</AvatarFallback>
               </Avatar>
               <span className="hidden sm:inline">Admin</span>
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4 text-white" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
