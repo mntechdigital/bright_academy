@@ -44,7 +44,10 @@ export const getWeeklyResultById = async (id: string) => {
   return response;
 };
 
-export const updateWeeklyResult = async (id: string, payload: Record<string, any>) => {
+export const updateWeeklyResult = async (
+  id: string,
+  payload: Record<string, any>,
+) => {
   const response = await apiRequest(`weekly-marks-sheets/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
