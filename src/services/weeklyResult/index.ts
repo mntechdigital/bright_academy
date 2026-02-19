@@ -73,3 +73,20 @@ export const deleteWeeklyResult = async (id: string | undefined) => {
 
   return response;
 };
+
+
+
+
+export const createWeeklyResultForSingleStd = async (payload: Record<string, any>) => {
+  const response = await apiRequest("weekly-marks-sheets/obtained-marks", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    authRequired: true,
+  });
+
+  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+    revalidatePath(path);
+  });
+
+  return response;
+};

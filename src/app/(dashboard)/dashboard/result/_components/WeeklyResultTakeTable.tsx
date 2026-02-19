@@ -4,6 +4,8 @@ import { Student } from "./studentTableTypes";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { createWeeklyResultForSingleStd } from "@/src/services/weeklyResult";
+import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 
 // Extract a single row into its own component so each has its own useForm instance
 const StudentRow = ({
@@ -17,16 +19,30 @@ const StudentRow = ({
 
   const form = useForm({
     defaultValues: {
-      obtainMark: student.obtainMark || "",
+      obtainedMarks: student.obtainedMarks || "",
     },
   });
 
-  const onSubmit = async (data: any) => {
-    startTransition(async () => {
-      console.log(`Student ${student.id} submitted:`, data);
-      // handle per-student submission here
-    });
-  };
+const onSubmit = async (data: any) => {
+  startTransition(async () => {
+    const payload = {
+      studentId: student.id,
+      obtainedMarks: data.obtainedMarks,
+    };
+    console.log(`Student ${student.id} submitted:`, data);
+
+    const res = await createWeeklyResultForSingleStd(payload);
+
+    console.log("see single student obtain mark==>", res);
+    
+    if (res.statusCode === 201) {
+      showSuccessToast("Student created successfully!");
+      form.reset();
+    } else {
+      showErrorToast(res.message || "Failed to create student.");
+    }
+  });
+};
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -46,14 +62,14 @@ const StudentRow = ({
       <td className="px-4 py-3 text-gray-900 text-sm font-medium">{totalMark}</td>
       <td className="px-4 py-3">
         <Controller
-          name="obtainMark"
+          name="obtainedMarks"
           control={form.control}
           rules={{ required: "Obtain mark is required" }}
           render={({ field, fieldState: { error } }) => (
             <div className="flex flex-col">
               <input
                 {...field}
-                type="text"
+                type="number"
                 placeholder="Enter obtain mark"
                 className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
               />

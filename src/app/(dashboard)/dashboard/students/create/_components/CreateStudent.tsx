@@ -76,10 +76,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
         gender: data.gender,
       };
 
-      console.log("see student info==>", payload)
-
       const res = await createStudent(payload);
-      console.log("registration std response==>",res)
       if (res.statusCode === 201) {
         showSuccessToast("Student created successfully!");
         form.reset();
