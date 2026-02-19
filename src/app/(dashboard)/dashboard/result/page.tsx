@@ -42,7 +42,7 @@ const ResultOverviewPage = async (props: {
   const weeklyResultsRes = await getWeeklyResults([]);
   const weeklyResultsData = weeklyResultsRes?.data?.data || [];
 
-  console.log("see weekly result data==>",weeklyResultsData[0].totalMarks);
+  console.log("see weekly result data==>",weeklyResultsData[0]?.totalMarks);
 
   const studentRes = await getStudents(query);
   const studentData = studentRes?.data?.data || [];
