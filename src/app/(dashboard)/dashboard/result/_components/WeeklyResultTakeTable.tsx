@@ -4,10 +4,14 @@ import { Student } from "./studentTableTypes";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { createWeeklyResultForSingleStd } from "@/src/services/weeklyResult";
+import {
+  createWeeklyResultForSingleStd,
+  updateWeeklyResultForSingleStd,
+} from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 
 type WeeklyResult = {
+  id: string;
   totalMarks: number;
   subject: { id: string };
   week: string;
@@ -16,6 +20,8 @@ type WeeklyResult = {
   publishedDate: string;
   sectionId: string;
   stdClassId: string;
+  studentId: string | null;
+  obtainedMarks: number | null;
 };
 
 const StudentRow = ({
@@ -26,8 +32,10 @@ const StudentRow = ({
   year,
   month,
   publishedDate,
-  sectionId, // 👈 add
-  stdClassId, // 👈 add
+  sectionId,
+  stdClassId,
+  defaultObtainedMarks,
+  weeklyResults,
 }: {
   student: Student;
   totalMark: number;
@@ -36,14 +44,18 @@ const StudentRow = ({
   year: string;
   month: string;
   publishedDate: string;
-  sectionId: string; // 👈 add
-  stdClassId: string; // 👈 add
+  sectionId: string;
+  stdClassId: string;
+  defaultObtainedMarks: number | null;
+  weeklyResults: WeeklyResult[];
 }) => {
   const [isPending, startTransition] = useTransition();
-
+  const existingResult = weeklyResults.find((r) => r.studentId === student.id);
+  const isEditing = !!existingResult;
+  console.log("update weeklyResults==>", weeklyResults);
   const form = useForm({
     defaultValues: {
-      obtainedMarks: student.obtainedMarks ? Number(student.obtainedMarks) : "",
+      obtainedMarks: defaultObtainedMarks ? Number(defaultObtainedMarks) : "",
     },
   });
 
@@ -51,8 +63,8 @@ const StudentRow = ({
     startTransition(async () => {
       const payload = {
         studentId: student.id,
-        stdClassId: stdClassId, // 👈 from weeklyResult
-        sectionId: sectionId, // 👈 from weeklyResult
+        stdClassId,
+        sectionId,
         subjectId,
         obtainedMarks: parseInt(data.obtainedMarks, 10),
         totalMarks: totalMark,
@@ -62,12 +74,22 @@ const StudentRow = ({
         publishedDate,
       };
 
-      const res = await createWeeklyResultForSingleStd(payload);
-      console.log("see response==>", res);
-      if (res.statusCode === 200) {
-        showSuccessToast("Result submitted successfully!");
+      const existingResult = weeklyResults.find(
+        (r) => r.studentId === student.id,
+      );
+      const res = isEditing
+        ? await updateWeeklyResultForSingleStd(
+            existingResult?.id ?? "",
+            payload,
+          )
+        : await createWeeklyResultForSingleStd(payload);
+
+      console.log("see update response==>", res);
+
+      if (res.statusCode === (isEditing ? 200 : 201)) {
+        showSuccessToast(res.message);
       } else {
-        showErrorToast(res.message || "Failed to submit result.");
+        showErrorToast(res.message);
       }
     });
   };
@@ -138,10 +160,12 @@ const StudentRow = ({
 
 const WeeklyResultTakeTable = ({
   studentsData,
-  weeklyResult,
+  weeklyResults,
+  weeklyResultMeta,
 }: {
   studentsData: Student[];
-  weeklyResult: WeeklyResult;
+  weeklyResults: WeeklyResult[];
+  weeklyResultMeta: WeeklyResult;
 }) => {
   const {
     totalMarks,
@@ -152,8 +176,8 @@ const WeeklyResultTakeTable = ({
     publishedDate,
     sectionId,
     stdClassId,
-  } = weeklyResult;
-  console.log("weeklyresult data==>", weeklyResult);
+  } = weeklyResultMeta;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
       <div className="flex items-center mb-4">
@@ -192,20 +216,28 @@ const WeeklyResultTakeTable = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {studentsData.map((student) => (
-              <StudentRow
-                key={student.id}
-                student={student}
-                totalMark={totalMarks || 0}
-                subjectId={subject?.id}
-                week={week}
-                year={year}
-                month={month}
-                publishedDate={publishedDate}
-                sectionId={sectionId} // 👈 add
-                stdClassId={stdClassId} // 👈 add
-              />
-            ))}
+            {studentsData.map((student) => {
+              const existingResult = weeklyResults.find(
+                (r) => r.studentId === student.id,
+              );
+
+              return (
+                <StudentRow
+                  key={student.id}
+                  student={student}
+                  totalMark={totalMarks || 0}
+                  subjectId={subject?.id}
+                  week={week}
+                  year={year}
+                  month={month}
+                  publishedDate={publishedDate}
+                  sectionId={sectionId}
+                  stdClassId={stdClassId}
+                  defaultObtainedMarks={existingResult?.obtainedMarks ?? null}
+                  weeklyResults={weeklyResults}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -90,3 +90,20 @@ export const createWeeklyResultForSingleStd = async (payload: Record<string, any
 
   return response;
 };
+
+export const updateWeeklyResultForSingleStd = async (
+  id: string,
+  payload: Record<string, any>,
+) => {
+  const response = await apiRequest(`weekly-marks-sheets/obtained-marks/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+    authRequired: true,
+  });
+  
+  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+    revalidatePath(path);
+  });
+
+  return response;
+};

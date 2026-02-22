@@ -52,7 +52,8 @@ const ResultOverviewPage = async (props: {
       {weeklyResultsData[0] && (
         <WeeklyResultTakeTable
           studentsData={studentData}
-          weeklyResult={weeklyResultsData[0]}
+          weeklyResults={weeklyResultsData}
+          weeklyResultMeta={weeklyResultsData[0]}
         />
       )}
       {studentRes?.data?.meta?.totalPages > 1 && (
