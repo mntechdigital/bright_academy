@@ -38,7 +38,7 @@ const ResultOverviewPage = async (props: {
 
   const classesRes = await getClasses([]);
   const classesData = classesRes?.data?.data;
-  
+
   const weeklyResultsRes = await getWeeklyResults([]);
   const weeklyResultsData = weeklyResultsRes?.data?.data || [];
 
@@ -49,7 +49,10 @@ const ResultOverviewPage = async (props: {
     <DashboardWrapper>
       <GiveResult classesData={classesData} />
       <WeeklyResultTable weeklyResults={weeklyResultsData} />
-      <WeeklyResultTakeTable studentsData={studentData} totalMark={weeklyResultsData[0]?.totalMarks || 0} />
+      <WeeklyResultTakeTable
+        studentsData={studentData}
+        weeklyResult={weeklyResultsData[0]}
+      />
       {studentRes?.data?.meta?.totalPages > 1 && (
         <PaginationWrapper
           active={page}

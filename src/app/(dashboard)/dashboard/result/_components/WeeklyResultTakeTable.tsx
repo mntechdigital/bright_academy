@@ -7,42 +7,71 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { createWeeklyResultForSingleStd } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 
+// Define a type for the weekly result
+type WeeklyResult = {
+  totalMarks: number;
+  subject: { id: string };
+  week: string;
+  year: string;
+  month: string;
+  publishedDate: string;
+
+};
+
 // Extract a single row into its own component so each has its own useForm instance
 const StudentRow = ({
   student,
   totalMark,
+  subjectId,
+  week,
+  year,
+  month,
+  publishedDate,
 }: {
   student: Student;
   totalMark: number;
+  subjectId: string;
+  week: string;
+  year: string;
+  month: string;
+  publishedDate: string;
 }) => {
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
     defaultValues: {
-      obtainedMarks: student.obtainedMarks || "",
+      obtainedMarks: student.obtainedMarks ? Number(student.obtainedMarks) : "",
     },
   });
 
-const onSubmit = async (data: any) => {
-  startTransition(async () => {
-    const payload = {
-      studentId: student.id,
-      obtainedMarks: data.obtainedMarks,
-    };
-    console.log(`Student ${student.id} submitted:`, data);
+  const onSubmit = async (data: any) => {
+    startTransition(async () => {
+      const payload = {
+        studentId: student.id,
+        
+        obtainedMarks: parseInt(data.obtainedMarks, 10),
+        subjectId: subjectId,
+        week: week,
+        year: year,
+        month: month,
+        publishedDate: publishedDate,
+      };
+      console.log(`Student ${student.id} submitted:`, data);
 
-    const res = await createWeeklyResultForSingleStd(payload);
+      const res = await createWeeklyResultForSingleStd(payload);
 
-    console.log("see single student obtain mark==>", res);
+      console.log("see single student obtain mark==>", res);
 
-    if (res.statusCode === 200) {
-      showSuccessToast("Student created successfully!");
-      form.reset();
-    } else {
-      showErrorToast(res.message || "Failed to create student.");
-    }
-  });
-};
+      if (res.statusCode === 200) {
+        showSuccessToast("Student created successfully!");
+        form.reset();
+      } else {
+        showErrorToast(res.message || "Failed to create student.");
+      }
+    });
+  };
+  // When handling student submission, ensure obtainedMarks is converted to integer
+  // Example: parseInt(obtainedMarks, 10)
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -59,7 +88,9 @@ const onSubmit = async (data: any) => {
           {student.studentId}
         </span>
       </td>
-      <td className="px-4 py-3 text-gray-900 text-sm font-medium">{totalMark}</td>
+      <td className="px-4 py-3 text-gray-900 text-sm font-medium">
+        {totalMark}
+      </td>
       <td className="px-4 py-3">
         <Controller
           name="obtainedMarks"
@@ -72,8 +103,12 @@ const onSubmit = async (data: any) => {
                 type="number"
                 placeholder="Enter obtain mark"
                 className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                onChange={(e) => field.onChange(Number(e.target.value))}
+                value={field.value}
               />
-              {error && <p className="mt-1 text-sm text-red-500">{error.message}</p>}
+              {error && (
+                <p className="mt-1 text-sm text-red-500">{error.message}</p>
+              )}
             </div>
           )}
         />
@@ -104,17 +139,19 @@ const onSubmit = async (data: any) => {
 
 const WeeklyResultTakeTable = ({
   studentsData,
-  totalMark,
+  weeklyResult,
 }: {
   studentsData: Student[];
-  totalMark: number;
+  weeklyResult: WeeklyResult;
 }) => {
+  const { totalMarks, subject, week, year, month, publishedDate } =
+    weeklyResult;
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
       <div className="flex items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900 mr-3">Students</h2>
         <span className="bg-orange-100 text-orange-600 text-xs font-medium px-3 py-1 rounded-full">
-          Class 6
+          Class 11
         </span>
       </div>
       <div className="overflow-x-auto">
@@ -122,22 +159,42 @@ const WeeklyResultTakeTable = ({
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs">
               <th className="px-4 py-3 font-medium text-left">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300" />
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-gray-300"
+                />
               </th>
-              <th className="px-4 py-3 font-medium text-left">Student's Name</th>
+              <th className="px-4 py-3 font-medium text-left">
+                Student's Name
+              </th>
               <th className="px-4 py-3 font-medium text-left">Student's ID</th>
               <th className="px-4 py-3 font-medium text-left">
-                Total Marks <span className="ml-1 cursor-pointer" title="Total marks">&#9432;</span>
+                Total Marks{" "}
+                <span className="ml-1 cursor-pointer" title="Total marks">
+                  &#9432;
+                </span>
               </th>
               <th className="px-4 py-3 font-medium text-left">
-                Obtain Marks <span className="ml-1 cursor-pointer" title="Obtain marks">&#9432;</span>
+                Obtain Marks{" "}
+                <span className="ml-1 cursor-pointer" title="Obtain marks">
+                  &#9432;
+                </span>
               </th>
               <th className="px-4 py-3 font-medium text-left">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {studentsData.map((student) => (
-              <StudentRow key={student.id} student={student} totalMark={totalMark} />
+              <StudentRow
+                key={student.id}
+                student={student}
+                totalMark={totalMarks || 0}
+                subjectId={subject?.id}
+                week={week}
+                year={year}
+                month={month}
+                publishedDate={publishedDate}
+              />
             ))}
           </tbody>
         </table>

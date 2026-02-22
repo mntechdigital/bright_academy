@@ -21,7 +21,7 @@ const WeeklyResultTable = ({
   weeklyResults: WeeklyResult[];
 }) => {
   const results = weeklyResults;
-  console.log("see weeklyresult data==>", results);
+  // console.log("see weeklyresult data==>", results);
 
   return (
     <div className="overflow-x-auto bg-white rounded-lg border border-gray-200 mt-6">
