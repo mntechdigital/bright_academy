@@ -5,5 +5,6 @@ export interface Student {
   avatarUrl?: string;
   studentId: string;
   totalMark: number;
-  obtainedMarks: number;
+  obtainedMarks?: number;
+  classId: string;
 }

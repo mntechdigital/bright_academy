@@ -7,7 +7,6 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { createWeeklyResultForSingleStd } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 
-// Define a type for the weekly result
 type WeeklyResult = {
   totalMarks: number;
   subject: { id: string };
@@ -15,10 +14,10 @@ type WeeklyResult = {
   year: string;
   month: string;
   publishedDate: string;
-
+  sectionId: string;
+  stdClassId: string;
 };
 
-// Extract a single row into its own component so each has its own useForm instance
 const StudentRow = ({
   student,
   totalMark,
@@ -27,6 +26,8 @@ const StudentRow = ({
   year,
   month,
   publishedDate,
+  sectionId, // 👈 add
+  stdClassId, // 👈 add
 }: {
   student: Student;
   totalMark: number;
@@ -35,6 +36,8 @@ const StudentRow = ({
   year: string;
   month: string;
   publishedDate: string;
+  sectionId: string; // 👈 add
+  stdClassId: string; // 👈 add
 }) => {
   const [isPending, startTransition] = useTransition();
 
@@ -48,30 +51,26 @@ const StudentRow = ({
     startTransition(async () => {
       const payload = {
         studentId: student.id,
-        
+        stdClassId: stdClassId, // 👈 from weeklyResult
+        sectionId: sectionId, // 👈 from weeklyResult
+        subjectId,
         obtainedMarks: parseInt(data.obtainedMarks, 10),
-        subjectId: subjectId,
-        week: week,
-        year: year,
-        month: month,
-        publishedDate: publishedDate,
+        totalMarks: totalMark,
+        week,
+        year,
+        month,
+        publishedDate,
       };
-      console.log(`Student ${student.id} submitted:`, data);
 
       const res = await createWeeklyResultForSingleStd(payload);
-
-      console.log("see single student obtain mark==>", res);
-
+      console.log("see response==>", res);
       if (res.statusCode === 200) {
-        showSuccessToast("Student created successfully!");
-        form.reset();
+        showSuccessToast("Result submitted successfully!");
       } else {
-        showErrorToast(res.message || "Failed to create student.");
+        showErrorToast(res.message || "Failed to submit result.");
       }
     });
   };
-  // When handling student submission, ensure obtainedMarks is converted to integer
-  // Example: parseInt(obtainedMarks, 10)
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -144,8 +143,17 @@ const WeeklyResultTakeTable = ({
   studentsData: Student[];
   weeklyResult: WeeklyResult;
 }) => {
-  const { totalMarks, subject, week, year, month, publishedDate } =
-    weeklyResult;
+  const {
+    totalMarks,
+    subject,
+    week,
+    year,
+    month,
+    publishedDate,
+    sectionId,
+    stdClassId,
+  } = weeklyResult;
+  console.log("weeklyresult data==>", weeklyResult);
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
       <div className="flex items-center mb-4">
@@ -194,6 +202,8 @@ const WeeklyResultTakeTable = ({
                 year={year}
                 month={month}
                 publishedDate={publishedDate}
+                sectionId={sectionId} // 👈 add
+                stdClassId={stdClassId} // 👈 add
               />
             ))}
           </tbody>
