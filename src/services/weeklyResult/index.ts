@@ -74,10 +74,25 @@ export const deleteWeeklyResult = async (id: string | undefined) => {
   return response;
 };
 
+export const deleteWeeklyResultByClassAndSection = async (
+  payload: Record<string, any>,
+) => {
+  const response = await apiRequest(`weekly-marks-sheets/section-class`, {
+    method: "DELETE",
+    body: JSON.stringify(payload),
+    authRequired: true,
+  });
 
+  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+    revalidatePath(path);
+  });
 
+  return response;
+};
 
-export const createWeeklyResultForSingleStd = async (payload: Record<string, any>) => {
+export const createWeeklyResultForSingleStd = async (
+  payload: Record<string, any>,
+) => {
   const response = await apiRequest("weekly-marks-sheets/obtained-marks", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -95,12 +110,15 @@ export const updateWeeklyResultForSingleStd = async (
   id: string,
   payload: Record<string, any>,
 ) => {
-  const response = await apiRequest(`weekly-marks-sheets/obtained-marks/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-    authRequired: true,
-  });
-  
+  const response = await apiRequest(
+    `weekly-marks-sheets/obtained-marks/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+      authRequired: true,
+    },
+  );
+
   ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
     revalidatePath(path);
   });

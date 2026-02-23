@@ -14,21 +14,24 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteStudent } from "@/src/services/students";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { deleteWeeklyResult } from "@/src/services/weeklyResult";
+import { deleteWeeklyResult, deleteWeeklyResultByClassAndSection } from "@/src/services/weeklyResult";
 
 interface DeleteWeeklyResultDialogProps {
+  sectionId: string;
+  stdClassId: string;
   id?: string;
   trigger?: ReactNode;
 }
 
-const DeleteWeeklyResultDialog = ({ id, trigger }: DeleteWeeklyResultDialogProps) => {
+const DeleteWeeklyResultDialog = ({ sectionId, stdClassId, trigger }: DeleteWeeklyResultDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  console.log("see sectionId, stdClassId--->",sectionId, stdClassId)
   const handleDelete = async () => {
     startTransition(async () => {
-      const result = await deleteWeeklyResult(id);
-
+      const result = await deleteWeeklyResultByClassAndSection({ sectionId,stdClassId });
+      console.log("delete response ==>",result)
       if (result.statusCode === 200) {
         setIsOpen(false);
         showSuccessToast(result.message);
