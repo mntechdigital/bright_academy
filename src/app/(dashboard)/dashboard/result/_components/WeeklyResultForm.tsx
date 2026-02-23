@@ -47,6 +47,7 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
       subjectId: "",
       totalMarks: 0,
     },
+    mode: "onSubmit",
   });
 
   const selectedClassId = watch("classId");
@@ -82,18 +83,24 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
             <Controller
               name="month"
               control={control}
+              rules={{ required: "Month is required" }}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                >
-                  <option value="">Select Month</option>
-                  {months.map((month) => (
-                    <option key={month} value={month}>
-                      {month}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    {...field}
+                    className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                  >
+                    <option value="">Select Month</option>
+                    {months.map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.month && (
+                    <span className="text-red-500 text-xs">{errors.month.message}</span>
+                  )}
+                </>
               )}
             />
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -107,18 +114,24 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
             <Controller
               name="week"
               control={control}
+              rules={{ required: "Week is required" }}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                >
-                  <option value="">Select Week</option>
-                  {weeks.map((week) => (
-                    <option key={week} value={week}>
-                      {week}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    {...field}
+                    className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                  >
+                    <option value="">Select Week</option>
+                    {weeks.map((week) => (
+                      <option key={week} value={week}>
+                        {week}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.week && (
+                    <span className="text-red-500 text-xs">{errors.week.message}</span>
+                  )}
+                </>
               )}
             />
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -133,30 +146,36 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
           <Controller
             name="publishedDate"
             control={control}
+            rules={{ required: "Published date is required" }}
             render={({ field }) => (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 h-auto text-sm text-gray-700 font-normal hover:bg-white focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                  >
-                    {field.value ? (
-                      format(field.value, "MMMM d, yyyy")
-                    ) : (
-                      <span className="text-gray-400">Select Date</span>
-                    )}
-                    <CalendarIcon className="h-4 w-4 text-gray-400" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 h-auto text-sm text-gray-700 font-normal hover:bg-white focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                    >
+                      {field.value ? (
+                        format(field.value, "MMMM d, yyyy")
+                      ) : (
+                        <span className="text-gray-400">Select Date</span>
+                      )}
+                      <CalendarIcon className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {errors.publishedDate && (
+                  <span className="text-red-500 text-xs">{errors.publishedDate.message}</span>
+                )}
+              </>
             )}
           />
         </div>
@@ -168,17 +187,24 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
             <Controller
               name="year"
               control={control}
+              rules={{ required: "Year is required" }}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year.toString()}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    {...field}
+                    className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                  >
+                    <option value="">Select Year</option>
+                    {years.map((year) => (
+                      <option key={year} value={year.toString()}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.year && (
+                    <span className="text-red-500 text-xs">{errors.year.message}</span>
+                  )}
+                </>
               )}
             />
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -194,18 +220,24 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
             <Controller
               name="classId"
               control={control}
+              rules={{ required: "Class is required" }}
               render={({ field }) => (
-                <select
-                  {...field}
-                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                >
-                  <option value="">Select Class</option>
-                  {classesData.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.className}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    {...field}
+                    className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                  >
+                    <option value="">Select Class</option>
+                    {classesData.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.className}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.classId && (
+                    <span className="text-red-500 text-xs">{errors.classId.message}</span>
+                  )}
+                </>
               )}
             />
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -219,19 +251,25 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
             <Controller
               name="sectionId"
               control={control}
+              rules={{ required: "Section is required" }}
               render={({ field }) => (
-                <select
-                  {...field}
-                  disabled={!selectedClassId}
-                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Section</option>
-                  {sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.sectionName}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    {...field}
+                    disabled={!selectedClassId}
+                    className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select Section</option>
+                    {sections.map((section) => (
+                      <option key={section.id} value={section.id}>
+                        {section.sectionName}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.sectionId && (
+                    <span className="text-red-500 text-xs">{errors.sectionId.message}</span>
+                  )}
+                </>
               )}
             />
             <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -246,19 +284,25 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
           <Controller
             name="subjectId"
             control={control}
+            rules={{ required: "Subject is required" }}
             render={({ field }) => (
-              <select
-                {...field}
-                disabled={!selectedClassId}
-                className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Select Subject</option>
-                {subjects.map((subject) => (
-                  <option key={subject.id} value={subject.id}>
-                    {subject.subjectName}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  {...field}
+                  disabled={!selectedClassId}
+                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select Subject</option>
+                  {subjects.map((subject) => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.subjectName}
+                    </option>
+                  ))}
+                </select>
+                {errors.subjectId && (
+                  <span className="text-red-500 text-xs">{errors.subjectId.message}</span>
+                )}
+              </>
             )}
           />
           <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />

@@ -22,6 +22,8 @@ type WeeklyResult = {
   stdClassId: string;
   studentId: string | null;
   obtainedMarks: number | null;
+  section?: { id: string; sectionName: string };
+  stdClass?: { id: string; className: string };
 };
 
 const StudentRow = ({
@@ -52,7 +54,7 @@ const StudentRow = ({
   const [isPending, startTransition] = useTransition();
   const existingResult = weeklyResults.find((r) => r.studentId === student.id);
   const isEditing = !!existingResult;
-  console.log("update weeklyResults==>", weeklyResults);
+
   const form = useForm({
     defaultValues: {
       obtainedMarks: defaultObtainedMarks ? Number(defaultObtainedMarks) : "",
@@ -74,17 +76,12 @@ const StudentRow = ({
         publishedDate,
       };
 
-      const existingResult = weeklyResults.find(
-        (r) => r.studentId === student.id,
-      );
       const res = isEditing
         ? await updateWeeklyResultForSingleStd(
             existingResult?.id ?? "",
             payload,
           )
         : await createWeeklyResultForSingleStd(payload);
-
-      console.log("see update response==>", res);
 
       if (res.statusCode === (isEditing ? 200 : 201)) {
         showSuccessToast(res.message);
@@ -112,13 +109,17 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
           <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-          {student.stdClass?.className || "No Class"}
+          {existingResult?.stdClass?.className ||
+            student.stdClass?.className ||
+            "No Class"}
         </span>
       </td>
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
           <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-          {student.section?.sectionName || "No Section"}
+          {existingResult?.section?.sectionName ||
+            student.section?.sectionName ||
+            "No Section"}
         </span>
       </td>
       <td className="px-4 py-3 text-gray-900 text-sm font-medium">
@@ -190,68 +191,98 @@ const WeeklyResultTakeTable = ({
     stdClassId,
   } = weeklyResultMeta;
 
+  const filteredStudents = studentsData;
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
       <div className="flex items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900 mr-3">Students</h2>
         <span className="bg-orange-100 text-orange-600 text-xs font-medium px-3 py-1 rounded-full">
-          Class 11
+          {filteredStudents.length} Students
         </span>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full">
+        <table className="min-w-full table-auto">
           <thead>
-            <tr className="bg-gray-50 text-gray-500 text-xs">
-              <th className="px-4 py-3 font-medium text-left">
+            <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap w-10">
                 <input
                   type="checkbox"
                   className="w-4 h-4 rounded border-gray-300"
                 />
               </th>
-              <th className="px-4 py-3 font-medium text-left">
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
                 Student's Name
               </th>
-              <th className="px-4 py-3 font-medium text-left">Student's ID</th>
-              <th className="px-4 py-3 font-medium text-left">Student's Class</th>
-              <th className="px-4 py-3 font-medium text-left">Student's Section</th>
-              <th className="px-4 py-3 font-medium text-left">
-                Total Marks{" "}
-                <span className="ml-1 cursor-pointer" title="Total marks">
-                  &#9432;
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                Student's ID
+              </th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                Student's Class
+              </th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                Student's Section
+              </th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Total Marks
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Total marks"
+                  >
+                    &#9432;
+                  </span>
                 </span>
               </th>
-              <th className="px-4 py-3 font-medium text-left">
-                Obtain Marks{" "}
-                <span className="ml-1 cursor-pointer" title="Obtain marks">
-                  &#9432;
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Obtain Marks
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Obtain marks"
+                  >
+                    &#9432;
+                  </span>
                 </span>
               </th>
-              <th className="px-4 py-3 font-medium text-left">Action</th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {studentsData.map((student) => {
-              const existingResult = weeklyResults.find(
-                (r) => r.studentId === student.id,
-              );
-
-              return (
-                <StudentRow
-                  key={student.id}
-                  student={student}
-                  totalMark={totalMarks || 0}
-                  subjectId={subject?.id}
-                  week={week}
-                  year={year}
-                  month={month}
-                  publishedDate={publishedDate}
-                  sectionId={sectionId}
-                  stdClassId={stdClassId}
-                  defaultObtainedMarks={existingResult?.obtainedMarks ?? null}
-                  weeklyResults={weeklyResults}
-                />
-              );
-            })}
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((student) => {
+                const existingResult = weeklyResults.find(
+                  (r) => r.studentId === student.id,
+                );
+                return (
+                  <StudentRow
+                    key={student.id}
+                    student={student}
+                    totalMark={existingResult?.totalMarks ?? totalMarks ?? 0}
+                    subjectId={subject?.id}
+                    week={week}
+                    year={year}
+                    month={month}
+                    publishedDate={publishedDate}
+                    sectionId={sectionId}
+                    stdClassId={stdClassId}
+                    defaultObtainedMarks={existingResult?.obtainedMarks ?? null}
+                    weeklyResults={weeklyResults}
+                  />
+                );
+              })
+            ) : (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-4 py-8 text-center text-gray-400 text-sm"
+                >
+                  No students found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
