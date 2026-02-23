@@ -48,7 +48,7 @@ const ResultOverviewPage = async (props: {
   return (
     <DashboardWrapper>
       <GiveResult classesData={classesData} />
-      <WeeklyResultTable weeklyResults={weeklyResultsData} />
+      {/* <WeeklyResultTable weeklyResults={weeklyResultsData} /> */}
       {weeklyResultsData[0] && (
         <WeeklyResultTakeTable
           studentsData={studentData}

@@ -109,6 +109,18 @@ const StudentRow = ({
           {student.studentId}
         </span>
       </td>
+      <td className="px-4 py-3">
+        <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
+          <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
+          {student.stdClass?.className || "No Class"}
+        </span>
+      </td>
+      <td className="px-4 py-3">
+        <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
+          <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
+          {student.section?.sectionName || "No Section"}
+        </span>
+      </td>
       <td className="px-4 py-3 text-gray-900 text-sm font-medium">
         {totalMark}
       </td>
@@ -200,6 +212,8 @@ const WeeklyResultTakeTable = ({
                 Student's Name
               </th>
               <th className="px-4 py-3 font-medium text-left">Student's ID</th>
+              <th className="px-4 py-3 font-medium text-left">Student's Class</th>
+              <th className="px-4 py-3 font-medium text-left">Student's Section</th>
               <th className="px-4 py-3 font-medium text-left">
                 Total Marks{" "}
                 <span className="ml-1 cursor-pointer" title="Total marks">

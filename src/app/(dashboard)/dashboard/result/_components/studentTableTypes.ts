@@ -7,4 +7,12 @@ export interface Student {
   totalMark: number;
   obtainedMarks?: number;
   classId: string;
+  stdClass: {
+    id: string;
+    className: string;
+  };
+  section: {
+    id: string;
+    sectionName: string;
+  };
 }
