@@ -27,7 +27,6 @@ const DeleteWeeklyResultDialog = ({ sectionId, stdClassId, trigger }: DeleteWeek
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  console.log("see sectionId, stdClassId--->",sectionId, stdClassId)
   const handleDelete = async () => {
     startTransition(async () => {
       const result = await deleteWeeklyResultByClassAndSection({ sectionId,stdClassId });

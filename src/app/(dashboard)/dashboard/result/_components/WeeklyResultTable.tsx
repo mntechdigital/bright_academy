@@ -6,7 +6,6 @@ const WeeklyResultTable = ({
   weeklyResults: any[];
 }) => {
 
-  console.log("see weeklyresult data==>",weeklyResults)
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [

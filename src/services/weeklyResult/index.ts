@@ -111,7 +111,7 @@ export const updateWeeklyResultForSingleStd = async (
   payload: Record<string, any>,
 ) => {
   const response = await apiRequest(
-    `weekly-marks-sheets/obtained-marks/${id}`,
+    `weekly-marks-sheets/${id}`,
     {
       method: "PUT",
       body: JSON.stringify(payload),

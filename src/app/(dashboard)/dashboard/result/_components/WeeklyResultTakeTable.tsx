@@ -76,12 +76,12 @@ const StudentRow = ({
         publishedDate,
       };
 
-      const res = isEditing
-        ? await updateWeeklyResultForSingleStd(
-            existingResult?.id ?? "",
-            payload,
-          )
-        : await createWeeklyResultForSingleStd(payload);
+      let res;
+      if (isEditing) {
+        res = await updateWeeklyResultForSingleStd(existingResult.id, payload);
+      } else {
+        res = await createWeeklyResultForSingleStd(payload);
+      }
 
       if (res.statusCode === (isEditing ? 200 : 201)) {
         showSuccessToast(res.message);
