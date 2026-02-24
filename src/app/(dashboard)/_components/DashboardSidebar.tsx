@@ -5,9 +5,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, LucideIcon } from "lucide-react";
 import React, { useState } from "react";
 import { NAV_ITEMS } from "@/src/constant/dashboardNavbar.constant";
+
+interface NavChild {
+  icon?: LucideIcon;
+  label: string;
+  href: string;
+}
+
+interface NavItem {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  children?: NavChild[];
+}
 
 interface SidebarProps {
   adminData?: any;
@@ -35,25 +48,8 @@ export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
     return href.replace(/^\/dashboard\/|^\//, '').replace(/\/$/, '');
   };
 
-  const filteredNavItems = NAV_ITEMS.filter((item) => {
-    const normalizedHref = normalizeHref(item.href);
-    
-    // Always show Dashboard and Log Out
-    if (item.href === "/dashboard" || item.label === "Log Out") return true;
-    
-    // Check if the item itself is allowed
-    if (allowedPaths.includes(normalizedHref)) return true;
-    
-    // If item has children, check if any child is allowed
-    if (item.children && Array.isArray(item.children)) {
-      return item.children.some((child: any) => {
-        const normalizedChildHref = normalizeHref(child.href);
-        return allowedPaths.includes(normalizedChildHref);
-      });
-    }
-    
-    return false;
-  });
+  // Show all nav items without role-based filtering
+  const filteredNavItems = NAV_ITEMS as NavItem[];
 
   // console.log("Filtered Nav Items:", filteredNavItems);
 
@@ -83,16 +79,14 @@ export function Sidebar({ adminData, isMobile, onNavItemClick }: SidebarProps) {
         <ScrollArea className="h-full">
           <div className={cn("grid gap-1", isMobile && "px-4")}>
             {filteredNavItems.length > 0 ? (
-              filteredNavItems.map((item) => {
+              filteredNavItems.map((navItem) => {
+                const item = navItem as NavItem;
                 const Icon = item.icon;
                 if (item.children && Array.isArray(item.children)) {
-                  // Filter children based on allowed paths
-                  const filteredChildren = item.children.filter((child: any) => {
-                    const normalizedChildHref = normalizeHref(child.href);
-                    return allowedPaths.includes(normalizedChildHref);
-                  });
+                  // Use all children
+                  const filteredChildren = item.children;
 
-                  // Don't show parent if no children are allowed
+                  // Don't show parent if no children
                   if (filteredChildren.length === 0) return null;
 
                   // Dropdown menu item
