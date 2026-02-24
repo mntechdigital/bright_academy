@@ -1,6 +1,6 @@
 "use client";
 import React, { useTransition } from "react";
-import { Student } from "./studentTableTypes";
+import { Student } from "../studentTableTypes";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";

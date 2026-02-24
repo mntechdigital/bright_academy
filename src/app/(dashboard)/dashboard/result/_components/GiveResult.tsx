@@ -17,8 +17,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import WeeklyResultForm from './WeeklyResultForm';
-import MonthlyResultForm from './MonthlyResultForm';
+import WeeklyResultForm from './weeklyResult/WeeklyResultForm';
+import MonthlyResultForm from './monthlyResult/MonthlyResultForm';
 
 interface ClassData {
   id: string;
@@ -112,6 +112,7 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
       {/* Render the correct form */}
       {examType === "weekly" ? (
         <WeeklyResultForm classesData={classesData} />
+        
       ) : (
         <MonthlyResultForm classesData={classesData} />
       )}
