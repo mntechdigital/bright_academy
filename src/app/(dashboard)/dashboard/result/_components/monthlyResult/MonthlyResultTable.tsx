@@ -13,7 +13,16 @@ type SubjectRow = {
   grade: string;
 };
 
-// ─── Initial rows ─────────────────────────────────────────────────────────────
+type Summary = {
+  totalMarks: string;
+  gpa: string;
+  grade: string;
+  position: string;
+  present: string;
+  absent: string;
+};
+
+// ─── Initial data ─────────────────────────────────────────────────────────────
 
 const INITIAL_ROWS: SubjectRow[] = [
   "Bangla First Paper",
@@ -30,7 +39,21 @@ const INITIAL_ROWS: SubjectRow[] = [
   grade: "",
 }));
 
-// ─── NumberInput component ────────────────────────────────────────────────────
+const INITIAL_SUMMARY: Summary = {
+  totalMarks: "",
+  gpa: "",
+  grade: "",
+  position: "",
+  present: "",
+  absent: "",
+};
+
+// ─── Shared input styles ──────────────────────────────────────────────────────
+
+const inputBase =
+  "rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-center text-sm text-gray-800 placeholder:text-gray-300 outline-none tabular-nums transition-all duration-150 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100";
+
+// ─── Reusable inputs ──────────────────────────────────────────────────────────
 
 type NumberInputProps = {
   value: string;
@@ -45,130 +68,192 @@ function NumberInput({ value, onChange, placeholder }: NumberInputProps) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full min-w-[64px] rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-center text-sm text-gray-800 placeholder:text-gray-300 outline-none tabular-nums transition-all duration-150 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+      className={`w-full min-w-[64px] ${inputBase}`}
+    />
+  );
+}
+
+type TextInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  width?: string;
+  uppercase?: boolean;
+  maxLength?: number;
+};
+
+function TextInput({ value, onChange, placeholder, width = "w-full", uppercase = false, maxLength }: TextInputProps) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(uppercase ? e.target.value.toUpperCase() : e.target.value)}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      className={`${width} ${inputBase} ${uppercase ? "uppercase font-semibold" : ""}`}
     />
   );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function MonthlyResultTable() {
-  const [rows, setRows] = useState<SubjectRow[]>(INITIAL_ROWS);
+interface MonthlyResultTableProps {
+  studentName: string;
+  subjects: { id?: string; subjectName?: string; name?: string }[];
+}
+
+export default function MonthlyResultTable({ studentName, subjects }: MonthlyResultTableProps) {
+  const subjectNames = subjects && subjects.length > 0
+    ? subjects.map(s => s.subjectName || s.name || "")
+    : INITIAL_ROWS.map(r => r.name);
+  const [rows, setRows] = useState<SubjectRow[]>(
+    subjectNames.map(name => ({
+      name,
+      fullMarks: "",
+      highestMark: "",
+      marksObtained: "",
+      point: "",
+      grade: "",
+    }))
+  );
+  const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
 
   const updateRow = (idx: number, field: keyof SubjectRow, value: string) =>
     setRows((prev) =>
       prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
     );
 
-  // Live footer stats
-  const filled = rows.filter((r) => r.marksObtained !== "");
-  const avgMarks = filled.length
-    ? (filled.reduce((s, r) => s + Number(r.marksObtained), 0) / filled.length).toFixed(1)
-    : "—";
+  const updateSummary = (field: keyof Summary, value: string) =>
+    setSummary((prev) => ({ ...prev, [field]: value }));
 
-  const filledGPA = rows.filter((r) => r.point !== "");
-  const avgGpa = filledGPA.length
-    ? (filledGPA.reduce((s, r) => s + Number(r.point), 0) / filledGPA.length).toFixed(2)
-    : "—";
+  const handleSubmit = () => {
+    console.log("Submitted:", { rows, summary });
+    alert("Result submitted successfully!");
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-full space-y-4">
 
-        {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
-          <h2 className="text-[15px] font-bold text-gray-900">Raisul R.</h2>
-          <span className="rounded-md bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-500 ring-1 ring-red-100">
-            Roll: bright0191
-          </span>
-        </div>
+        {/* ── Main Card ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                <th className="px-4 py-3 text-left">Student's Name</th>
-                <th className="px-3 py-3 text-center">Full Marks</th>
-                <th className="px-3 py-3 text-center">Highest Mark</th>
-                <th className="px-3 py-3 text-center">Marks Obtained</th>
-                <th className="px-3 py-3 text-center">Point</th>
-                <th className="px-3 py-3 text-center">Grade</th>
-              </tr>
-            </thead>
+          {/* Card Header */}
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+            <h2 className="text-[15px] font-bold text-gray-900">{studentName}</h2>
+          </div>
 
-            <tbody>
-              {rows.map((row, idx) => (
-                <tr
-                  key={row.name}
-                  className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100"
-                >
-                  {/* Subject name */}
-                  <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-                    {row.name}
-                  </td>
+          {/* Subject Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-3 text-left">Subject</th>
+                  <th className="px-3 py-3 text-center">Full Marks</th>
+                  <th className="px-3 py-3 text-center">Highest Mark</th>
+                  <th className="px-3 py-3 text-center">Marks Obtained</th>
+                  <th className="px-3 py-3 text-center">Point</th>
+                  <th className="px-3 py-3 text-center">Grade</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, idx) => (
+                  <tr
+                    key={row.name}
+                    className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                      {row.name}
+                    </td>
+                    <td className="px-3 py-3">
+                      <NumberInput value={row.fullMarks}     onChange={(v) => updateRow(idx, "fullMarks", v)}     placeholder="100"  />
+                    </td>
+                    <td className="px-3 py-3">
+                      <NumberInput value={row.highestMark}   onChange={(v) => updateRow(idx, "highestMark", v)}   placeholder="100"  />
+                    </td>
+                    <td className="px-3 py-3">
+                      <NumberInput value={row.marksObtained} onChange={(v) => updateRow(idx, "marksObtained", v)} placeholder="0"    />
+                    </td>
+                    <td className="px-3 py-3">
+                      <NumberInput value={row.point}         onChange={(v) => updateRow(idx, "point", v)}         placeholder="0.00" />
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <TextInput
+                        value={row.grade}
+                        onChange={(v) => updateRow(idx, "grade", v)}
+                        placeholder="A+"
+                        width="w-16"
+                        uppercase
+                        maxLength={2}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                  {/* Number inputs */}
-                  <td className="px-3 py-3">
-                    <NumberInput
-                      value={row.fullMarks}
-                      onChange={(v) => updateRow(idx, "fullMarks", v)}
-                      placeholder="100"
-                    />
+          {/* ── Exam Summary ── */}
+          <div className="border-t border-gray-100">
+            <div className="py-3 text-center border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-700 tracking-wide">Exam Summary</h3>
+            </div>
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 border-b border-gray-100">
+                  <th className="px-4 py-3 text-center">Total Marks</th>
+                  <th className="px-4 py-3 text-center">GPA</th>
+                  <th className="px-4 py-3 text-center">Grade</th>
+                  <th className="px-4 py-3 text-center">Position</th>
+                  <th className="px-4 py-3 text-center">Present</th>
+                  <th className="px-4 py-3 text-center">Absent</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="px-4 py-4">
+                    <NumberInput value={summary.totalMarks} onChange={(v) => updateSummary("totalMarks", v)} placeholder="0"    />
                   </td>
-                  <td className="px-3 py-3">
-                    <NumberInput
-                      value={row.highestMark}
-                      onChange={(v) => updateRow(idx, "highestMark", v)}
-                      placeholder="100"
-                    />
+                  <td className="px-4 py-4">
+                    <NumberInput value={summary.gpa}        onChange={(v) => updateSummary("gpa", v)}        placeholder="0.00" />
                   </td>
-                  <td className="px-3 py-3">
-                    <NumberInput
-                      value={row.marksObtained}
-                      onChange={(v) => updateRow(idx, "marksObtained", v)}
-                      placeholder="0"
-                    />
-                  </td>
-                  <td className="px-3 py-3">
-                    <NumberInput
-                      value={row.point}
-                      onChange={(v) => updateRow(idx, "point", v)}
-                      placeholder="0.00"
-                    />
-                  </td>
-
-                  {/* Grade text input */}
-                  <td className="px-3 py-3 text-center">
-                    <input
-                      type="text"
-                      value={row.grade}
-                      onChange={(e) => updateRow(idx, "grade", e.target.value.toUpperCase())}
-                      placeholder="A+"
+                  <td className="px-4 py-4 text-center">
+                    <TextInput
+                      value={summary.grade}
+                      onChange={(v) => updateSummary("grade", v)}
+                      placeholder="B"
+                      width="w-16"
+                      uppercase
                       maxLength={2}
-                      className="w-16 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-center text-sm font-semibold text-gray-800 placeholder:text-gray-300 placeholder:font-normal outline-none uppercase transition-all duration-150 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                     />
+                  </td>
+                  <td className="px-4 py-4 text-center">
+                    <TextInput
+                      value={summary.position}
+                      onChange={(v) => updateSummary("position", v)}
+                      placeholder="12th"
+                      width="w-20"
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <NumberInput value={summary.present} onChange={(v) => updateSummary("present", v)} placeholder="0" />
+                  </td>
+                  <td className="px-4 py-4">
+                    <NumberInput value={summary.absent}  onChange={(v) => updateSummary("absent", v)}  placeholder="0" />
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/40">
-          <p className="text-xs text-gray-400">{rows.length} subjects total</p>
-          <div className="flex items-center gap-5 text-xs text-gray-500">
-            <span>
-              Avg. Marks:{" "}
-              <span className="font-semibold text-gray-700">{avgMarks}</span>
-            </span>
-            <span>
-              GPA:{" "}
-              <span className="font-semibold text-gray-700">{avgGpa}</span>
-            </span>
+              </tbody>
+            </table>
           </div>
         </div>
+
+        {/* ── Submit Button ── */}
+        <button
+          onClick={handleSubmit}
+          className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white tracking-wide transition-all duration-150 hover:bg-orange-600 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+        >
+          Submit
+        </button>
 
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import MonthlyResultTable from "./MonthlyResultTable";
 
 interface ClassData {
   id: string;
@@ -38,10 +39,20 @@ const MonthlyResultForm = ({ classesData = [] }: MonthlyResultFormProps) => {
       studentName: "",
     },
   });
+  const [showTable, setShowTable] = useState(false);
+  const [tableData, setTableData] = useState<{ studentName: string; subjects: any[] } | null>(null);
 
   const onSubmit = (data: any) => {
     // handle form submit
     console.log("Form submitted:", data);
+    const selectedClass = classesData.find((cls) => cls.id === data.classId);
+    const selectedStudent = (selectedClass?.students || []).find(
+      (stu: any) => stu.id === data.studentName
+    );
+    const studentName = selectedStudent?.name || selectedStudent?.studentName || selectedStudent?.fullName || "Unnamed";
+    const subjects = selectedClass?.subjects || [];
+    setTableData({ studentName, subjects });
+    setShowTable(true);
   };
 
   console.log("see monthyResult data==>",classesData);
@@ -193,6 +204,11 @@ const MonthlyResultForm = ({ classesData = [] }: MonthlyResultFormProps) => {
           <Button type="submit" className="w-full">Submit</Button>
         </div>
       </form>
+      {showTable && tableData && (
+        <div className="mt-10">
+          <MonthlyResultTable studentName={tableData.studentName} subjects={tableData.subjects} />
+        </div>
+      )}
     </div>
   );
 };
