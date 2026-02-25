@@ -1,5 +1,7 @@
 "use client";
 
+import { createMonthlyResult } from "@/src/services/monthlyResult";
+import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -82,12 +84,21 @@ type TextInputProps = {
   maxLength?: number;
 };
 
-function TextInput({ value, onChange, placeholder, width = "w-full", uppercase = false, maxLength }: TextInputProps) {
+function TextInput({
+  value,
+  onChange,
+  placeholder,
+  width = "w-full",
+  uppercase = false,
+  maxLength,
+}: TextInputProps) {
   return (
     <input
       type="text"
       value={value}
-      onChange={(e) => onChange(uppercase ? e.target.value.toUpperCase() : e.target.value)}
+      onChange={(e) =>
+        onChange(uppercase ? e.target.value.toUpperCase() : e.target.value)
+      }
       placeholder={placeholder}
       maxLength={maxLength}
       className={`${width} ${inputBase} ${uppercase ? "uppercase font-semibold" : ""}`}
@@ -99,51 +110,83 @@ function TextInput({ value, onChange, placeholder, width = "w-full", uppercase =
 
 interface MonthlyResultTableProps {
   studentName: string;
+  studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
 }
 
-export default function MonthlyResultTable({ studentName, subjects }: MonthlyResultTableProps) {
-  const subjectNames = subjects && subjects.length > 0
-    ? subjects.map(s => s.subjectName || s.name || "")
-    : INITIAL_ROWS.map(r => r.name);
+export default function MonthlyResultTable({
+  studentId,
+  studentName,
+  subjects,
+}: MonthlyResultTableProps) {
+  const subjectNames =
+    subjects && subjects.length > 0
+      ? subjects.map((s) => s.subjectName || s.name || "")
+      : INITIAL_ROWS.map((r) => r.name);
   const [rows, setRows] = useState<SubjectRow[]>(
-    subjectNames.map(name => ({
+    subjectNames.map((name) => ({
       name,
       fullMarks: "",
       highestMark: "",
       marksObtained: "",
       point: "",
       grade: "",
-    }))
+    })),
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
 
   const updateRow = (idx: number, field: keyof SubjectRow, value: string) =>
     setRows((prev) =>
-      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)),
     );
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
 
-  const handleSubmit = () => {
-    const payload ={
-        ...rows,
-        ...summary
+  const handleSubmit = async () => {
+    try {
+      const payload = {
+        studentId: studentId, // ✅ অবশ্যই দিতে হবে
+        totalMarks: Number(summary.totalMarks),
+        gpa: Number(summary.gpa),
+        grade: summary.grade,
+        position: summary.position,
+        present: Number(summary.present),
+        absent: Number(summary.absent),
+        results: {
+          create: rows.map((r) => ({
+            subjectName: r.name,
+            marks: Number(r.marksObtained),
+            // Option B এ schema update করলে পাঠাতে পারবে
+            fullMarks: Number(r.fullMarks),
+            highestMark: Number(r.highestMark),
+            point: Number(r.point),
+            grade: r.grade,
+          })),
+        },
+      };
+
+      const res = await createMonthlyResult(payload);
+      if(res.status === 201){
+        showSuccessToast("Monthly result created successfully!");
+      }else{
+        showErrorToast("Failed to create monthly result. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
     }
-    console.log("Submitted:", payload);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full space-y-4">
-
         {/* ── Main Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
           {/* Card Header */}
           <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
-            <h2 className="text-[15px] font-bold text-gray-900">{studentName}</h2>
+            <h2 className="text-[15px] font-bold text-gray-900">
+              {studentName}
+            </h2>
           </div>
 
           {/* Subject Table */}
@@ -169,16 +212,32 @@ export default function MonthlyResultTable({ studentName, subjects }: MonthlyRes
                       {row.name}
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput value={row.fullMarks}     onChange={(v) => updateRow(idx, "fullMarks", v)}     placeholder="100"  />
+                      <NumberInput
+                        value={row.fullMarks}
+                        onChange={(v) => updateRow(idx, "fullMarks", v)}
+                        placeholder="100"
+                      />
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput value={row.highestMark}   onChange={(v) => updateRow(idx, "highestMark", v)}   placeholder="100"  />
+                      <NumberInput
+                        value={row.highestMark}
+                        onChange={(v) => updateRow(idx, "highestMark", v)}
+                        placeholder="100"
+                      />
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput value={row.marksObtained} onChange={(v) => updateRow(idx, "marksObtained", v)} placeholder="0"    />
+                      <NumberInput
+                        value={row.marksObtained}
+                        onChange={(v) => updateRow(idx, "marksObtained", v)}
+                        placeholder="0"
+                      />
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput value={row.point}         onChange={(v) => updateRow(idx, "point", v)}         placeholder="0.00" />
+                      <NumberInput
+                        value={row.point}
+                        onChange={(v) => updateRow(idx, "point", v)}
+                        placeholder="0.00"
+                      />
                     </td>
                     <td className="px-3 py-3 text-center">
                       <TextInput
@@ -199,7 +258,9 @@ export default function MonthlyResultTable({ studentName, subjects }: MonthlyRes
           {/* ── Exam Summary ── */}
           <div className="border-t border-gray-100">
             <div className="py-3 text-center border-b border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-700 tracking-wide">Exam Summary</h3>
+              <h3 className="text-sm font-semibold text-gray-700 tracking-wide">
+                Exam Summary
+              </h3>
             </div>
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -215,10 +276,18 @@ export default function MonthlyResultTable({ studentName, subjects }: MonthlyRes
               <tbody>
                 <tr>
                   <td className="px-4 py-4">
-                    <NumberInput value={summary.totalMarks} onChange={(v) => updateSummary("totalMarks", v)} placeholder="0"    />
+                    <NumberInput
+                      value={summary.totalMarks}
+                      onChange={(v) => updateSummary("totalMarks", v)}
+                      placeholder="0"
+                    />
                   </td>
                   <td className="px-4 py-4">
-                    <NumberInput value={summary.gpa}        onChange={(v) => updateSummary("gpa", v)}        placeholder="0.00" />
+                    <NumberInput
+                      value={summary.gpa}
+                      onChange={(v) => updateSummary("gpa", v)}
+                      placeholder="0.00"
+                    />
                   </td>
                   <td className="px-4 py-4 text-center">
                     <TextInput
@@ -239,10 +308,18 @@ export default function MonthlyResultTable({ studentName, subjects }: MonthlyRes
                     />
                   </td>
                   <td className="px-4 py-4">
-                    <NumberInput value={summary.present} onChange={(v) => updateSummary("present", v)} placeholder="0" />
+                    <NumberInput
+                      value={summary.present}
+                      onChange={(v) => updateSummary("present", v)}
+                      placeholder="0"
+                    />
                   </td>
                   <td className="px-4 py-4">
-                    <NumberInput value={summary.absent}  onChange={(v) => updateSummary("absent", v)}  placeholder="0" />
+                    <NumberInput
+                      value={summary.absent}
+                      onChange={(v) => updateSummary("absent", v)}
+                      placeholder="0"
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -257,7 +334,6 @@ export default function MonthlyResultTable({ studentName, subjects }: MonthlyRes
         >
           Submit
         </button>
-
       </div>
     </div>
   );
