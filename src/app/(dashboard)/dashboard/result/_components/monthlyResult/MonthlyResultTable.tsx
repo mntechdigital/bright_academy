@@ -68,7 +68,7 @@ function NumberInput({ value, onChange, placeholder }: NumberInputProps) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`w-full min-w-[64px] ${inputBase}`}
+      className={`w-full min-w-16 ${inputBase}`}
     />
   );
 }
