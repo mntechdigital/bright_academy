@@ -127,8 +127,11 @@ export default function MonthlyResultTable({ studentName, subjects }: MonthlyRes
     setSummary((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = () => {
-    console.log("Submitted:", { rows, summary });
-    alert("Result submitted successfully!");
+    const payload ={
+        ...rows,
+        ...summary
+    }
+    console.log("Submitted:", payload);
   };
 
   return (
