@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 
 // ---- Types ----
 interface ResultSubject {
@@ -37,50 +38,66 @@ export interface MonthlyResult {
   updatedAt: string;
 }
 
+interface FormValues {
+  gpa: number;
+  grade: string;
+  position: string;
+  present: number;
+  absent: number;
+  results: {
+    id: string;
+    subjectName: string;
+    fullMarks: number;
+    marks: number;
+    highestMark: number;
+  }[];
+}
+
 interface Props {
   result: MonthlyResult;
 }
 
-
 const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
 
 export default function UpdateResultForm({ result }: Props) {
-  const [gpa, setGpa] = useState<number>(result.gpa);
-  const [grade, setGrade] = useState<string>(result.grade);
-  const [position, setPosition] = useState<string>(result.position);
-  const [present, setPresent] = useState<number>(result.present);
-  const [absent, setAbsent] = useState<number>(result.absent);
-  const [subjectResults, setSubjectResults] = useState<ResultSubject[]>(
-    result.results.map((r) => ({ ...r }))
-  );
-
-  const updateSubjectField = (
-    id: string,
-    field: "marks" | "highestMark",
-    value: number
-  ) => {
-    setSubjectResults((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
-    );
-  };
-
-  const totalAchieved = subjectResults.reduce((sum, r) => sum + r.marks, 0);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log({
-      id: result.id,
-      gpa,
-      grade,
-      position,
-      present,
-      absent,
-      results: subjectResults.map((r) => ({
+  const { control, handleSubmit, watch } = useForm<FormValues>({
+    defaultValues: {
+      gpa: result.gpa,
+      grade: result.grade,
+      position: result.position,
+      present: result.present,
+      absent: result.absent,
+      results: result.results.map((r) => ({
         id: r.id,
+        subjectName: r.subjectName,
+        fullMarks: r.fullMarks,
         marks: r.marks,
         highestMark: r.highestMark,
       })),
-    });
+    },
+  });
+
+  const { fields } = useFieldArray({ control, name: "results" });
+
+  const watchedResults = watch("results");
+  const totalAchieved = watchedResults?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
+
+  const onSubmit = (data: FormValues) => {
+    const payload = {
+      id: result.id,
+      studentId: result.studentId,
+      gpa: data.gpa,
+      grade: data.grade,
+      position: data.position,
+      present: data.present,
+      absent: data.absent,
+      results: data.results.map((r) => ({
+        id: r.id,
+        marks: Number(r.marks),
+        highestMark: Number(r.highestMark),
+      })),
+    };
+    console.log("Payload:", payload);
   };
 
   const avatarUrl =
@@ -89,7 +106,7 @@ export default function UpdateResultForm({ result }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
         {/* Student Info Card */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -131,36 +148,46 @@ export default function UpdateResultForm({ result }: Props) {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-4">Subject Results</h3>
           <div className="space-y-3">
-            {subjectResults.map((subject) => (
-              <div key={subject.id} className="grid grid-cols-12 items-center gap-3">
+            {fields.map((field, index) => (
+              <div key={field.id} className="grid grid-cols-12 items-center gap-3">
                 <div className="col-span-4">
-                  <p className="text-sm font-medium text-gray-800">{subject.subjectName}</p>
-                  <p className="text-xs text-gray-400">Full: {subject.fullMarks}</p>
+                  <p className="text-sm font-medium text-gray-800">{field.subjectName}</p>
+                  <p className="text-xs text-gray-400">Full: {field.fullMarks}</p>
                 </div>
+
                 <div className="col-span-4">
                   <label className="text-xs text-gray-500 mb-1 block">Marks Obtained</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={subject.fullMarks}
-                    value={subject.marks}
-                    onChange={(e) =>
-                      updateSubjectField(subject.id, "marks", Number(e.target.value))
-                    }
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                  <Controller
+                    control={control}
+                    name={`results.${index}.marks`}
+                    render={({ field: f }) => (
+                      <input
+                        {...f}
+                        type="number"
+                        min={0}
+                        max={field.fullMarks}
+                        onChange={(e) => f.onChange(Number(e.target.value))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                      />
+                    )}
                   />
                 </div>
+
                 <div className="col-span-4">
                   <label className="text-xs text-gray-500 mb-1 block">Highest Mark</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={subject.fullMarks}
-                    value={subject.highestMark}
-                    onChange={(e) =>
-                      updateSubjectField(subject.id, "highestMark", Number(e.target.value))
-                    }
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                  <Controller
+                    control={control}
+                    name={`results.${index}.highestMark`}
+                    render={({ field: f }) => (
+                      <input
+                        {...f}
+                        type="number"
+                        min={0}
+                        max={field.fullMarks}
+                        onChange={(e) => f.onChange(Number(e.target.value))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                      />
+                    )}
                   />
                 </div>
               </div>
@@ -175,67 +202,96 @@ export default function UpdateResultForm({ result }: Props) {
 
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Grade</label>
-              <select
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition bg-white"
-              >
-                {gradeOptions.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
+              <Controller
+                control={control}
+                name="grade"
+                render={({ field }) => (
+                  <select
+                    {...field}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition bg-white"
+                  >
+                    {gradeOptions.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                )}
+              />
             </div>
 
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">GPA</label>
-              <input
-                type="number"
-                step="0.01"
-                min={0}
-                max={5}
-                value={gpa}
-                onChange={(e) => setGpa(Number(e.target.value))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+              <Controller
+                control={control}
+                name="gpa"
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={5}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                  />
+                )}
               />
             </div>
 
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Position</label>
-              <input
-                type="number"
-                min={1}
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+              <Controller
+                control={control}
+                name="position"
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    type="number"
+                    min={1}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                  />
+                )}
               />
             </div>
 
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Present Days</label>
-              <input
-                type="number"
-                min={0}
-                value={present}
-                onChange={(e) => setPresent(Number(e.target.value))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+              <Controller
+                control={control}
+                name="present"
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    type="number"
+                    min={0}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                  />
+                )}
               />
             </div>
 
             <div className="col-span-2">
               <label className="text-xs font-medium text-gray-500 mb-1 block">Absent Days</label>
-              <input
-                type="number"
-                min={0}
-                value={absent}
-                onChange={(e) => setAbsent(Number(e.target.value))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+              <Controller
+                control={control}
+                name="absent"
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    type="number"
+                    min={0}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                  />
+                )}
               />
             </div>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end">
           <button
             type="submit"
             className="px-6 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors shadow-sm"
