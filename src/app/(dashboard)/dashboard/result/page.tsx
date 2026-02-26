@@ -8,6 +8,7 @@ import WeeklyResultTakeTable from "./_components/weeklyResult/WeeklyResultTakeTa
 import { getStudents } from "@/src/services/students";
 import PaginationWrapper from "@/src/components/PaginationWrapper";
 import { TQuery } from "@/src/types/query.types";
+import ShowMonthlyResultTable from "./_components/monthlyResult/ShowMonthlyResultTable";
 
 const ResultOverviewPage = async (props: {
   searchParams: Promise<{ search: string; page: string }>;
@@ -62,7 +63,7 @@ const ResultOverviewPage = async (props: {
 
   return (
     <DashboardWrapper>
-      <GiveResult classesData={classesData} />
+      <ShowMonthlyResultTable/>
     </DashboardWrapper>
   );
 };
