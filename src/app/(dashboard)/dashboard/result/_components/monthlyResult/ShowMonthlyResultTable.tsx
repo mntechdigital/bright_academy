@@ -166,7 +166,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
           <select
             value={selectedClassId}
             onChange={handleClassChange}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-[130px]"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-32.5"
           >
             <option value="">Select Class</option>
             {classesData.map((cls) => (
@@ -181,7 +181,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
             value={selectedSectionId}
             onChange={(e) => setSelectedSectionId(e.target.value)}
             disabled={!selectedClassId}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-32.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">Select Section</option>
             {availableSections.map((sec) => (
@@ -212,7 +212,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto whitespace-nowrap">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
@@ -269,10 +269,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
                   const achievedMarks = getAchievedMarks(result.results);
                   const fullMarks = getFullMarks(result.results, result.totalMarks);
                   const sectionName = result.student?.section?.sectionName ?? "—";
-                  const avatarUrl =
-                    result.student?.avatar ??
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(result.student?.name ?? "S")}&background=f3f4f6&color=374151`;
-
+                  
                   return (
                     <tr key={result.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                       <td className="px-3 py-3.5">
@@ -287,11 +284,6 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
                       {/* Name + Avatar */}
                       <td className="px-3 py-3.5">
                         <div className="flex items-center gap-2.5">
-                          <img
-                            src={avatarUrl}
-                            alt={result.student?.name}
-                            className="w-9 h-9 rounded-full object-cover border-2 border-gray-100"
-                          />
                           <div>
                             <p className="font-semibold text-gray-900">{result.student?.name}</p>
                             <p className="text-xs text-gray-400">
