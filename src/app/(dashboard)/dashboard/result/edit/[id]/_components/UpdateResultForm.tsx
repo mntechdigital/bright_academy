@@ -1,4 +1,6 @@
 "use client";
+import { updateMonthlyResult } from "@/src/services/monthlyResult";
+import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import React from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 
@@ -80,9 +82,10 @@ export default function UpdateResultForm({ result }: Props) {
   const { fields } = useFieldArray({ control, name: "results" });
 
   const watchedResults = watch("results");
-  const totalAchieved = watchedResults?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
+  const totalAchieved =
+    watchedResults?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     const payload = {
       id: result.id,
       studentId: result.studentId,
@@ -97,7 +100,12 @@ export default function UpdateResultForm({ result }: Props) {
         highestMark: Number(r.highestMark),
       })),
     };
-    console.log("Payload:", payload);
+    const res = await updateMonthlyResult(result.id, payload);
+    if (res.statusCode === 200) {
+      showSuccessToast("Result updated successfully!");
+    } else {
+      showErrorToast("Failed to update result. Please try again.");
+    }
   };
 
   const avatarUrl =
@@ -105,9 +113,8 @@ export default function UpdateResultForm({ result }: Props) {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(result.student?.name ?? "S")}&background=f3f4f6&color=374151`;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="mx-auto">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-
         {/* Student Info Card */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center gap-4">
@@ -117,7 +124,9 @@ export default function UpdateResultForm({ result }: Props) {
               className="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
             />
             <div>
-              <h2 className="text-base font-bold text-gray-900">{result.student?.name}</h2>
+              <h2 className="text-base font-bold text-gray-900">
+                {result.student?.name}
+              </h2>
               <div className="flex flex-wrap gap-2 mt-1">
                 {result.student?.stdClass?.className && (
                   <span className="text-xs bg-orange-50 text-orange-500 border border-orange-200 px-2 py-0.5 rounded-full font-medium">
@@ -138,7 +147,9 @@ export default function UpdateResultForm({ result }: Props) {
               <p className="text-xs text-gray-400">Total Marks</p>
               <p className="text-2xl font-bold text-gray-900">
                 {totalAchieved}
-                <span className="text-sm font-normal text-gray-400">/{result.totalMarks}</span>
+                <span className="text-sm font-normal text-gray-400">
+                  /{result.totalMarks}
+                </span>
               </p>
             </div>
           </div>
@@ -146,17 +157,28 @@ export default function UpdateResultForm({ result }: Props) {
 
         {/* Subject Marks */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Subject Results</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">
+            Subject Results
+          </h3>
           <div className="space-y-3">
             {fields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-12 items-center gap-3">
+              <div
+                key={field.id}
+                className="grid grid-cols-12 items-center gap-3"
+              >
                 <div className="col-span-4">
-                  <p className="text-sm font-medium text-gray-800">{field.subjectName}</p>
-                  <p className="text-xs text-gray-400">Full: {field.fullMarks}</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {field.subjectName}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Full: {field.fullMarks}
+                  </p>
                 </div>
 
                 <div className="col-span-4">
-                  <label className="text-xs text-gray-500 mb-1 block">Marks Obtained</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Marks Obtained
+                  </label>
                   <Controller
                     control={control}
                     name={`results.${index}.marks`}
@@ -174,7 +196,9 @@ export default function UpdateResultForm({ result }: Props) {
                 </div>
 
                 <div className="col-span-4">
-                  <label className="text-xs text-gray-500 mb-1 block">Highest Mark</label>
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Highest Mark
+                  </label>
                   <Controller
                     control={control}
                     name={`results.${index}.highestMark`}
@@ -197,11 +221,14 @@ export default function UpdateResultForm({ result }: Props) {
 
         {/* Result Summary */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">Result Summary</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">
+            Result Summary
+          </h3>
           <div className="grid grid-cols-2 gap-4">
-
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Grade</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Grade
+              </label>
               <Controller
                 control={control}
                 name="grade"
@@ -211,7 +238,9 @@ export default function UpdateResultForm({ result }: Props) {
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition bg-white"
                   >
                     {gradeOptions.map((g) => (
-                      <option key={g} value={g}>{g}</option>
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
                     ))}
                   </select>
                 )}
@@ -219,7 +248,9 @@ export default function UpdateResultForm({ result }: Props) {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">GPA</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                GPA
+              </label>
               <Controller
                 control={control}
                 name="gpa"
@@ -238,7 +269,9 @@ export default function UpdateResultForm({ result }: Props) {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Position</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Position
+              </label>
               <Controller
                 control={control}
                 name="position"
@@ -255,7 +288,9 @@ export default function UpdateResultForm({ result }: Props) {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Present Days</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Present Days
+              </label>
               <Controller
                 control={control}
                 name="present"
@@ -272,7 +307,9 @@ export default function UpdateResultForm({ result }: Props) {
             </div>
 
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Absent Days</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">
+                Absent Days
+              </label>
               <Controller
                 control={control}
                 name="absent"
@@ -299,7 +336,6 @@ export default function UpdateResultForm({ result }: Props) {
             Update Result
           </button>
         </div>
-
       </form>
     </div>
   );

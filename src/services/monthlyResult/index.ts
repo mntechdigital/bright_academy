@@ -49,7 +49,7 @@ export const updateMonthlyResult = async (
   payload: Record<string, any>,
 ) => {
   const response = await apiRequest(`monthly-results/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(payload),
     authRequired: true,
   });
