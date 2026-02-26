@@ -331,9 +331,13 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
                           <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors" title="Delete">
                             <TrashIcon />
                           </button>
-                          <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors" title="Edit">
+                          <Link
+                            href={`/dashboard/result/edit/${result.id}`}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors"
+                            title="Edit"
+                          >
                             <PencilIcon />
-                          </button>
+                          </Link>
                         </div>
                       </td>
                     </tr>
