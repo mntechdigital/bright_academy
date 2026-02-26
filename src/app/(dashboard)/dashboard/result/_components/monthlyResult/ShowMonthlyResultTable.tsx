@@ -132,7 +132,7 @@ const students = [
   },
 ];
 
-export default function ShowMonthlyResultTable() {
+export default function ShowMonthlyResultTable(monthlyResultsData: any) {
   const [checkedAll, setCheckedAll] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 

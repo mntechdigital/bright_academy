@@ -9,6 +9,7 @@ import { getStudents } from "@/src/services/students";
 import PaginationWrapper from "@/src/components/PaginationWrapper";
 import { TQuery } from "@/src/types/query.types";
 import ShowMonthlyResultTable from "./_components/monthlyResult/ShowMonthlyResultTable";
+import { getMonthlyResults } from "@/src/services/monthlyResult";
 
 const ResultOverviewPage = async (props: {
   searchParams: Promise<{ search: string; page: string }>;
@@ -17,14 +18,18 @@ const ResultOverviewPage = async (props: {
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
 
-  const classesRes = await getClasses([]);
-  const classesData = classesRes?.data?.data;
 
   const weeklyResultsRes = await getWeeklyResults([]);
   const weeklyResultsData = weeklyResultsRes?.data?.data || [];
 
   // Get the first weekly result meta to filter students by class and section
   const weeklyResultMeta = weeklyResultsData[0];
+
+
+  const monthlyResultsRes = await getMonthlyResults([]);
+  const monthlyResultsData = monthlyResultsRes?.data?.data || [];
+
+  console.log("see monthlyResutdata==>",monthlyResultsData);
 
   const query: TQuery[] = [
     {
@@ -43,27 +48,16 @@ const ResultOverviewPage = async (props: {
       key: "limit",
       value: "10",
     },
-    // ✅ Filter students by classId and sectionId from weekly result
-    // ✅ Use "filter" key with JSON stringified object
-  ...(weeklyResultMeta?.stdClassId && weeklyResultMeta?.sectionId
-    ? [
-        {
-          key: "filter",
-          value: JSON.stringify({
-            classId: weeklyResultMeta.stdClassId,
-            sectionId: weeklyResultMeta.sectionId,
-          }),
-        },
-      ]
-    : []),
+    
   ];
 
   const studentRes = await getStudents(query);
   const studentData = studentRes?.data?.data || [];
+  // console.log("see student data==>",studentData);
 
   return (
     <DashboardWrapper>
-      <ShowMonthlyResultTable/>
+      <ShowMonthlyResultTable monthlyResultsData={monthlyResultsData} />
     </DashboardWrapper>
   );
 };
