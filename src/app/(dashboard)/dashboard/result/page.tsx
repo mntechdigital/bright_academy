@@ -19,17 +19,12 @@ const ResultOverviewPage = async (props: {
   const page = parseInt(searchParams.page) || 1;
 
 
-  const weeklyResultsRes = await getWeeklyResults([]);
-  const weeklyResultsData = weeklyResultsRes?.data?.data || [];
-
-  // Get the first weekly result meta to filter students by class and section
-  const weeklyResultMeta = weeklyResultsData[0];
-
-
   const monthlyResultsRes = await getMonthlyResults([]);
   const monthlyResultsData = monthlyResultsRes?.data?.data || [];
 
-  console.log("see monthlyResutdata==>",monthlyResultsData);
+  const classesRes = await getClasses([]);
+  const classesData = classesRes?.data?.data;
+  console.log("see class data==>",classesData)
 
   const query: TQuery[] = [
     {
@@ -51,13 +46,10 @@ const ResultOverviewPage = async (props: {
     
   ];
 
-  const studentRes = await getStudents(query);
-  const studentData = studentRes?.data?.data || [];
-  // console.log("see student data==>",studentData);
 
   return (
     <DashboardWrapper>
-      <ShowMonthlyResultTable monthlyResultsData={monthlyResultsData} />
+      <ShowMonthlyResultTable monthlyResultsData={monthlyResultsData} classesData={classesData} />
     </DashboardWrapper>
   );
 };

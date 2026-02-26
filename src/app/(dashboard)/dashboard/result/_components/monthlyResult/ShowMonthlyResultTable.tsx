@@ -57,13 +57,35 @@ export interface MonthlyResult {
   updatedAt: string;
 }
 
-interface Props {
-  monthlyResultsData: MonthlyResult[];
+interface Section {
+  id: string;
+  sectionName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Props) {
+interface ClassData {
+  id: string;
+  className: string;
+  createdAt: string;
+  updatedAt: string;
+  sections: Section[];
+  students?: any[];
+  subjects?: any[];
+  _count?: { students: number };
+}
+
+interface Props {
+  monthlyResultsData: MonthlyResult[];
+  classesData: ClassData[];
+}
+
+export default function ShowMonthlyResultTable({ monthlyResultsData = [], classesData = [] }: Props) {
   const [checkedAll, setCheckedAll] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedSectionId, setSelectedSectionId] = useState<string>("");
+  const [search, setSearch] = useState("");
 
   const toggleAll = () => {
     const next = !checkedAll;
@@ -83,62 +105,110 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Prop
   const getFullMarks = (results: ResultSubject[], fallback: number) =>
     results.length > 0 ? results.reduce((sum, r) => sum + r.fullMarks, 0) : fallback;
 
+  // Sections for the selected class
+  const availableSections =
+    classesData.find((c) => c.id === selectedClassId)?.sections ?? [];
+
+  // Handle class change — reset section when class changes
+  const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedClassId(e.target.value);
+    setSelectedSectionId("");
+  };
+
+  // Filter table rows
+  const filteredResults = monthlyResultsData.filter((result) => {
+    const matchesSearch = search
+      ? result.student?.name?.toLowerCase().includes(search.toLowerCase())
+      : true;
+    const matchesClass = selectedClassId
+      ? result.student?.classId === selectedClassId
+      : true;
+    const matchesSection = selectedSectionId
+      ? result.student?.sectionId === selectedSectionId
+      : true;
+    return matchesSearch && matchesClass && matchesSection;
+  });
+
+  const selectedClassName = classesData.find((c) => c.id === selectedClassId)?.className;
+
   return (
     <div>
       {/* Page Header */}
       <div className="flex items-center gap-2 mb-5">
         <h1 className="text-xl font-bold text-gray-900">Result</h1>
-        <span className="text-xs font-semibold text-orange-500 bg-orange-50 border border-orange-200 px-3 py-0.5 rounded-full">
-          Class 6
-        </span>
+        {selectedClassName && (
+          <span className="text-xs font-semibold text-orange-500 bg-orange-50 border border-orange-200 px-3 py-0.5 rounded-full">
+            {selectedClassName}
+          </span>
+        )}
       </div>
 
       {/* Card */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-          {/* Left: Search + Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white w-52">
-              <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <circle cx="11" cy="11" r="8" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search for students"
-                className="text-sm text-gray-700 bg-transparent outline-none w-full placeholder-gray-400"
-              />
-            </div>
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          {/* Search */}
+          <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white w-52">
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="11" cy="11" r="8" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search for students"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="text-sm text-gray-700 bg-transparent outline-none w-full placeholder-gray-400"
+            />
+          </div>
 
-            {["Select Class", "Select Section", "Select Exam"].map((label) => (
-              <div key={label} className="flex items-center justify-between gap-6 border border-gray-200 rounded-lg px-3 py-2 bg-white cursor-pointer min-w-32.5 text-sm text-gray-500 select-none">
-                <span>{label}</span>
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+          {/* Select Class */}
+          <select
+            value={selectedClassId}
+            onChange={handleClassChange}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-[130px]"
+          >
+            <option value="">Select Class</option>
+            {classesData.map((cls) => (
+              <option key={cls.id} value={cls.id}>
+                {cls.className}
+              </option>
             ))}
-          </div>
+          </select>
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download CSV
-            </button>
-            <Link
-              href="/dashboard/result/give-result"
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Give Result
-            </Link>
-          </div>
+          {/* Select Section — only show sections of selected class */}
+          <select
+            value={selectedSectionId}
+            onChange={(e) => setSelectedSectionId(e.target.value)}
+            disabled={!selectedClassId}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-[130px] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">Select Section</option>
+            {availableSections.map((sec) => (
+              <option key={sec.id} value={sec.id}>
+                {sec.sectionName}
+              </option>
+            ))}
+          </select>
+
+          {/* Download CSV */}
+          <button className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download CSV
+          </button>
+
+          {/* Give Result */}
+          <Link
+            href="/dashboard/result/give-result"
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Give Result
+          </Link>
         </div>
 
         {/* Table */}
@@ -188,14 +258,14 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Prop
               </tr>
             </thead>
             <tbody>
-              {monthlyResultsData.length === 0 ? (
+              {filteredResults.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-3 py-10 text-center text-gray-400 text-sm">
                     No results found.
                   </td>
                 </tr>
               ) : (
-                monthlyResultsData.map((result) => {
+                filteredResults.map((result) => {
                   const achievedMarks = getAchievedMarks(result.results);
                   const fullMarks = getFullMarks(result.results, result.totalMarks);
                   const sectionName = result.student?.section?.sectionName ?? "—";
@@ -205,7 +275,6 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Prop
 
                   return (
                     <tr key={result.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      {/* Checkbox */}
                       <td className="px-3 py-3.5">
                         <input
                           type="checkbox"
@@ -232,7 +301,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Prop
                         </div>
                       </td>
 
-                      {/* Student ID (shortened) */}
+                      {/* Student ID */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -248,10 +317,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Prop
                         </span>
                       </td>
 
-                      {/* Total Mark */}
                       <td className="px-3 py-3.5 text-gray-700 font-medium">{fullMarks}</td>
-
-                      {/* Achieved Mark */}
                       <td className="px-3 py-3.5 text-gray-700 font-medium">{achievedMarks}</td>
 
                       {/* Grade */}
@@ -261,31 +327,19 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [] }: Prop
                         </span>
                       </td>
 
-                      {/* GPA */}
                       <td className="px-3 py-3.5 text-gray-700 font-medium">{result.gpa}</td>
-
-                      {/* Position */}
                       <td className="px-3 py-3.5 text-gray-700 font-medium">#{result.position}</td>
 
                       {/* Actions */}
                       <td className="px-3 py-3.5">
                         <div className="flex items-center gap-1.5">
-                          <button
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
-                            title="View Grade"
-                          >
+                          <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors" title="View Grade">
                             <GradeIcon />
                           </button>
-                          <button
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors"
-                            title="Delete"
-                          >
+                          <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors" title="Delete">
                             <TrashIcon />
                           </button>
-                          <button
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors"
-                            title="Edit"
-                          >
+                          <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors" title="Edit">
                             <PencilIcon />
                           </button>
                         </div>
