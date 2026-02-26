@@ -63,21 +63,6 @@ const ResultOverviewPage = async (props: {
   return (
     <DashboardWrapper>
       <GiveResult classesData={classesData} />
-      <WeeklyResultTable weeklyResults={weeklyResultsData} />
-      {weeklyResultMeta && (
-        <WeeklyResultTakeTable
-          studentsData={studentData}
-          weeklyResults={weeklyResultsData}
-          weeklyResultMeta={weeklyResultMeta}
-        />
-      )}
-      {studentRes?.data?.meta?.totalPages > 1 && (
-        <PaginationWrapper
-          active={page}
-          totalPages={studentRes?.data?.meta?.totalPages || 1}
-          totalItems={studentRes?.data?.meta?.totalItems || 0}
-        />
-      )}
     </DashboardWrapper>
   );
 };
