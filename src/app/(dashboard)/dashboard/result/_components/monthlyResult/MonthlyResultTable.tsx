@@ -146,7 +146,7 @@ export default function MonthlyResultTable({
   const handleSubmit = async () => {
     try {
       const payload = {
-        studentId: studentId, // ✅ অবশ্যই দিতে হবে
+        studentId: studentId,
         totalMarks: Number(summary.totalMarks),
         gpa: Number(summary.gpa),
         grade: summary.grade,
@@ -157,7 +157,6 @@ export default function MonthlyResultTable({
           create: rows.map((r) => ({
             subjectName: r.name,
             marks: Number(r.marksObtained),
-            // Option B এ schema update করলে পাঠাতে পারবে
             fullMarks: Number(r.fullMarks),
             highestMark: Number(r.highestMark),
             point: Number(r.point),
