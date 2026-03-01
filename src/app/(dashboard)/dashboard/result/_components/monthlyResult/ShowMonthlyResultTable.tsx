@@ -136,7 +136,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
     <div>
       {/* Page Header */}
       <div className="flex items-center gap-2 mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Result</h1>
+        <h1 className="text-xl font-bold text-gray-900">Monthly Result</h1>
         {selectedClassName && (
           <span className="text-xs font-semibold text-orange-500 bg-orange-50 border border-orange-200 px-3 py-0.5 rounded-full">
             {selectedClassName}

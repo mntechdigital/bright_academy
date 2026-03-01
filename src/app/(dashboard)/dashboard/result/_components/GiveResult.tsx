@@ -75,6 +75,13 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
           <span>Overview</span>
         </Link>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <Link
+          href="/dashboard/result"
+          className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          <span>Result</span>
+        </Link>
         <span className="flex items-center gap-1 text-foreground font-medium">
           <FileSpreadsheet className="h-4 w-4" />
           Give Result

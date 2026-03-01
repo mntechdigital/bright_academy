@@ -3,6 +3,8 @@ import { updateMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import React from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 // ---- Types ----
 interface ResultSubject {
@@ -62,6 +64,8 @@ interface Props {
 const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
 
 export default function UpdateResultForm({ result }: Props) {
+  const router = useRouter();
+
   const { control, handleSubmit, watch } = useForm<FormValues>({
     defaultValues: {
       gpa: result.gpa,
@@ -114,6 +118,19 @@ export default function UpdateResultForm({ result }: Props) {
 
   return (
     <div className="mx-auto">
+      {/* Back Arrow */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-4 group"
+      >
+        <ArrowLeft
+          size={18}
+          className="group-hover:-translate-x-0.5 transition-transform"
+        />
+        <span>Back</span>
+      </button>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Student Info Card */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
