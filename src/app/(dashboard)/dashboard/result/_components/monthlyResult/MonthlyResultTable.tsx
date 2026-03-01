@@ -112,12 +112,14 @@ interface MonthlyResultTableProps {
   studentName: string;
   studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
+  month: string;
 }
 
 export default function MonthlyResultTable({
   studentId,
   studentName,
   subjects,
+  month
 }: MonthlyResultTableProps) {
   const subjectNames =
     subjects && subjects.length > 0
@@ -152,6 +154,7 @@ export default function MonthlyResultTable({
       position: summary.position,
       present: Number(summary.present),
       absent: Number(summary.absent),
+      month: month,
       results: {
         create: rows.map((r) => ({
           subjectName: r.name,
