@@ -144,35 +144,33 @@ export default function MonthlyResultTable({
     setSummary((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = async () => {
-    try {
-      const payload = {
-        studentId: studentId,
-        totalMarks: Number(summary.totalMarks),
-        gpa: Number(summary.gpa),
-        grade: summary.grade,
-        position: summary.position,
-        present: Number(summary.present),
-        absent: Number(summary.absent),
-        results: {
-          create: rows.map((r) => ({
-            subjectName: r.name,
-            marks: Number(r.marksObtained),
-            fullMarks: Number(r.fullMarks),
-            highestMark: Number(r.highestMark),
-            point: Number(r.point),
-            grade: r.grade,
-          })),
-        },
-      };
+    const payload = {
+      studentId: studentId,
+      totalMarks: Number(summary.totalMarks),
+      gpa: Number(summary.gpa),
+      grade: summary.grade,
+      position: summary.position,
+      present: Number(summary.present),
+      absent: Number(summary.absent),
+      results: {
+        create: rows.map((r) => ({
+          subjectName: r.name,
+          marks: Number(r.marksObtained),
+          fullMarks: Number(r.fullMarks),
+          highestMark: Number(r.highestMark),
+          point: Number(r.point),
+          grade: r.grade,
+        })),
+      },
+    };
 
-      const res = await createMonthlyResult(payload);
-      if(res.status === 201){
-        showSuccessToast("Monthly result created successfully!");
-      }else{
-        showErrorToast("Failed to create monthly result. Please try again.");
-      }
-    } catch (error) {
-      console.error(error);
+    const res = await createMonthlyResult(payload);
+    if (res.statusCode === 201) {
+      showSuccessToast(res.message || "Monthly result created successfully.");
+    } else {
+      showErrorToast(
+        res.message || "Failed to create monthly result. Please try again.",
+      );
     }
   };
 

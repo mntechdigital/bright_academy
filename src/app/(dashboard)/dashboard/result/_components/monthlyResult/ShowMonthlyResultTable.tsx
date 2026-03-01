@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import React, { useState } from "react";
+import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
 
 const GradeIcon = () => (
   <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -328,9 +329,7 @@ export default function ShowMonthlyResultTable({ monthlyResultsData = [], classe
                           <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors" title="View Grade">
                             <GradeIcon />
                           </button>
-                          <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors" title="Delete">
-                            <TrashIcon />
-                          </button>
+                          <DeleteMonthlyResultDialog id={result.id} />
                           <Link
                             href={`/dashboard/result/edit/${result.id}`}
                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors"

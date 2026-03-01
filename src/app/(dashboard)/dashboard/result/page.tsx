@@ -18,13 +18,11 @@ const ResultOverviewPage = async (props: {
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
 
-
   const monthlyResultsRes = await getMonthlyResults([]);
   const monthlyResultsData = monthlyResultsRes?.data?.data || [];
 
   const classesRes = await getClasses([]);
   const classesData = classesRes?.data?.data;
-  console.log("see class data==>",classesData)
 
   const query: TQuery[] = [
     {
@@ -43,13 +41,21 @@ const ResultOverviewPage = async (props: {
       key: "limit",
       value: "10",
     },
-    
   ];
-
 
   return (
     <DashboardWrapper>
-      <ShowMonthlyResultTable monthlyResultsData={monthlyResultsData} classesData={classesData} />
+      <ShowMonthlyResultTable
+        monthlyResultsData={monthlyResultsData}
+        classesData={classesData}
+      />
+      {monthlyResultsRes?.data?.meta?.totalPages > 1 && (
+        <PaginationWrapper
+          active={page}
+          totalPages={monthlyResultsRes?.data?.meta?.totalPages || 1}
+          totalItems={monthlyResultsRes?.data?.meta?.totalItems || 0}
+        />
+      )}
     </DashboardWrapper>
   );
 };
