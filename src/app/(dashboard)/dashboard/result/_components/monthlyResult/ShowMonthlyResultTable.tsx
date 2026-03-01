@@ -67,6 +67,7 @@ const PencilIcon = () => (
 interface ResultSubject {
   id: string;
   subjectName: string;
+  stdRegNo: string;
   marks: number;
   fullMarks: number;
   highestMark: number;
@@ -91,6 +92,7 @@ interface Student {
 export interface MonthlyResult {
   id: string;
   studentId: string;
+  stdRegNo: string;
   student: Student;
   results: ResultSubject[];
   totalMarks: number;
@@ -436,7 +438,7 @@ export default function ShowMonthlyResultTable({
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          {result.studentId.slice(0, 8)}
+                          {result.stdRegNo}
                         </span>
                       </td>
 
