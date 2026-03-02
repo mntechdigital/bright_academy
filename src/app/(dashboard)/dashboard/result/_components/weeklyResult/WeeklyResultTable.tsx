@@ -123,8 +123,8 @@ const WeeklyResultTable = ({
             );
           })}
         </CarouselContent>
-        <CarouselPrevious className="left-0 bg-blue-800 text-white" />
-        <CarouselNext className="right-0 bg-blue-800 text-white" />
+        <CarouselPrevious className="left-0 bg-orange-500 text-white" />
+        <CarouselNext className="right-0 bg-orange-500 text-white" />
       </Carousel>
     </div>
   );
