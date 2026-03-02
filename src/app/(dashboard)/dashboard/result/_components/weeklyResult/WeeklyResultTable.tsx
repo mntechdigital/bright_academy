@@ -41,7 +41,7 @@ const WeeklyResultTable = ({
             onClick={() => onCardClick?.(result)}
             className={`relative bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer ${
               isSelected
-                ? "border-orange-500 ring-2 ring-orange-200"
+                ? "border-green-500 ring-2 ring-green-200"
                 : "border-gray-200"
             }`}
           >
@@ -54,21 +54,27 @@ const WeeklyResultTable = ({
             <div
               className={`px-3 pt-2.5 pb-2.5 border-b pr-8 ${
                 isSelected
-                  ? "bg-orange-100 border-orange-300"
+                  ? "bg-green-100 border-green-300"
                   : "bg-linear-to-r from-orange-50 to-amber-50 border-orange-100"
               }`}
             >
-              <p className="text-[10px] font-medium text-orange-500 uppercase tracking-wide truncate">
+              <p className={`text-[10px] font-medium uppercase tracking-wide truncate ${
+                isSelected ? "text-green-600" : "text-orange-500"
+              }`}>
                 {result.subject?.subjectName || "—"}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <h3 className={`text-xs font-semibold truncate ${
-                  isSelected ? "text-orange-900" : "text-gray-800"
+                  isSelected ? "text-green-900" : "text-gray-800"
                 }`}>
                   {result.stdClass?.className || "—"}
                   {result.section?.sectionName ? ` · ${result.section.sectionName}` : ""}
                 </h3>
-                <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  isSelected 
+                    ? "bg-green-200 text-green-800"
+                    : "bg-orange-100 text-orange-700"
+                }`}>
                   Wk {result.week}
                 </span>
               </div>
@@ -92,7 +98,9 @@ const WeeklyResultTable = ({
               </div>
               <div>
                 <p className="text-[10px] text-gray-400 uppercase tracking-wide">Marks</p>
-                <p className="text-xs font-bold text-orange-500">{result.totalMarks}</p>
+                <p className={`text-xs font-bold ${
+                  isSelected ? "text-green-600" : "text-orange-500"
+                }`}>{result.totalMarks}</p>
               </div>
             </div>
           </div>
