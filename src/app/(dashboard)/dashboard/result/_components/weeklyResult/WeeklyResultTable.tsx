@@ -2,8 +2,12 @@ import DeleteWeeklyResultDialog from "./DeleteWeeklyResultDialog";
 
 const WeeklyResultTable = ({
   weeklyResults,
+  selectedCard,
+  onCardClick,
 }: {
   weeklyResults: any[];
+  selectedCard?: any;
+  onCardClick?: (card: any) => void;
 }) => {
 
   const uniqueResults = Array.from(
@@ -29,55 +33,71 @@ const WeeklyResultTable = ({
 
   return (
     <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {uniqueResults.map((result) => (
-        <div
-          key={result.id}
-          className="relative bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
-        >
-          {/* Delete button — top right */}
-          <div className="absolute top-2 right-2 z-10">
-            <DeleteWeeklyResultDialog sectionId={result.sectionId} stdClassId={result.stdClassId} />
-          </div>
+      {uniqueResults.map((result) => {
+        const isSelected = selectedCard?.id === result.id;
+        return (
+          <div
+            key={result.id}
+            onClick={() => onCardClick?.(result)}
+            className={`relative bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer ${
+              isSelected
+                ? "border-orange-500 ring-2 ring-orange-200"
+                : "border-gray-200"
+            }`}
+          >
+            {/* Delete button — top right */}
+            <div className="absolute top-2 right-2 z-10">
+              <DeleteWeeklyResultDialog sectionId={result.sectionId} stdClassId={result.stdClassId} />
+            </div>
 
-          {/* Card Header */}
-          <div className="bg-linear-to-r from-orange-50 to-amber-50 px-3 pt-2.5 pb-2.5 border-b border-orange-100 pr-8">
-            <p className="text-[10px] font-medium text-orange-500 uppercase tracking-wide truncate">
-              {result.subject?.subjectName || "—"}
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <h3 className="text-xs font-semibold text-gray-800 truncate">
-                {result.stdClass?.className || "—"}
-                {result.section?.sectionName ? ` · ${result.section.sectionName}` : ""}
-              </h3>
-              <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
-                Wk {result.week}
-              </span>
-            </div>
-          </div>
-
-          {/* Card Body */}
-          <div className="px-3 py-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Month</p>
-              <p className="text-xs font-medium text-gray-700 truncate">{result.month}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Year</p>
-              <p className="text-xs font-medium text-gray-700">{result.year}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Published</p>
-              <p className="text-xs font-medium text-gray-700">
-                {new Date(result.publishedDate).toLocaleDateString()}
+            {/* Card Header */}
+            <div
+              className={`px-3 pt-2.5 pb-2.5 border-b pr-8 ${
+                isSelected
+                  ? "bg-orange-100 border-orange-300"
+                  : "bg-linear-to-r from-orange-50 to-amber-50 border-orange-100"
+              }`}
+            >
+              <p className="text-[10px] font-medium text-orange-500 uppercase tracking-wide truncate">
+                {result.subject?.subjectName || "—"}
               </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <h3 className={`text-xs font-semibold truncate ${
+                  isSelected ? "text-orange-900" : "text-gray-800"
+                }`}>
+                  {result.stdClass?.className || "—"}
+                  {result.section?.sectionName ? ` · ${result.section.sectionName}` : ""}
+                </h3>
+                <span className="shrink-0 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                  Wk {result.week}
+                </span>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Marks</p>
-              <p className="text-xs font-bold text-orange-500">{result.totalMarks}</p>
+
+            {/* Card Body */}
+            <div className="px-3 py-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Month</p>
+                <p className="text-xs font-medium text-gray-700 truncate">{result.month}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Year</p>
+                <p className="text-xs font-medium text-gray-700">{result.year}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Published</p>
+                <p className="text-xs font-medium text-gray-700">
+                  {new Date(result.publishedDate).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Marks</p>
+                <p className="text-xs font-bold text-orange-500">{result.totalMarks}</p>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

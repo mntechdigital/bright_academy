@@ -22,6 +22,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams }) => {
   const [weeklyResultsData, setWeeklyResultsData] = useState<any[]>([]);
   const [studentData, setStudentData] = useState<any[]>([]);
   const [studentMeta, setStudentMeta] = useState<{ totalPages: number; totalItems: number }>({ totalPages: 1, totalItems: 0 });
+  const [selectedCard, setSelectedCard] = useState<any>(null);
 
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
@@ -32,8 +33,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams }) => {
       const weeklyResults = weeklyResultsRes?.data?.data || [];
       setWeeklyResultsData(weeklyResults);
 
-      // Get the first weekly result meta to filter students by class and section
-      const weeklyResultMeta = weeklyResults[0];
+      // Use selected card if available, otherwise use the first weekly result
+      const weeklyResultMeta = selectedCard || weeklyResults[0];
 
       const query: TQuery[] = [
         {
@@ -73,13 +74,17 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams }) => {
       });
     };
     fetchData();
-  }, [search, page]);
+  }, [search, page, selectedCard]);
 
-  const weeklyResultMeta = weeklyResultsData[0];
+  const weeklyResultMeta = selectedCard || weeklyResultsData[0];
 
   return (
     <DashboardWrapper>
-      <WeeklyResultTable weeklyResults={weeklyResultsData} />
+      <WeeklyResultTable 
+        weeklyResults={weeklyResultsData}
+        selectedCard={selectedCard}
+        onCardClick={setSelectedCard}
+      />
       {weeklyResultMeta && (
         <WeeklyResultTakeTable
           studentsData={studentData}
