@@ -25,16 +25,16 @@ const TeacherTable = ({ teacherData = [] }: TeacherTableProps) => {
     return teacherData.filter(
       (teacher) =>
         teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        teacher.regNo.toLowerCase().includes(searchQuery.toLowerCase())
+        teacher.regNo.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [teacherData, searchQuery]);
 
   return (
-    <div className="w-full">
+    <div className="">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <span className="text-lg font-semibold text-gray-900">Teacher</span>
-        <span className="text-lg font-semibold text-orange-500">
+        <span className="text-orange-500 font-medium bg-orange-100 px-2 py-1 rounded-full text-md">
           Bright Academy
         </span>
       </div>
@@ -54,7 +54,7 @@ const TeacherTable = ({ teacherData = [] }: TeacherTableProps) => {
       </div>
 
       {/* Teachers List */}
-      <div className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg overflow-hidden">
         {/* Column Headers */}
         <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50">
           <div className="col-span-6">
@@ -68,9 +68,7 @@ const TeacherTable = ({ teacherData = [] }: TeacherTableProps) => {
             </h3>
           </div>
           <div className="col-span-3 text-right">
-            <h3 className="text-sm font-semibold text-gray-700">
-              Action
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-700">Action</h3>
           </div>
         </div>
 
@@ -93,16 +91,19 @@ const TeacherTable = ({ teacherData = [] }: TeacherTableProps) => {
                   </div>
                 </div>
                 <div className="col-span-3 flex items-center">
-                  <span className="text-sm font-medium text-blue-600">
+                  <span className="px-3 py-1.5 rounded-lg text-sm bg-blue-50 font-medium text-[#00c950]">
                     {teacher.regNo}
                   </span>
                 </div>
                 <div className="col-span-3 flex items-center justify-end">
                   <Link
                     href={`/dashboard/teachers/edit/${teacher.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors group"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-[#00c950] hover:bg-blue-100 transition-colors group"
                   >
-                    <Lock size={16} className="group-hover:rotate-12 transition-transform" />
+                    <Lock
+                      size={16}
+                      className="group-hover:rotate-12 transition-transform"
+                    />
                     <span className="text-xs font-medium">Change Password</span>
                   </Link>
                 </div>
@@ -115,13 +116,6 @@ const TeacherTable = ({ teacherData = [] }: TeacherTableProps) => {
           )}
         </div>
       </div>
-
-      {/* Results Count */}
-      {filteredTeachers.length > 0 && (
-        <p className="mt-4 text-xs text-gray-500">
-          Showing {filteredTeachers.length} of {teacherData.length} teachers
-        </p>
-      )}
     </div>
   );
 };

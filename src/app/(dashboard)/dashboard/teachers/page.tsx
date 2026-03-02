@@ -33,14 +33,16 @@ const page = async (props: {
   const teacherData = await getTeachers(query);
   return (
     <DashboardWrapper>
-      <TeacherTable teacherData={teacherData?.data || []} />
-      {teacherData?.meta?.totalPages > 1 && (
-        <PaginationWrapper
-          active={page}
-          totalPages={teacherData?.meta?.totalPages || 1}
-          totalItems={teacherData?.meta?.totalItems || 0}
-        />
-      )}
+      <div className="p-4 rounded-lg shadow-s border-2 border-gray-100">
+        <TeacherTable teacherData={teacherData?.data || []} />
+        {teacherData?.meta?.totalPages > 1 && (
+          <PaginationWrapper
+            active={page}
+            totalPages={teacherData?.meta?.totalPages || 1}
+            totalItems={teacherData?.meta?.totalItems || 0}
+          />
+        )}
+      </div>
     </DashboardWrapper>
   );
 };

@@ -44,7 +44,7 @@ const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManag
 
   return (
     <div className="">
-      <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm">
+      <div className="bg-white rounded-lg shadow-sm">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
