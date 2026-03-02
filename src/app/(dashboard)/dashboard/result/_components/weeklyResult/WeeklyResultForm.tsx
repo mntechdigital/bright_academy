@@ -24,12 +24,13 @@ interface ClassData {
 
 interface WeeklyResultFormProps {
   classesData?: ClassData[];
+  onResultCreated?: () => void;
 }
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
-const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
+const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFormProps) => {
   const {
     control,
     handleSubmit,
@@ -67,6 +68,7 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
     if (res.statusCode === 201) {
       showSuccessToast("Weekly result created successfully!");
       reset();
+      onResultCreated?.();
     } else {
       showErrorToast(res.message || "Failed to create weekly result");
     }
@@ -340,16 +342,11 @@ const WeeklyResultForm = ({ classesData = [] }: WeeklyResultFormProps) => {
       <div>
         <button
           type="submit"
-          className="mt-6 w-full bg-[#F97316] text-white py-3 rounded-lg hover:bg-[#ea580c] transition-all disabled:opacity-60"
+          className=" w-full bg-[#F97316] text-white py-3 rounded-lg hover:bg-[#ea580c] transition-all disabled:opacity-60"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Submitting..." : "Create Weekly Result"}
         </button>
-        {isSubmitSuccessful && (
-          <div className="text-green-600 mt-2">
-            Weekly result created successfully!
-          </div>
-        )}
       </div>
     </form>
   );

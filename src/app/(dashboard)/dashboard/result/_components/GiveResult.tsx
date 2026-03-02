@@ -62,6 +62,11 @@ const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
 const GiveResult = ({ classesData = [] }: GiveResultProps) => {
   const [examType, setExamType] = useState<ExamType>("weekly");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleWeeklyResultCreated = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <div className="p-6">
@@ -120,8 +125,8 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
       {/* Render the correct form */}
       {examType === "weekly" ? (
         <>
-          <WeeklyResultForm classesData={classesData} />
-          <WeeklyResult searchParams={{ search: "", page: "1" }} />
+          <WeeklyResultForm classesData={classesData} onResultCreated={handleWeeklyResultCreated} />
+          <WeeklyResult searchParams={{ search: "", page: "1" }} refreshTrigger={refreshTrigger} />
         </>
       ) : (
         <>

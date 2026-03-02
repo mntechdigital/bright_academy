@@ -16,9 +16,10 @@ import WeeklyResultTakeTable from "./WeeklyResultTakeTable";
 
 interface WeeklyResultProps {
   searchParams: { search: string; page: string };
+  refreshTrigger?: number;
 }
 
-const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams }) => {
+const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigger = 0 }) => {
   const [weeklyResultsData, setWeeklyResultsData] = useState<any[]>([]);
   const [studentData, setStudentData] = useState<any[]>([]);
   const [studentMeta, setStudentMeta] = useState<{ totalPages: number; totalItems: number }>({ totalPages: 1, totalItems: 0 });
@@ -74,7 +75,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams }) => {
       });
     };
     fetchData();
-  }, [search, page, selectedCard]);
+  }, [search, page, selectedCard, refreshTrigger]);
 
   const weeklyResultMeta = selectedCard || weeklyResultsData[0];
 
