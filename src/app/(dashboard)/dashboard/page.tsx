@@ -10,13 +10,14 @@ import { getClasses } from "@/src/services/classes";
 import StudentManagement from "./students/_components/StudentManagement";
 
 const DashboardPage = async (props: {
-  searchParams: Promise<{ search: string; page: string }>;
+  searchParams: Promise<{ search: string; teacherPage: string; studentPage: string }>;
 }) => {
   const searchParams = await props.searchParams;
   const search = searchParams.search || "";
-  const page = parseInt(searchParams.page) || 1;
+  const teacherPage = parseInt(searchParams.teacherPage) || 1;
+  const studentPage = parseInt(searchParams.studentPage) || 1;
 
-  const query: TQuery[] = [
+  const teacherQuery: TQuery[] = [
     {
       key: "orderBy",
       value: JSON.stringify({ createdAt: "desc" }),
@@ -27,7 +28,26 @@ const DashboardPage = async (props: {
     },
     {
       key: "page",
-      value: page.toString(),
+      value: teacherPage.toString(),
+    },
+    {
+      key: "limit",
+      value: "10",
+    },
+  ];
+
+  const studentQuery: TQuery[] = [
+    {
+      key: "orderBy",
+      value: JSON.stringify({ createdAt: "desc" }),
+    },
+    {
+      key: "searchTerm",
+      value: search,
+    },
+    {
+      key: "page",
+      value: studentPage.toString(),
     },
     {
       key: "limit",
@@ -43,11 +63,11 @@ const DashboardPage = async (props: {
   ];
 
   const [studentsData, classesData] = await Promise.all([
-    getStudents(query),
+    getStudents(studentQuery),
     getClasses(classQuery),
   ]);
 
-  const teacherData = await getTeachers(query);
+  const teacherData = await getTeachers(teacherQuery);
 
   const totalStudents = studentsData?.data?.meta?.totalItems || 0;
   const totalTeachers = teacherData?.meta?.totalItems || 0;
@@ -65,9 +85,10 @@ const DashboardPage = async (props: {
         <TeacherTable teacherData={teacherData?.data || []} />
         {teacherData?.meta?.totalPages > 1 && (
           <PaginationWrapper
-            active={page}
+            active={teacherPage}
             totalPages={teacherData?.meta?.totalPages || 1}
             totalItems={teacherData?.meta?.totalItems || 0}
+            pageParam="teacherPage"
           />
         )}
       </div>
@@ -79,9 +100,10 @@ const DashboardPage = async (props: {
         />
         {studentsData?.data?.meta?.totalPages > 1 && (
           <PaginationWrapper
-            active={page}
+            active={studentPage}
             totalPages={studentsData?.data?.meta?.totalPages || 1}
             totalItems={studentsData?.data?.meta?.totalItems || 0}
+            pageParam="studentPage"
           />
         )}
       </div>
