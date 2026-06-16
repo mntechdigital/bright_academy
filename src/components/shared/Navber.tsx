@@ -47,8 +47,9 @@ const Navber = () => {
   return (
     <div className="navbar shadow-sm bg-white px-4">
       {/* ১. বাম পাশে শুধু লোগো থাকবে */}
-      <div className="navbar-start gap-2">
+      <Link href="/" className="navbar-start gap-2">
         <Image
+        
           src={logo}
           alt="bright academic school"
           style={{
@@ -59,7 +60,7 @@ const Navber = () => {
         <h1 className="text-[#F68319] text-[14px] font-semibold">
           ব্রাইট একাডেমিক কেয়ার
         </h1>
-      </div>
+      </Link>
 
       {/* বড় স্ক্রিনের জন্য মিডল মেনু */}
       <div className="navbar-center hidden lg:flex">
