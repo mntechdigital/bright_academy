@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 import logo from "../../assets/logo/logo.png";
@@ -71,13 +71,16 @@ const Navber = () => {
         {/* বড় স্ক্রিনে বাটনটি আলাদা দেখাবে */}
         <Link
           href="/"
-          className="btn bg-[#F68319] hidden sm:inline-flex items-center gap-2 border-0 rounded-lg text-white"
+          className="btn bg-[#F68319] hover:bg-[#e07210] hidden sm:inline-flex items-center pl-4 pr-2 gap-2 border-0 rounded-[8px] text-white font-medium transition-all"
         >
-          <span>login</span>
-          <ArrowRight className="w-4 h-4" />
+          <span className="text-[16px] capitalize">Login</span>
+
+          {/* ডানপাশের আইকন বক্স */}
+          <span className="bg-[#da7210] p-2 rounded-[8px] inline-flex items-center justify-center">
+            <ArrowUpRight className="w-4 h-4 text-white" />
+          </span>
         </Link>
 
-        {/* মোবাইল/ট্যাবলেটের জন্য বার্গার ড্রপডাউন (ডান পাশে খোলার জন্য dropdown-end ব্যবহার করা হয়েছে) */}
         <div className="dropdown dropdown-end lg:hidden">
           <div tabIndex={0} role="button" className="btn btn-ghost">
             <svg
