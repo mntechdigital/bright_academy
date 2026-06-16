@@ -131,7 +131,6 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
       ) : (
         <>
           <MonthlyResultForm classesData={classesData} />
-          
         </>
       )}
     </div>

@@ -27,6 +27,19 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
 
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
+  const weeklyResultMeta = selectedCard || weeklyResultsData[0];
+  const activeWeeklyResults = weeklyResultMeta
+    ? weeklyResultsData.filter((result) => {
+        return (
+          String(result.stdClassId) === String(weeklyResultMeta.stdClassId) &&
+          String(result.sectionId) === String(weeklyResultMeta.sectionId) &&
+          String(result.subject?.id) === String(weeklyResultMeta.subject?.id) &&
+          String(result.week) === String(weeklyResultMeta.week) &&
+          String(result.month) === String(weeklyResultMeta.month) &&
+          String(result.year) === String(weeklyResultMeta.year)
+        );
+      })
+    : [];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,8 +90,6 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
     fetchData();
   }, [search, page, selectedCard, refreshTrigger]);
 
-  const weeklyResultMeta = selectedCard || weeklyResultsData[0];
-
   return (
     <DashboardWrapper>
       <WeeklyResultTable 
@@ -89,7 +100,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
       {weeklyResultMeta && (
         <WeeklyResultTakeTable
           studentsData={studentData}
-          weeklyResults={weeklyResultsData}
+          weeklyResults={activeWeeklyResults}
           weeklyResultMeta={weeklyResultMeta}
         />
       )}
