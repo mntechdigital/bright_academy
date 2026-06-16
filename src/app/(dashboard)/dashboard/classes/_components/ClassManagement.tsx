@@ -66,7 +66,7 @@ const ClassManagement = ({
                 className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium"
               >
                 <Plus className="w-5 h-5" />
-                <span>Create Subject</span>
+                <span>Manage Subject</span>
               </Link>
               <Link
                 href="/dashboard/classes/create"

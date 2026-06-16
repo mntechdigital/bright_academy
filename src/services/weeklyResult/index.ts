@@ -12,7 +12,7 @@ export const createWeeklyResult = async (payload: Record<string, any>) => {
     authRequired: true,
   });
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);
   });
 
@@ -54,7 +54,7 @@ export const updateWeeklyResult = async (
     authRequired: true,
   });
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);
   });
 
@@ -67,7 +67,7 @@ export const deleteWeeklyResult = async (id: string | undefined) => {
     authRequired: true,
   });
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);
   });
 
@@ -83,7 +83,7 @@ export const deleteWeeklyResultByClassAndSection = async (
     authRequired: true,
   });
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);
   });
 
@@ -99,7 +99,7 @@ export const createWeeklyResultForSingleStd = async (
     authRequired: true,
   });
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);
   });
 
@@ -119,7 +119,7 @@ export const updateWeeklyResultForSingleStd = async (
     },
   );
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);
   });
 

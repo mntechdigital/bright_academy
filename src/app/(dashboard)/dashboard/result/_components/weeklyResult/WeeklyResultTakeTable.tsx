@@ -93,9 +93,7 @@ const StudentRow = ({
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-4 py-3">
-        <input type="checkbox" className="w-4 h-4 rounded border-gray-300" />
-      </td>
+      
       <td className="px-4 py-3">
         <div className="font-medium text-gray-900 text-sm">{student.name}</div>
         <div className="text-xs text-gray-500">{student.username}</div>
@@ -205,12 +203,7 @@ const WeeklyResultTakeTable = ({
         <table className="min-w-full table-auto">
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap w-10">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-gray-300"
-                />
-              </th>
+              
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
                 Student's Name
               </th>

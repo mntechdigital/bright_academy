@@ -8,6 +8,8 @@ import WeeklyResultTakeTable from "./_components/weeklyResult/WeeklyResultTakeTa
 import { getStudents } from "@/src/services/students";
 import PaginationWrapper from "@/src/components/PaginationWrapper";
 import { TQuery } from "@/src/types/query.types";
+import ShowMonthlyResultTable from "./_components/monthlyResult/ShowMonthlyResultTable";
+import { getMonthlyResults } from "@/src/services/monthlyResult";
 
 const ResultOverviewPage = async (props: {
   searchParams: Promise<{ search: string; page: string }>;
@@ -16,14 +18,11 @@ const ResultOverviewPage = async (props: {
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
 
+  const monthlyResultsRes = await getMonthlyResults([]);
+  const monthlyResultsData = monthlyResultsRes?.data?.data || [];
+
   const classesRes = await getClasses([]);
   const classesData = classesRes?.data?.data;
-
-  const weeklyResultsRes = await getWeeklyResults([]);
-  const weeklyResultsData = weeklyResultsRes?.data?.data || [];
-
-  // Get the first weekly result meta to filter students by class and section
-  const weeklyResultMeta = weeklyResultsData[0];
 
   const query: TQuery[] = [
     {
@@ -42,27 +41,21 @@ const ResultOverviewPage = async (props: {
       key: "limit",
       value: "10",
     },
-    // ✅ Filter students by classId and sectionId from weekly result
-    // ✅ Use "filter" key with JSON stringified object
-  ...(weeklyResultMeta?.stdClassId && weeklyResultMeta?.sectionId
-    ? [
-        {
-          key: "filter",
-          value: JSON.stringify({
-            classId: weeklyResultMeta.stdClassId,
-            sectionId: weeklyResultMeta.sectionId,
-          }),
-        },
-      ]
-    : []),
   ];
-
-  const studentRes = await getStudents(query);
-  const studentData = studentRes?.data?.data || [];
 
   return (
     <DashboardWrapper>
-      <GiveResult classesData={classesData} />
+      <ShowMonthlyResultTable
+        monthlyResultsData={monthlyResultsData}
+        classesData={classesData}
+      />
+      {monthlyResultsRes?.data?.meta?.totalPages > 1 && (
+        <PaginationWrapper
+          active={page}
+          totalPages={monthlyResultsRes?.data?.meta?.totalPages || 1}
+          totalItems={monthlyResultsRes?.data?.meta?.totalItems || 0}
+        />
+      )}
     </DashboardWrapper>
   );
 };

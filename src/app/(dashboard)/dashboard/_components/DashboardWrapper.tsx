@@ -14,7 +14,7 @@ export function DashboardWrapper({
   return (
     <div
       className={cn(
-        "w-full p-4 sm:p-6 md:p-6",
+        "w-full p-4  md:p-4",
         className
       )}
     >

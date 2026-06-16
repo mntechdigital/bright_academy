@@ -62,6 +62,11 @@ const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
 const GiveResult = ({ classesData = [] }: GiveResultProps) => {
   const [examType, setExamType] = useState<ExamType>("weekly");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleWeeklyResultCreated = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <div className="p-6">
@@ -75,6 +80,13 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
           <span>Overview</span>
         </Link>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <Link
+          href="/dashboard/result"
+          className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          <span>Result</span>
+        </Link>
         <span className="flex items-center gap-1 text-foreground font-medium">
           <FileSpreadsheet className="h-4 w-4" />
           Give Result
@@ -113,13 +125,12 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
       {/* Render the correct form */}
       {examType === "weekly" ? (
         <>
-          <WeeklyResultForm classesData={classesData} />
-          <WeeklyResult searchParams={{ search: "", page: "1" }} />
+          <WeeklyResultForm classesData={classesData} onResultCreated={handleWeeklyResultCreated} />
+          <WeeklyResult searchParams={{ search: "", page: "1" }} refreshTrigger={refreshTrigger} />
         </>
       ) : (
         <>
           <MonthlyResultForm classesData={classesData} />
-          
         </>
       )}
     </div>

@@ -19,6 +19,7 @@ import { Pattaya } from "next/font/google";
 
 interface CreateStudentFormValues {
   studentName: string;
+  stdRegNo: string;
   classId: string;
   sectionId: string;
   parentPhone: string;
@@ -47,6 +48,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
   const form = useForm<CreateStudentFormValues>({
     defaultValues: {
       studentName: "",
+      stdRegNo: "",
       classId: "",
       sectionId: "",
       parentPhone: "",
@@ -69,6 +71,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
     startTransition(async () => {
       const payload = {
         name: data.studentName,
+        stdRegNo: data.stdRegNo,
         classId: data.classId,
         sectionId: data.sectionId,
         parentPhone: data.parentPhone,
@@ -77,6 +80,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
       };
 
       const res = await createStudent(payload);
+      console.log("create student==>",res)
       if (res.statusCode === 201) {
         showSuccessToast("Student created successfully!");
         form.reset();
@@ -125,6 +129,31 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
                   {...field}
                   type="text"
                   placeholder="William Shakespeare"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                />
+                {error && (
+                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Student Registration Number Input */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Registration No.<span className="text-red-500">*</span>
+          </label>
+          <Controller
+            name="stdRegNo"
+            control={form.control}
+            rules={{ required: "Registration number is required" }}
+            render={({ field, fieldState: { error } }) => (
+              <div>
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="REG-2024-001"
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                 />
                 {error && (

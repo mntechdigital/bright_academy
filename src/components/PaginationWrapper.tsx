@@ -6,17 +6,19 @@
     active,
     totalPages,
     totalItems,
+    pageParam = "page",
   }: {
     active: number;
     totalPages: number;
     totalItems: number;
+    pageParam?: string;
   }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const handlePageChange = (page: number) => {
       const params = new URLSearchParams(searchParams);
-      params.set("page", String(page));
+      params.set(pageParam, String(page));
       router.push(`?${params.toString()}`);
     };
 

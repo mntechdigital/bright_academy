@@ -109,6 +109,10 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
       subjects: selectedClass?.subjects ?? [],
       studentId: data.studentId,
     });
+    // Reset form after submit
+    handleSubmit((formData) => {
+      // Form submission logic here
+    })();
   };
 
   return (
@@ -210,6 +214,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
             studentName={tableData.studentName}
             subjects={tableData.subjects}
             studentId={tableData.studentId}
+            month={watch("month")}
           />
         </div>
       )}
