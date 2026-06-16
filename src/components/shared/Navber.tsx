@@ -56,8 +56,8 @@ const Navber = () => {
             height: "70px",
           }}
         />
-        <h1 className="text-[#F68319] text-xl font-semibold">
-          ব্রাইট একাডেমিক
+        <h1 className="text-[#F68319] text-[14px] font-semibold">
+          ব্রাইট একাডেমিক কেয়ার
         </h1>
       </div>
 
