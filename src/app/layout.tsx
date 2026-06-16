@@ -7,7 +7,6 @@ import { Toaster } from "sonner";
 import ScrollToTop from "../components/shared/ScrollToTop";
 import Provider from "../provider/Provider";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -37,6 +36,10 @@ export const metadata: Metadata = {
   title: "ব্রাইট একাডেমিক",
   description:
     "© Bright Academic 2024. All rights reserved. Bright Academic is an educational platform dedicated to providing quality learning resources and support for students and educators.",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0B3738" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B3738" },
+  ],
 };
 
 export default function RootLayout({

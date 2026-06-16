@@ -6,7 +6,7 @@ import Topber from "@/src/components/shared/Topber";
 const CommonLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <div>
-      <Topber />
+      {/* <Topber /> */}
       <Navber />
       {children}
       <Footer />

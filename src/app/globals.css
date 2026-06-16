@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital,wght@0,400;1,400&family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@plugin "daisyui";
 
 @plugin "tailwindcss-animate";
 
