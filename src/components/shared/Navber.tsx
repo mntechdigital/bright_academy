@@ -1,6 +1,8 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import logo from "../../assets/logo/logo.png";
+import Image from "next/image";
 
 const Navber = () => {
   const NavItems = (
@@ -46,10 +48,18 @@ const Navber = () => {
   return (
     <div className="navbar shadow-sm bg-white px-4">
       {/* ১. বাম পাশে শুধু লোগো থাকবে */}
-      <div className="navbar-start">
-        <Link href="/" className="btn btn-ghost text-xl font-bold">
-          Logo
-        </Link>
+      <div className="navbar-start gap-2">
+        <Image
+          src={logo}
+          alt="bright academic school"
+          style={{
+            width: "70px",
+            height: "70px",
+          }}
+        />
+        <h1 className="text-[#F68319] text-xl font-semibold">
+          ব্রাইট একাডেমিক
+        </h1>
       </div>
 
       {/* বড় স্ক্রিনের জন্য মিডল মেনু */}
