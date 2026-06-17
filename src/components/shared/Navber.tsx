@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import logo from "../../../public/logo.png";
+
 const navLinks = [
   { label: "হোম", href: "/" },
   { label: "আমাদের সম্পর্কে", href: "/about" },
@@ -16,13 +18,14 @@ const navLinks = [
 export default function Navbar() {
   const [active, setActive] = useState("হোম");
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <nav className="w-full bg-white border-b border-gray-200 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-16 gap-4">
 
         {/* Brand */}
-        <a href="#" className="flex items-center gap-2.5 shrink-0 mr-2 no-underline">
+        <a href="/" className="flex items-center gap-2.5 shrink-0 mr-2 no-underline">
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border-2 border-gray-200 bg-white">
             <Image src={logo} alt="Bright Academy" fill className="object-cover" priority />
           </div>
@@ -35,7 +38,6 @@ export default function Navbar() {
         <div className="hidden lg:flex items-center gap-0.5 flex-1">
           {navLinks.map((link, idx) => (
             <div key={link.label} className="flex items-center">
-              {/* Divider after first item */}
               {idx === 1 && (
                 <div className="w-px h-8 bg-orange-400 opacity-40 mx-1.5" />
               )}
@@ -60,7 +62,10 @@ export default function Navbar() {
         <div className="flex-1 lg:hidden" />
 
         {/* Login Button */}
-        <button className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-150 shrink-0 ml-2">
+        <button
+          onClick={() => router.push("/StudentLogin")}
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-150 shrink-0 ml-2 cursor-pointer"
+        >
           Login
           <span className="flex items-center justify-center w-5 h-5 bg-white/25 rounded text-xs">
             ↗
