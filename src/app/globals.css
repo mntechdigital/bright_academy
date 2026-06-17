@@ -313,6 +313,13 @@
   animation: simpleMarquee 20s linear infinite;
 }
 
+.simple-marquee-reverse {
+  display: inline-block;
+  white-space: nowrap;
+  padding-left: 8px;
+  animation: simpleMarquee 20s linear infinite reverse;
+}
+
 @keyframes simpleMarquee {
   0% {
     transform: translateX(0%);
