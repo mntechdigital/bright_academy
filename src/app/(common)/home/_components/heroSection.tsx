@@ -10,15 +10,15 @@ import image01 from "../../../../assets/hero-icon/image.png";
 
 const HeroSection = () => {
   return (
-    <div className="grid md:grid-cols-2 justify-center bg-[#F5F5F5] py-10 px-4 gap-2">
-      <div className="text-start">
-        <h4 className="block w-fit mx-auto bg-white text-[#2B2B2B] text-center px-4 py-2 border-l-2 border-l-[#f81717]">
+    <div className=" grid md:grid-cols-2 justify-items-center bg-[#F5F5F5] py-10 px-4 gap-2">
+      <div>
+        <h4 className="block w-fit mx-auto md:mx-0 bg-white text-[#2B2B2B]  px-4 py-2 border-l-2 border-l-[#f81717]">
           জ্ঞানের আকাঙ্ক্ষা করো। সীমাহীনভাবে শিখো।
         </h4>
-        <h1 className="text-center font-semibold text-[28px] px-5 leading-9 mt-5">
+        <h1 className="text-center md:text-start font-semibold text-[28px] leading-9 mt-5">
           ব্রাইট একাডেমিক কেয়ারে স্বাগতম
         </h1>
-        <p className="text-sm text-center leading-6 text-[#2B2B2B] px-11 mt-5">
+        <p className="text-sm text-center md:text-start leading-6 text-[#2B2B2B] px-11 md:px-0 mt-5">
           সাফল্যের স্বর্ণালী শিখরে পৌঁছাতে আমরা দৃঢ় প্রতিজ্ঞ। আমরা জানি,
           প্রতিশ্রুতি রক্ষায় আমরা ব্যক্তি নয়, বিবেকের কাছে দায়বদ্ধ।
         </p>
@@ -33,9 +33,8 @@ const HeroSection = () => {
             <ArrowUpRight className="w-4 h-4 text-[#2B2B2B]" />
           </span>
         </Link>
-
-        <div className="px-22 mt-8">
-          <div className="w-full max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center md:items-start gap-6 p-6 border border-[#F68319] rounded-xl bg-white shadow-sm">
+        <div className="px-18 md:px-0 mt-8">
+          <div className="w-full max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center md:items-start gap-6 px-4 py-4 border border-[#F68319] rounded-xl bg-white shadow-sm">
             <div className="flex items-center gap-3 w-full sm:w-auto justify-center md:justify-start">
               <Image
                 src={frame}
@@ -90,6 +89,7 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+
       <div className="mt-10">
         <Image
           src={image01}
