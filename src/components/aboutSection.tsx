@@ -4,16 +4,34 @@ import gaolicon from "../assets/about-icon/goal icon.png";
 import star from "../assets/about-icon/star.png";
 import rightMark from "../assets/about-icon/righMark.png";
 import image01 from "../assets/about-icon/Image.png";
+import image02 from "../assets/about-icon/image02.png";
+import image03 from "../assets/about-icon/image03.png";
 
 const AboutSection = () => {
   return (
     <div className="mt-12 px-4 grid grid-cols-1 md:grid-cols-2 items-center gap-8 max-w-6xl mx-auto">
-      <div className="w-full order-last md:order-first">
-        <Image
-          src={image01}
-          alt="Bright Academic Care"
-          className="w-full md:w-[450px] h-[600px]"
-        />
+      <div className="w-full order-last md:order-first relative">
+        <div className="absolute z-1">
+          <Image
+            src={image02}
+            alt="Bright Academic Care"
+            className="w-full md:w-[150px] h-[150px]"
+          />
+        </div>
+        <div className="flex justify-end my-10 mr-5">
+          <Image
+            src={image01}
+            alt="Bright Academic Care"
+            className="w-full md:w-[450px] h-[600px] z-10"
+          />
+        </div>
+        <div className="absolute z-1 -bottom-5 -right-5">
+          <Image
+            src={image03}
+            alt="Bright Academic Care"
+            className="w-full md:w-[150px] h-[150px]"
+          />
+        </div>
       </div>
 
       <div>
