@@ -1,16 +1,17 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import Image from "next/image";
 import frame from "../../../../assets/hero-icon/Frame.png";
 import frame01 from "../../../../assets/hero-icon/Frame (1).png";
 import frame02 from "../../../../assets/hero-icon/Frame (2).png";
 import frame03 from "../../../../assets/hero-icon/Frame (3).png";
-import Image from "next/image";
+import image01 from "../../../../assets/hero-icon/image.png";
 
 const HeroSection = () => {
   return (
-    <div className="grid md:grid-cols-2 bg-[#F5F5F5] py-10">
-      <div>
+    <div className="grid md:grid-cols-2 justify-center bg-[#F5F5F5] py-10 px-4 gap-2">
+      <div className="text-start">
         <h4 className="block w-fit mx-auto bg-white text-[#2B2B2B] text-center px-4 py-2 border-l-2 border-l-[#f81717]">
           জ্ঞানের আকাঙ্ক্ষা করো। সীমাহীনভাবে শিখো।
         </h4>
@@ -89,7 +90,14 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-      <div></div>
+      <div className="mt-10">
+        <Image
+          src={image01}
+          alt="bright academic care"
+          height={350}
+          className="px-4"
+        />
+      </div>
     </div>
   );
 };
