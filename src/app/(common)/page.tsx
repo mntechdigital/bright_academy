@@ -4,6 +4,7 @@ import AboutSection from "@/src/components/aboutSection";
 import Hometime from "./home/_components/hometime";
 import Teachers from "./home/_components/teachers";
 import StudentsReview from "./home/_components/studentsReview";
+import NewsUpdate from "./home/_components/newsUpdate";
 
 const Home = () => {
   return (
@@ -13,6 +14,7 @@ const Home = () => {
       <Hometime />
       <Teachers />
       <StudentsReview />
+      <NewsUpdate />
     </div>
   );
 };

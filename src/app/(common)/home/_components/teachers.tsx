@@ -84,6 +84,7 @@ const Teachers = () => {
             </div>
           </div>
         </div>
+        
         <div className="card bg-white w-80 mx-auto shadow-sm">
           <div className="relative">
             <figure>
