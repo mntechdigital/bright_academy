@@ -49,7 +49,6 @@ const Navber = () => {
       {/* ১. বাম পাশে শুধু লোগো থাকবে */}
       <Link href="/" className="navbar-start gap-2">
         <Image
-        
           src={logo}
           alt="bright academic school"
           style={{
@@ -81,7 +80,6 @@ const Navber = () => {
             <ArrowUpRight className="w-4 h-4 text-white" />
           </span>
         </Link>
-
         <div className="dropdown dropdown-end lg:hidden">
           <div tabIndex={0} role="button" className="btn btn-ghost">
             <svg
