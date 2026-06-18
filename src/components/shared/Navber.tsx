@@ -28,7 +28,7 @@ const Navber = () => {
         </Link>
       </li>
       <li className="border border-transparent hover:bg-[#FFECDB] hover:border-amber-600 rounded transition-all">
-        <Link href="/" className="block px-4 py-2">
+        <Link href="/students_review" className="block px-4 py-2">
           মতামত
         </Link>
       </li>
@@ -45,7 +45,7 @@ const Navber = () => {
     </>
   );
   return (
-    <div className="navbar shadow-sm bg-white px-4">
+    <div className="navbar shadow-sm bg-white px-4 z-3000">
       {/* ১. বাম পাশে শুধু লোগো থাকবে */}
       <Link href="/" className="navbar-start gap-2">
         <Image
