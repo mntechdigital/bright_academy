@@ -10,7 +10,7 @@ const NewsUpdate = () => {
         পরিকল্পনা আপডেট এবং গুরুত্বপূর্ণ তথ্য
       </h1>
 
-      <div className="px-5 md:grid grid-cols-3 justify-between">
+      <div className=" md:grid grid-cols-3 justify-between">
         <div className="mt-5 shadow-xl mx-5 rounded-3xl">
           <div className="px-4 py-7.5">
             <div className="flex items-center gap-4">
