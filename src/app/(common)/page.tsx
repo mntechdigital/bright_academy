@@ -5,6 +5,7 @@ import Hometime from "./home/_components/hometime";
 import Teachers from "./home/_components/teachers";
 import StudentsReview from "./home/_components/studentsReview";
 import NewsUpdate from "./home/_components/newsUpdate";
+import ChairmanSpeech from "./home/_components/chairmanSpeech";
 
 const Home = () => {
   return (
@@ -13,6 +14,7 @@ const Home = () => {
       <AboutSection />
       <Hometime />
       <Teachers />
+      <ChairmanSpeech />
       <StudentsReview />
       <NewsUpdate />
     </div>
