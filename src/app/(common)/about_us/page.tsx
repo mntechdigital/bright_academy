@@ -1,9 +1,10 @@
+import AboutSection from "@/src/components/aboutSection";
 import React from "react";
 
 const page = () => {
   return (
     <div>
-      <h1>This is about us page</h1>
+      <AboutSection />
     </div>
   );
 };

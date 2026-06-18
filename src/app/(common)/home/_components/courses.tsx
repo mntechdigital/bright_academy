@@ -3,7 +3,7 @@ import bg from "../../../../assets/hometime/bg.png";
 import courseImage from "../../../../assets/coures/BG.png";
 import Image from "next/image";
 
-const Hometime = () => {
+const Courses = () => {
   return (
     <div
       className="relative w-full bg-cover bg-center bg-no-repeat flex items-center justify-center py-12.5 md:py-20 mt-24"
@@ -109,4 +109,4 @@ const Hometime = () => {
   );
 };
 
-export default Hometime;
+export default Courses;

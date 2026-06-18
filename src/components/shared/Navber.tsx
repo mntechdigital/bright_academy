@@ -13,17 +13,17 @@ const Navber = () => {
         </Link>
       </li>
       <li className="border border-transparent hover:bg-[#FFECDB] hover:border-amber-600 rounded transition-all">
-        <Link href="/" className="block px-4 py-2">
+        <Link href="/about_us" className="block px-4 py-2">
           আমাদের সম্পর্কে
         </Link>
       </li>
       <li className="border border-transparent hover:bg-[#FFECDB] hover:border-amber-600 rounded transition-all">
-        <Link href="/" className="block px-4 py-2">
+        <Link href="/courses" className="block px-4 py-2">
           কোর্স সমূহ
         </Link>
       </li>
       <li className="border border-transparent hover:bg-[#FFECDB] hover:border-amber-600 rounded transition-all">
-        <Link href="/" className="block px-4 py-2">
+        <Link href="/teachers" className="block px-4 py-2">
           শিক্ষম মন্ডলী
         </Link>
       </li>
