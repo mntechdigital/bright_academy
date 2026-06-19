@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { getAccessToken } from "./getAccessToken";
+import { jwtDecode } from "jwt-decode";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL as string;
 
@@ -18,6 +19,20 @@ const getAuthToken = async () => {
       .split("; ")
       .find((row) => row.startsWith("accessToken="))
       ?.split("=")[1];
+  }
+};
+
+// Existing (possibly expired) token theke role ber kore, role onujayi
+// shothik login page e redirect korar jonno
+const getLoginRedirectPath = async () => {
+  const token = await getAuthToken();
+  if (!token) return "/login";
+
+  try {
+    const decoded = jwtDecode<{ role?: string }>(token);
+    return decoded.role === "TEACHER" ? "/teacher/login" : "/login";
+  } catch {
+    return "/login";
   }
 };
 
@@ -60,8 +75,10 @@ export const apiRequest = async (
       return response.json();
     }
 
+    const redirectPath = await getLoginRedirectPath();
+
     if (typeof window !== "undefined") {
-      window.location.href = "/login"; // Redirect to login page
+      window.location.href = redirectPath; // Role onujayi Admin/Teacher login e redirect
     } else {
       throw new Error("Unauthorized access. Please log in again.");
     }

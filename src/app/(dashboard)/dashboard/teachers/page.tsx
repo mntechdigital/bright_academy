@@ -2,8 +2,8 @@ import React from "react";
 import { DashboardWrapper } from "../_components/DashboardWrapper";
 import TeacherTable from "./_components/TeacherTable";
 import { TQuery } from "@/src/types/query.types";
-import { getTeachers } from "@/src/services/teacher";
 import PaginationWrapper from "@/src/components/PaginationWrapper";
+import { getTeachers } from '@/src/services/teacher';
 
 const page = async (props: {
   searchParams: Promise<{ search: string; page: string }>;
