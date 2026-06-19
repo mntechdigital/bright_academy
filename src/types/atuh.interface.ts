@@ -32,4 +32,15 @@ export type TRoleFeature = {
   roleId?: string;
 };
 
-
+export interface TTeacherJwtPayload extends JwtPayload {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+  phone: string;
+  designation: string;
+  subject?: string;
+  profilePhoto?: string;
+  iat: number;
+  exp: number;
+}
