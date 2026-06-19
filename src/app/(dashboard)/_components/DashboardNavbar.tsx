@@ -25,6 +25,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useRouter } from "next/navigation";
 import { logout } from "@/src/services/auth";
 import { Sidebar } from "./DashboardSidebar";
+import { jwtDecode } from "jwt-decode";
 
 interface NavbarProps {
   adminData: any;
@@ -35,9 +36,32 @@ export function Navbar({ adminData }: NavbarProps) {
   const router = useRouter();
 
   const handleLogout = async () => {
+    // Determine redirect path based on user role BEFORE logout deletes cookies
+    let redirectPath = "/login";
+    
+    // Read token from client-side cookies
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(";").shift();
+      return undefined;
+    };
+    
+    const accessToken = getCookie("accessToken");
+    
+    if (accessToken) {
+      try {
+        const decoded = jwtDecode<{ role?: string }>(accessToken);
+        redirectPath = decoded.role === "TEACHER" ? "/teacher/login" : "/login";
+      } catch {
+        redirectPath = "/login";
+      }
+    }
+    
     const res = await logout();
     console.log("logout res==>",res);
-    router.push("/login");
+    
+    router.push(redirectPath);
     router.refresh();
   };
 
