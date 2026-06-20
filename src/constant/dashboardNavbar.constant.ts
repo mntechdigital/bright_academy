@@ -42,4 +42,11 @@ export const NAV_ITEMS = [
     href: "/result" 
   },
   
+  // Batch - index: 16
+  {
+    icon: Package,
+    label: "Batches",
+    href: "/batches"
+  },
+   
 ];

@@ -63,26 +63,39 @@ export const apiRequest = async (
 
   // Handle token expiration only if auth was required
   if (response.status === 401 && options.authRequired) {
-    try {
-      const newToken = await getAccessToken();
-      if (newToken) {
-        headers.set("Authorization", `Bearer ${newToken}`);
-        return apiRequest(endpoint, { ...options, headers });
-      }
-    } catch (error) {
-      console.error("Failed to refresh token:", error);
-      // If we can't refresh the token, return the original response
-      return response.json();
-    }
-
     const redirectPath = await getLoginRedirectPath();
-
+    
     if (typeof window !== "undefined") {
-      window.location.href = redirectPath; // Role onujayi Admin/Teacher login e redirect
-    } else {
-      throw new Error("Unauthorized access. Please log in again.");
+      window.location.href = redirectPath;
+    }
+    
+    return { 
+      statusCode: 401, 
+      message: "Unauthorized access. Please log in again." 
+    };
+  }
+
+  // Handle other error status codes
+  if (!response.ok && response.status !== 200) {
+    const errorText = await response.text();
+    console.error(`API Error ${response.status}:`, errorText);
+    
+    try {
+      const errorJson = JSON.parse(errorText);
+      return errorJson;
+    } catch {
+      return { 
+        statusCode: response.status, 
+        message: `Server error: ${response.statusText}` 
+      };
     }
   }
 
-  return response.json();
+  // Try to parse JSON, return empty object if parsing fails
+  try {
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to parse response as JSON:", error);
+    return { data: null, message: "Invalid response from server" };
+  }
 };
