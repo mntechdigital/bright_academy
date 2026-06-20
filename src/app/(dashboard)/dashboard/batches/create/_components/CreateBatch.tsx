@@ -45,8 +45,17 @@ const CreateBatch = ({ classesData = [] }: CreateBatchProps) => {
 
   const onSubmit: SubmitHandler<CreateBatchFormValues> = async (data) => {
     startTransition(async () => {
-      const payload: CreateBatchFormValues = {
-        ...data,
+      // Ensure both times are provided before submitting
+      if (!data.startTime || !data.endTime) {
+        showErrorToast("Both start time and end time are required.");
+        return;
+      }
+
+      const payload = {
+        name: data.name,
+        classId: data.classId,
+        startTime: data.startTime,
+        endTime: data.endTime,
       };
       const res = await createBatch(payload);
       if (res.statusCode === 201) {
@@ -87,7 +96,18 @@ const CreateBatch = ({ classesData = [] }: CreateBatchProps) => {
       <h1 className="text-2xl font-bold text-foreground mb-6">Create Batch</h1>
 
       {/* Form */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-full">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (
+            e.key === "Enter" &&
+            (e.target as HTMLElement).tagName !== "TEXTAREA"
+          ) {
+            e.preventDefault();
+          }
+        }}
+        className="max-w-full"
+      >
         {/* Batch Name Input */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
@@ -136,7 +156,9 @@ const CreateBatch = ({ classesData = [] }: CreateBatchProps) => {
                   ))}
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                {error && <p className="mt-1 text-sm text-red-500">{error.message}</p>}
+                {error && (
+                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
+                )}
               </div>
             )}
           />
@@ -156,6 +178,7 @@ const CreateBatch = ({ classesData = [] }: CreateBatchProps) => {
                 <input
                   {...field}
                   type="time"
+                  step="60"
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                 />
                 {error && (
@@ -174,12 +197,22 @@ const CreateBatch = ({ classesData = [] }: CreateBatchProps) => {
           <Controller
             name="endTime"
             control={form.control}
-            rules={{ required: "End time is required" }}
+            rules={{
+              required: "End time is required",
+              validate: (value) => {
+                const startTime = form.getValues("startTime");
+                if (startTime && value && value <= startTime) {
+                  return "End time must be after start time";
+                }
+                return true;
+              },
+            }}
             render={({ field, fieldState: { error } }) => (
               <div>
                 <input
                   {...field}
                   type="time"
+                  step="60"
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                 />
                 {error && (
