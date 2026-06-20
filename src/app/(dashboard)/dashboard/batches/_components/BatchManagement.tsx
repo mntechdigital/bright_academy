@@ -95,7 +95,7 @@ const BatchManagement = ({
                       {batch.name || "N/A"}
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {batch.class?.className || "N/A"}
+                      {batch.stdClass?.className || "N/A"}
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
                       {batch.startTime || "N/A"}

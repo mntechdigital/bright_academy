@@ -21,7 +21,6 @@ interface CreateStudentFormValues {
   stdRegNo: string;
   password: string;
   classId: string;
-  sectionId: string;
   batchId: string;
   parentPhone: string;
   address: string;
@@ -31,10 +30,6 @@ interface CreateStudentFormValues {
 interface ClassData {
   id: string;
   className: string;
-  sections?: {
-    id: string;
-    sectionName: string;
-  }[];
 }
 
 interface BatchData {
@@ -63,17 +58,12 @@ const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProp
       stdRegNo: "",
       password: "",
       classId: "",
-      sectionId: "",
       batchId: "",
       parentPhone: "",
       address: "",
       gender: "",
     },
   });
-
-  // Get sections for selected class
-  const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
-  const sections = selectedClass?.sections || [];
 
   // Get batches for selected class only
   const filteredBatches = batchesData.filter((batch) => batch.classId === selectedClassId);
@@ -82,7 +72,6 @@ const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProp
     setSelectedClassId(classId);
     setSelectedBatchId("");
     form.setValue("classId", classId);
-    form.setValue("sectionId", "");
     form.setValue("batchId", "");
   };
 
@@ -98,7 +87,6 @@ const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProp
         stdRegNo: data.stdRegNo,
         password: data.password,
         classId: data.classId,
-        sectionId: data.sectionId,
         batchId: data.batchId,
         parentPhone: data.parentPhone,
         address: data.address,
@@ -253,36 +241,6 @@ const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProp
                   {classesData.map((cls) => (
                     <option key={cls.id} value={cls.id}>
                       {cls.className}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                {error && <p className="mt-1 text-sm text-red-500">{error.message}</p>}
-              </div>
-            )}
-          />
-        </div>
-
-        {/* Section */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Section<span className="text-red-500">*</span>
-          </label>
-          <Controller
-            name="sectionId"
-            control={form.control}
-            rules={{ required: "Section is required" }}
-            render={({ field, fieldState: { error } }) => (
-              <div className="relative">
-                <select
-                  {...field}
-                  disabled={!selectedClassId}
-                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Section</option>
-                  {sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.sectionName}
                     </option>
                   ))}
                 </select>
