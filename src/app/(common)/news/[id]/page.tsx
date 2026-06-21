@@ -3,8 +3,9 @@ import PageHeader from "../../_components/PageHeader";
 import Link from "next/link";
 import newsData from "@/src/data/news.json";
 
-const page = ({ params }: { params: { id: string } }) => {
-  const newsItem = (newsData as any[]).find((item: any) => item.id === params.id);
+const page = async ({ params }: { params: Promise<{ id: string }> }) => {
+  const { id } = await params;
+  const newsItem = (newsData as any[]).find((item: any) => item.id === id);
 
   if (!newsItem) {
     return (
