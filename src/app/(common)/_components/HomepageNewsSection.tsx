@@ -1,5 +1,7 @@
-
 "use client";
+
+import Link from "next/link";
+import newsData from "@/src/data/news.json";
 
 type BadgeType = "জরুরী" | "সাফল্য" | "তথ্য";
 
@@ -9,38 +11,39 @@ const badgeStyles: Record<BadgeType, string> = {
   তথ্য: "text-orange-500",
 };
 
-const news = [
-  {
-    badge: "জরুরী" as BadgeType,
-    title: "নতুন ব্যাচ ভর্তি শুরু",
-    description: "২০২৫ সালের নতুন শিক্ষাবর্ষের জন্য সকল ক্লাসে ভর্তি চলছে। সীমিত আসন। তাড়াতাড়ি যোগাযোগ করুন।",
-  },
-  {
-    badge: "সাফল্য" as BadgeType,
-    title: "JSC/SSC ফলাফল",
-    description: "আমাদের ৯৫% শিক্ষার্থী JSC ও SSC পরীক্ষায় A+ গ্রেড অর্জন করেছে। অভিনন্দন সবাইকে!",
-  },
-  {
-    badge: "তথ্য" as BadgeType,
-    title: "নতুন কম্পিউটার ল্যাব",
-    description: "আধুনিক কম্পিউটার ল্যাব স্থাপন করা হয়েছে। সর্বশেষ প্রযুক্তি দিয়ে সজ্জিত।",
-  },
-  {
-    badge: "জরুরী" as BadgeType,
-    title: "নতুন ব্যাচ ভর্তি শুরু",
-    description: "২০২৫ সালের নতুন শিক্ষাবর্ষের জন্য সকল ক্লাসে ভর্তি চলছে। সীমিত আসন। তাড়াতাড়ি যোগাযোগ করুন।",
-  },
-  {
-    badge: "সাফল্য" as BadgeType,
-    title: "JSC/SSC ফলাফল",
-    description: "আমাদের ৯৫% শিক্ষার্থী JSC ও SSC পরীক্ষায় A+ গ্রেড অর্জন করেছে। অভিনন্দন সবাইকে!",
-  },
-  {
-    badge: "তথ্য" as BadgeType,
-    title: "নতুন কম্পিউটার ল্যাব",
-    description: "আধুনিক কম্পিউটার ল্যাব স্থাপন করা হয়েছে। সর্বশেষ প্রযুক্তি দিয়ে সজ্জিত।",
-  },
-];
+type NewsItem = {
+  id: string;
+  badge: BadgeType;
+  title: string;
+  description: string;
+};
+
+const news: NewsItem[] = newsData.map((item: any) => ({
+  id: item.id,
+  badge: item.badge as BadgeType,
+  title: item.title,
+  description: item.description,
+}));
+
+const ArrowIcon = () => (
+  <svg
+    width="60"
+    height="10"
+    viewBox="0 0 60 10"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="text-gray-300"
+  >
+    <line x1="0" y1="5" x2="50" y2="5" stroke="currentColor" strokeWidth="1.5" />
+    <path
+      d="M5 1L1 5L5 9"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export default function HomepageNewsSection() {
   return (
@@ -60,26 +63,36 @@ export default function HomepageNewsSection() {
         </h2>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {news.map((item, idx) => (
-            <div
-              key={idx}
-              className="border border-gray-200 rounded-xl p-6 flex flex-col gap-3 hover:shadow-md transition-shadow duration-200 bg-white"
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {news.map((item) => (
+            <Link
+              key={item.id}
+              href={`/news/${item.id}`}
+              className="block"
             >
-              {/* Badge + line */}
-              <div className="flex items-center gap-3">
-                <span className={`text-sm font-semibold ${badgeStyles[item.badge]}`}>
-                  {item.badge}
-                </span>
-                <div className="flex-1 h-px bg-gray-200" />
+              <div
+                className="border border-gray-100 rounded-2xl p-7 flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow duration-200 bg-white cursor-pointer"
+              >
+                {/* Badge + arrow */}
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-bold ${badgeStyles[item.badge]}`}>
+                    {item.badge}
+                  </span>
+                  <ArrowIcon />
+                </div>
+
+                {/* Title */}
+                <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
+
+                {/* Divider */}
+                <div className="h-px bg-gray-200" />
+
+                {/* Description */}
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {item.description}
+                </p>
               </div>
-
-              {/* Title */}
-              <h3 className="text-base font-bold text-gray-900">{item.title}</h3>
-
-              {/* Description */}
-              <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
