@@ -75,7 +75,7 @@ export default function Footer() {
               মানসম্মত শিক্ষা ও যত্নশীল পরিচর্যায় আপনার সন্তানের উজ্জ্বল ভবিষ্যৎ গড়ুন। আমরা প্রতিটি শিক্ষার্থীর সফলতার জন্য প্রতিশ্রুতিবদ্ধ।
             </p>
             <a
-              href="#"
+              href="/communication"
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-all duration-150 w-fit no-underline"
             >
               যোগাযোগ
