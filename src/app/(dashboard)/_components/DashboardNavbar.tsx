@@ -100,7 +100,7 @@ export function Navbar({ adminData }: NavbarProps) {
         </Link>
       </div>
       <div className="flex items-center max-sm:gap-1 gap-4">
-        <Link href="/#navbar">
+        <Link href="/" target="_blank">
           <Button
             variant="outline"
             className="cursor-pointer flex items-center bg-white text-black border-white hover:bg-gray-200"
