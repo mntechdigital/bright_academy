@@ -81,6 +81,7 @@ interface Student {
   parentPhone: string;
   avatar?: string;
   username?: string;
+  stdRegNo?: string;
   batch?: {
     id: string;
     name: string;
@@ -158,6 +159,48 @@ export default function ShowMonthlyResultTable({
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedClassId(e.target.value);
     setSelectedBatchId("");
+  };
+
+  // Build a lookup map for student regNo from classesData
+  const studentRegNoMap = new Map<string, string>();
+  for (const cls of classesData) {
+    for (const s of cls.students ?? []) {
+      if (s.id && (s as any).stdRegNo) {
+        studentRegNoMap.set(s.id, (s as any).stdRegNo);
+      }
+    }
+  }
+
+  // Look up batch name from classesData
+  const getBatchName = (result: MonthlyResult): string => {
+    // First, try the populated batch relation
+    if (result.student?.batch?.name) return result.student.batch.name;
+    // Fallback: look up from classesData using batchId
+    if (result.student?.batchId) {
+      // Search across all classes for the matching batch
+      for (const cls of classesData) {
+        const batch = cls.batches?.find(
+          (b) => b.id === result.student.batchId,
+        );
+        if (batch) return batch.name;
+      }
+    }
+    return "—";
+  };
+
+  // Look up student registration number
+  const getStudentRegNo = (result: MonthlyResult): string => {
+    // First, try the top-level stdRegNo on the result
+    if (result.stdRegNo) return result.stdRegNo;
+    // Then, try the student's stdRegNo field
+    if (result.student?.stdRegNo) return result.student.stdRegNo;
+    // Then, try the student's username
+    if (result.student?.username) return result.student.username;
+    // Then, look up from classesData students array
+    if (result.student?.id && studentRegNoMap.has(result.student.id)) {
+      return studentRegNoMap.get(result.student.id)!;
+    }
+    return "—";
   };
 
   // Filter table rows
@@ -393,8 +436,7 @@ export default function ShowMonthlyResultTable({
                     result.results,
                     result.totalMarks,
                   );
-                  const batchName =
-                    result.student?.batch?.name ?? "—";
+                  const batchName = getBatchName(result);
 
                   return (
                     <tr
@@ -425,11 +467,11 @@ export default function ShowMonthlyResultTable({
                         </div>
                       </td>
 
-                      {/* Student ID */}
+                      {/* Student ID / Reg No */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          {result.stdRegNo}
+                          {getStudentRegNo(result)}
                         </span>
                       </td>
 
