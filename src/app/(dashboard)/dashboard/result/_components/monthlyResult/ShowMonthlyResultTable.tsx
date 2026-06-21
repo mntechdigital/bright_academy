@@ -77,15 +77,13 @@ interface Student {
   id: string;
   name: string;
   classId: string;
-  sectionId: string;
+  batchId?: string;
   parentPhone: string;
   avatar?: string;
   username?: string;
-  section?: {
+  batch?: {
     id: string;
-    sectionName: string;
-    createdAt: string;
-    updatedAt: string;
+    name: string;
   };
 }
 
@@ -106,19 +104,12 @@ export interface MonthlyResult {
   updatedAt: string;
 }
 
-interface Section {
-  id: string;
-  sectionName: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface ClassData {
   id: string;
   className: string;
   createdAt: string;
   updatedAt: string;
-  sections: Section[];
+  batches?: { id: string; name: string }[];
   students?: any[];
   subjects?: any[];
   _count?: { students: number };
@@ -136,7 +127,7 @@ export default function ShowMonthlyResultTable({
   const [checkedAll, setCheckedAll] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [selectedClassId, setSelectedClassId] = useState<string>("");
-  const [selectedSectionId, setSelectedSectionId] = useState<string>("");
+  const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [search, setSearch] = useState("");
 
   const toggleAll = () => {
@@ -159,14 +150,14 @@ export default function ShowMonthlyResultTable({
       ? results.reduce((sum, r) => sum + r.fullMarks, 0)
       : fallback;
 
-  // Sections for the selected class
-  const availableSections =
-    classesData.find((c) => c.id === selectedClassId)?.sections ?? [];
+  // Batches for the selected class
+  const availableBatches =
+    classesData.find((c) => c.id === selectedClassId)?.batches ?? [];
 
-  // Handle class change — reset section when class changes
+  // Handle class change — reset batch when class changes
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedClassId(e.target.value);
-    setSelectedSectionId("");
+    setSelectedBatchId("");
   };
 
   // Filter table rows
@@ -177,10 +168,10 @@ export default function ShowMonthlyResultTable({
     const matchesClass = selectedClassId
       ? result.student?.classId === selectedClassId
       : true;
-    const matchesSection = selectedSectionId
-      ? result.student?.sectionId === selectedSectionId
+    const matchesBatch = selectedBatchId
+      ? result.student?.batchId === selectedBatchId
       : true;
-    return matchesSearch && matchesClass && matchesSection;
+    return matchesSearch && matchesClass && matchesBatch;
   });
 
   const selectedClassName = classesData.find(
@@ -242,17 +233,17 @@ export default function ShowMonthlyResultTable({
             ))}
           </select>
 
-          {/* Select Section — only show sections of selected class */}
+          {/* Select Batch — only show batches of selected class */}
           <select
-            value={selectedSectionId}
-            onChange={(e) => setSelectedSectionId(e.target.value)}
+            value={selectedBatchId}
+            onChange={(e) => setSelectedBatchId(e.target.value)}
             disabled={!selectedClassId}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-32.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <option value="">Select Section</option>
-            {availableSections.map((sec) => (
-              <option key={sec.id} value={sec.id}>
-                {sec.sectionName}
+            <option value="">Select Batch</option>
+            {availableBatches.map((batch) => (
+              <option key={batch.id} value={batch.id}>
+                {batch.name}
               </option>
             ))}
           </select>
@@ -333,7 +324,7 @@ export default function ShowMonthlyResultTable({
                 </th>
                 <th className="px-3 py-2.5 text-left text-gray-500 font-semibold">
                   <span className="inline-flex items-center gap-1">
-                    Section
+                    Batch
                     <svg
                       className="w-3 h-3"
                       fill="none"
@@ -402,8 +393,8 @@ export default function ShowMonthlyResultTable({
                     result.results,
                     result.totalMarks,
                   );
-                  const sectionName =
-                    result.student?.section?.sectionName ?? "—";
+                  const batchName =
+                    result.student?.batch?.name ?? "—";
 
                   return (
                     <tr
@@ -442,11 +433,11 @@ export default function ShowMonthlyResultTable({
                         </span>
                       </td>
 
-                      {/* Section */}
+                      {/* Batch */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                          {sectionName}
+                          {batchName}
                         </span>
                       </td>
 

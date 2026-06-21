@@ -19,7 +19,7 @@ const GiveResultpage = async(props: {
   const weeklyResultsRes = await getWeeklyResults([]);
   const weeklyResultsData = weeklyResultsRes?.data?.data || [];
 
-  // Get the first weekly result meta to filter students by class and section
+  // Get the first weekly result meta to filter students by class and batch
   const weeklyResultMeta = weeklyResultsData[0];
 
   
@@ -40,15 +40,15 @@ const GiveResultpage = async(props: {
         key: "limit",
         value: "10",
       },
-      // ✅ Filter students by classId and sectionId from weekly result
+      // ✅ Filter students by classId and batchId from weekly result
       // ✅ Use "filter" key with JSON stringified object
-    ...(weeklyResultMeta?.stdClassId && weeklyResultMeta?.sectionId
+    ...(weeklyResultMeta?.stdClassId && weeklyResultMeta?.batchId
       ? [
           {
             key: "filter",
             value: JSON.stringify({
               classId: weeklyResultMeta.stdClassId,
-              sectionId: weeklyResultMeta.sectionId,
+              batchId: weeklyResultMeta.sectionId,
             }),
           },
         ]

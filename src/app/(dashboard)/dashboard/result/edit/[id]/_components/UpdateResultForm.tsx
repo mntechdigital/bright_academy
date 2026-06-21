@@ -19,10 +19,10 @@ interface Student {
   id: string;
   name: string;
   classId: string;
-  sectionId: string;
+  batchId?: string;
   parentPhone: string;
   avatar?: string;
-  section?: { id: string; sectionName: string };
+  batch?: { id: string; name: string };
   stdClass?: { id: string; className: string };
 }
 
@@ -150,9 +150,9 @@ export default function UpdateResultForm({ result }: Props) {
                     {result.student.stdClass.className}
                   </span>
                 )}
-                {result.student?.section?.sectionName && (
+                {result.student?.batch?.name && (
                   <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
-                    Section {result.student.section.sectionName}
+                    Batch {result.student.batch.name}
                   </span>
                 )}
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">

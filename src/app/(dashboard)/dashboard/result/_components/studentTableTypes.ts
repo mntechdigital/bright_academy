@@ -11,8 +11,8 @@ export interface Student {
     id: string;
     className: string;
   };
-  section: {
+  batch?: {
     id: string;
-    sectionName: string;
+    name: string;
   };
 }

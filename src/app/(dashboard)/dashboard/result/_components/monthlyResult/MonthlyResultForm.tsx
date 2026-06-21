@@ -11,14 +11,14 @@ import MonthlyResultTable from "./MonthlyResultTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Section  { id: string; sectionName: string }
+interface Batch  { id: string; name: string }
 interface Subject  { id: string; subjectName: string }
 interface Student  { id: string; name?: string; studentName?: string; fullName?: string; sectionId?: string }
 
 interface ClassData {
   id: string;
   className: string;
-  sections?: Section[];
+  batches?: Batch[];
   subjects?: Subject[];
   students?: Student[];
 }
@@ -28,7 +28,7 @@ interface FormValues {
   year: string;
   publishedDate: Date;
   classId: string;
-  sectionId: string;
+  batchId: string;
   studentId: string;
 }
 
@@ -87,19 +87,19 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
       year: currentYear.toString(),
       publishedDate: new Date(),
       classId: "",
-      sectionId: "",
+      batchId: "",
       studentId: "",
     },
   });
 
   const selectedClassId  = watch("classId");
-  const selectedSectionId = watch("sectionId");
+  const selectedBatchId = watch("batchId");
 
   const selectedClass = classesData.find((c) => c.id === selectedClassId);
-  const sections = selectedClass?.sections ?? [];
+  const batches = selectedClass?.batches ?? [];
 
   const students = (selectedClass?.students ?? [])
-    .filter((s) => !s.sectionId || s.sectionId === selectedSectionId)
+    .filter((s) => !s.sectionId || s.sectionId === selectedBatchId)
     .map((s) => ({ id: s.id, name: s.name ?? s.studentName ?? s.fullName ?? "Unnamed" }));
 
   const onSubmit = (data: FormValues) => {
@@ -179,14 +179,14 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </Field>
         </div>
 
-        {/* Row 3 — Section & Student */}
+        {/* Row 3 — Batch & Student */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Field label="Section" error={errors.sectionId?.message}>
-            <Controller name="sectionId" control={control} rules={{ required: "Section is required" }}
+          <Field label="Batch" error={errors.batchId?.message}>
+            <Controller name="batchId" control={control} rules={{ required: "Batch is required" }}
               render={({ field }) => (
                 <SelectField {...field} disabled={!selectedClassId}>
-                  <option value="">Select Section</option>
-                  {sections.map((s) => <option key={s.id} value={s.id}>{s.sectionName}</option>)}
+                  <option value="">Select Batch</option>
+                  {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </SelectField>
               )}
             />
@@ -195,7 +195,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           <Field label="Student's Name" error={errors.studentId?.message}>
             <Controller name="studentId" control={control} rules={{ required: "Student is required" }}
               render={({ field }) => (
-                <SelectField {...field} disabled={!selectedSectionId || students.length === 0}>
+                <SelectField {...field} disabled={!selectedBatchId || students.length === 0}>
                   <option value="">Select Student</option>
                   {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </SelectField>

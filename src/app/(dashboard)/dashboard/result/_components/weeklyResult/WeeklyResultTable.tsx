@@ -20,7 +20,7 @@ const WeeklyResultTable = ({
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.section?.sectionName}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.batch?.name}`,
         result,
       ])
     ).values()
@@ -62,7 +62,7 @@ const WeeklyResultTable = ({
                 >
                   {/* Delete button — top right */}
                   <div className="absolute top-2 right-2 z-10">
-                    <DeleteWeeklyResultDialog sectionId={result.sectionId} stdClassId={result.stdClassId} />
+                    <DeleteWeeklyResultDialog batchId={result.sectionId} stdClassId={result.stdClassId} />
                   </div>
 
                   {/* Card Header */}
@@ -83,7 +83,7 @@ const WeeklyResultTable = ({
                         isSelected ? "text-green-900" : "text-gray-800"
                       }`}>
                         {result.stdClass?.className || "—"}
-                        {result.section?.sectionName ? ` · ${result.section.sectionName}` : ""}
+                        {result.batch?.name ? ` · ${result.batch.name}` : ""}
                       </h3>
                       <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         isSelected 

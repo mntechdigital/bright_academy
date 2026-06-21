@@ -22,12 +22,6 @@ const ClassManagement = ({
     cls.className.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  // Helper function to count students in a section
-  const getStudentCountBySection = (cls: any, sectionId: string) => {
-    if (!cls.students || !sectionId) return 0;
-    return cls.students.filter((student: any) => student.sectionId === sectionId).length;
-  };
-
   console.log("see classes data==>",studentClassData)
 
   return (
@@ -92,16 +86,7 @@ const ClassManagement = ({
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    Section
-                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                  </div>
-                </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Students
-                </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    Section
+                    Batches
                     <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 </th>
@@ -124,22 +109,24 @@ const ClassManagement = ({
                       {cls.className || "N/A"}
                     </td>
                     <td className="px-6 py-6">
-                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
-                        <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
-                        {cls.sections?.[0]?.sectionName || "N/A"}
-                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {cls.batches?.length > 0 ? (
+                          cls.batches.map((batch: any) => (
+                            <span
+                              key={batch.id}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap"
+                            >
+                              <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
+                              {batch.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-sm">N/A</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {cls.sections?.[0] ? getStudentCountBySection(cls, cls.sections[0].id) : "N/A"}
-                    </td>
-                    <td className="px-6 py-6">
-                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap">
-                        <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
-                        {cls.sections?.[1]?.sectionName || "N/A"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {cls.sections?.[1] ? getStudentCountBySection(cls, cls.sections[1].id) : "N/A"}
+                      {cls.students?.length || 0}
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
@@ -159,7 +146,7 @@ const ClassManagement = ({
               ) : (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={4}
                     className="px-6 py-12 text-center text-gray-500 text-base"
                   >
                     No classes found

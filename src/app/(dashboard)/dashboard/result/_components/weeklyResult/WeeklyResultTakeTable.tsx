@@ -22,7 +22,7 @@ type WeeklyResult = {
   stdClassId: string;
   studentId: string | null;
   obtainedMarks: number | null;
-  section?: { id: string; sectionName: string };
+  batch?: { id: string; name: string };
   stdClass?: { id: string; className: string };
 };
 
@@ -34,7 +34,7 @@ const StudentRow = ({
   year,
   month,
   publishedDate,
-  sectionId,
+  batchId,
   stdClassId,
   defaultObtainedMarks,
   weeklyResults,
@@ -46,7 +46,7 @@ const StudentRow = ({
   year: string;
   month: string;
   publishedDate: string;
-  sectionId: string;
+  batchId: string;
   stdClassId: string;
   defaultObtainedMarks: number | null;
   weeklyResults: WeeklyResult[];
@@ -66,7 +66,7 @@ const StudentRow = ({
       const payload = {
         studentId: student.id,
         stdClassId,
-        sectionId,
+        sectionId: batchId,
         subjectId,
         obtainedMarks: parseInt(data.obtainedMarks, 10),
         totalMarks: totalMark,
@@ -115,9 +115,9 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
           <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-          {existingResult?.section?.sectionName ||
-            student.section?.sectionName ||
-            "No Section"}
+          {existingResult?.batch?.name ||
+            student.batch?.name ||
+            "No Batch"}
         </span>
       </td>
       <td className="px-4 py-3 text-gray-900 text-sm font-medium">
@@ -185,7 +185,7 @@ const WeeklyResultTakeTable = ({
     year,
     month,
     publishedDate,
-    sectionId,
+    sectionId: batchId,
     stdClassId,
   } = weeklyResultMeta;
 
@@ -214,7 +214,7 @@ const WeeklyResultTakeTable = ({
                 Student's Class
               </th>
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
-                Student's Section
+                Batch
               </th>
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
                 <span className="flex items-center gap-1">
@@ -259,7 +259,7 @@ const WeeklyResultTakeTable = ({
                     year={year}
                     month={month}
                     publishedDate={publishedDate}
-                    sectionId={sectionId}
+                    batchId={batchId}
                     stdClassId={stdClassId}
                     defaultObtainedMarks={existingResult?.obtainedMarks ?? null}
                     weeklyResults={weeklyResults}
