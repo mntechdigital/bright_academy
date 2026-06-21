@@ -14,14 +14,18 @@ interface Student {
   address: string;
   gender: string;
   classId: string;
-  sectionId: string;
+  batch?: {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+    classId: string;
+    createdAt: string;
+    updatedAt: string;
+  };
   stdClass?: {
     id: string;
     className: string;
-  };
-  section?: {
-    id: string;
-    sectionName: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -34,7 +38,7 @@ interface StudentManagementProps {
 
 const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManagementProps) => {
   const router = useRouter();
-
+  console.log("Students Data:", studentsData);
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -100,7 +104,7 @@ const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManag
                   Class
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Section
+                  Batch
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   Parent Phone
@@ -131,7 +135,7 @@ const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManag
                     <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
                       <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium">
                         <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                        {student.section?.sectionName || "N/A"}
+                        {student.batch?.name || "N/A"}
                       </span>
                     </td>
                     <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   Dialog,
   DialogClose,
@@ -12,25 +12,17 @@ import {
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { deleteStudent } from "@/src/services/students";
+import { deleteBatch } from "@/src/services/batches";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { deleteWeeklyResult, deleteWeeklyResultByClassAndSection } from "@/src/services/weeklyResult";
 
-interface DeleteWeeklyResultDialogProps {
-  batchId: string;
-  stdClassId: string;
-  id?: string;
-  trigger?: ReactNode;
-}
-
-const DeleteWeeklyResultDialog = ({ batchId, stdClassId, trigger }: DeleteWeeklyResultDialogProps) => {
+const DeleteBatchDialog = ({ id }: { id?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = async () => {
     startTransition(async () => {
-      const result = await deleteWeeklyResultByClassAndSection({ sectionId: batchId, stdClassId });
-      console.log("delete response ==>",result)
+      const result = await deleteBatch(id);
+
       if (result.statusCode === 200) {
         setIsOpen(false);
         showSuccessToast(result.message);
@@ -45,15 +37,13 @@ const DeleteWeeklyResultDialog = ({ batchId, stdClassId, trigger }: DeleteWeekly
     <div>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          {trigger || (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0 text-red-400 cursor-pointer hover:text-red-600"
-            >
-              <Trash2 size={18} />
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0 text-red-400 cursor-pointer hover:text-red-600"
+          >
+            <Trash2 size={18} />
+          </Button>
         </DialogTrigger>
         <DialogContent className="bg-[#18181b] text-white border border-[#232326]">
           <DialogHeader>
@@ -62,7 +52,7 @@ const DeleteWeeklyResultDialog = ({ batchId, stdClassId, trigger }: DeleteWeekly
             </DialogTitle>
             <DialogDescription className="text-gray-300">
               This action cannot be undone. This will permanently delete this
-              weekly result and remove their data from our servers.
+              batch and remove your data from our servers.
             </DialogDescription>
             <div className="flex justify-end space-x-2 mt-4">
               <DialogClose asChild>
@@ -86,4 +76,4 @@ const DeleteWeeklyResultDialog = ({ batchId, stdClassId, trigger }: DeleteWeekly
   );
 };
 
-export default DeleteWeeklyResultDialog;
+export default DeleteBatchDialog;

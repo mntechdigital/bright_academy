@@ -9,20 +9,20 @@ import {
   ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
-import DeleteStdClassesDialog from "./DeleteStdClassesDialog";
+import DeleteBatchDialog from "./DeleteBatchDialog";
 
-const ClassManagement = ({
-  studentClassData = [],
+const BatchManagement = ({
+  batchData = [],
 }: {
-  studentClassData?: any[];
+  batchData?: any[];
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredClasses = studentClassData.filter((cls) =>
-    cls.className.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredBatches = batchData.filter((batch) =>
+    batch.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  console.log("see classes data==>",studentClassData)
+  console.log("see batches data==>", batchData);
 
   return (
     <div className="">
@@ -30,7 +30,7 @@ const ClassManagement = ({
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <h1 className="text-4xl font-semibold text-gray-900">Classes</h1>
+            <h1 className="text-4xl font-semibold text-gray-900">Batches</h1>
             <span className="text-orange-500 font-medium bg-orange-100 px-2 py-1 rounded-full text-md">
               Bright Academy
             </span>
@@ -41,33 +41,19 @@ const ClassManagement = ({
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search for classes"
+                placeholder="Search for batches"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base placeholder:text-gray-400"
               />
             </div>
             <div className="flex flex-wrap items-center gap-3 w-full md:w-2/3 md:justify-end">
-              {/* <Link
-                href="/dashboard/sections/create"
-                className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Create Section</span>
-              </Link> */}
               <Link
-                href="/dashboard/subjects"
-                className="flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors whitespace-nowrap text-base font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Manage Subject</span>
-              </Link>
-              <Link
-                href="/dashboard/classes/create"
+                href="/dashboard/batches/create"
                 className="flex items-center justify-center gap-2 px-5 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors whitespace-nowrap text-base font-medium"
               >
                 <Plus className="w-5 h-5" />
-                <span>Create Class</span>
+                <span>Create Batch</span>
               </Link>
             </div>
           </div>
@@ -80,18 +66,18 @@ const ClassManagement = ({
               <tr>
                 <th className="px-6 lg:px-12 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    Class Name
+                    Batch Name
                     <HelpCircle className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    Batches
-                    <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
-                  </div>
+                  Class
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Students
+                  Start Time
+                </th>
+                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
+                  End Time
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   Action
@@ -99,42 +85,30 @@ const ClassManagement = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredClasses.length > 0 ? (
-                filteredClasses.map((cls) => (
+              {filteredBatches.length > 0 ? (
+                filteredBatches.map((batch) => (
                   <tr
-                    key={cls.id}
+                    key={batch.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
-                      {cls.className || "N/A"}
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="flex flex-wrap gap-2">
-                        {cls.batches?.length > 0 ? (
-                          cls.batches.map((batch: any) => (
-                            <span
-                              key={batch.id}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap"
-                            >
-                              <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
-                              {batch.name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-gray-400 text-sm">N/A</span>
-                        )}
-                      </div>
+                      {batch.name || "N/A"}
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {cls.students?.length || 0}
+                      {batch.stdClass?.className || "N/A"}
+                    </td>
+                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
+                      {batch.startTime || "N/A"}
+                    </td>
+                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
+                      {batch.endTime || "N/A"}
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
-                        {/* Add DeleteServiceDialog or similar here if needed */}
-                        <DeleteStdClassesDialog id={cls.id} />
+                        <DeleteBatchDialog id={batch.id} />
 
                         <Link
-                          href={`/dashboard/classes/edit/${cls.id}`}
+                          href={`/dashboard/batches/edit/${batch.id}`}
                           className="text-purple-500 hover:text-purple-600 transition-colors"
                         >
                           <Edit2 className="w-5 h-5" />
@@ -146,10 +120,10 @@ const ClassManagement = ({
               ) : (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="px-6 py-12 text-center text-gray-500 text-base"
                   >
-                    No classes found
+                    No batches found
                   </td>
                 </tr>
               )}
@@ -161,4 +135,4 @@ const ClassManagement = ({
   );
 };
 
-export default ClassManagement;
+export default BatchManagement;

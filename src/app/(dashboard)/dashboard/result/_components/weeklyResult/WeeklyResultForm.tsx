@@ -18,7 +18,7 @@ import { months, weeks } from "@/src/constant/weeklyResult.constant";
 interface ClassData {
   id: string;
   className: string;
-  sections?: { id: string; sectionName: string }[];
+  batches?: { id: string; name: string }[];
   subjects?: { id: string; subjectName: string }[];
 }
 
@@ -44,7 +44,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
       publishedDate: new Date(),
       year: new Date().getFullYear().toString(),
       classId: "",
-      sectionId: "",
+      batchId: "",
       subjectId: "",
       totalMarks: 0,
     },
@@ -53,7 +53,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
 
   const selectedClassId = watch("classId");
   const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
-  const sections = selectedClass?.sections || [];
+  const batches = selectedClass?.batches || [];
   const subjects = selectedClass?.subjects || [];
 
   const onSubmit = async (data: any) => {
@@ -247,13 +247,13 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
         </div>
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Section
+            Batch
           </label>
           <div className="relative">
             <Controller
-              name="sectionId"
+              name="batchId"
               control={control}
-              rules={{ required: "Section is required" }}
+              rules={{ required: "Batch is required" }}
               render={({ field }) => (
                 <>
                   <select
@@ -261,15 +261,15 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
                     disabled={!selectedClassId}
                     className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select Section</option>
-                    {sections.map((section) => (
-                      <option key={section.id} value={section.id}>
-                        {section.sectionName}
+                    <option value="">Select Batch</option>
+                    {batches.map((batch) => (
+                      <option key={batch.id} value={batch.id}>
+                        {batch.name}
                       </option>
                     ))}
                   </select>
-                  {errors.sectionId && (
-                    <span className="text-red-500 text-xs">{errors.sectionId.message}</span>
+                  {errors.batchId && (
+                    <span className="text-red-500 text-xs">{errors.batchId.message}</span>
                   )}
                 </>
               )}

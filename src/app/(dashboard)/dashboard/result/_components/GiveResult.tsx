@@ -24,9 +24,9 @@ import WeeklyResult from "./weeklyResult/WeeklyResult";
 interface ClassData {
   id: string;
   className: string;
-  sections?: {
+  batches?: {
     id: string;
-    sectionName: string;
+    name: string;
   }[];
   subjects?: {
     id: string;

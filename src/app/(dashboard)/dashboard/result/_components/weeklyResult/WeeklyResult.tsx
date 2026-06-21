@@ -73,7 +73,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
                 key: "filter",
                 value: JSON.stringify({
                   classId: weeklyResultMeta.stdClassId,
-                  sectionId: weeklyResultMeta.sectionId,
+                  batchId: weeklyResultMeta.sectionId,
                 }),
               },
             ]

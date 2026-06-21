@@ -19,9 +19,9 @@ import { createStudent } from "@/src/services/students";
 interface CreateStudentFormValues {
   studentName: string;
   stdRegNo: string;
-  password: string;      // ✅ নতুন
+  password: string;
   classId: string;
-  sectionId: string;
+  batchId: string;
   parentPhone: string;
   address: string;
   gender: string;
@@ -30,43 +30,54 @@ interface CreateStudentFormValues {
 interface ClassData {
   id: string;
   className: string;
-  sections?: {
-    id: string;
-    sectionName: string;
-  }[];
+}
+
+interface BatchData {
+  id: string;
+  name: string;
+  classId: string;
+  startTime: string;
+  endTime: string;
 }
 
 interface CreateStudentProps {
   classesData?: ClassData[];
+  batchesData?: BatchData[];
 }
 
-const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
+const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<CreateStudentFormValues>({
     defaultValues: {
       studentName: "",
       stdRegNo: "",
-      password: "",      // ✅ নতুন
+      password: "",
       classId: "",
-      sectionId: "",
+      batchId: "",
       parentPhone: "",
       address: "",
       gender: "",
     },
   });
 
-  // Get sections for selected class
-  const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
-  const sections = selectedClass?.sections || [];
+  // Get batches for selected class only
+  const filteredBatches = batchesData.filter((batch) => batch.classId === selectedClassId);
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
+    setSelectedBatchId("");
     form.setValue("classId", classId);
-    form.setValue("sectionId", "");
+    form.setValue("batchId", "");
+  };
+
+  const handleBatchChange = (batchId: string) => {
+    setSelectedBatchId(batchId);
+    form.setValue("batchId", batchId);
   };
 
   const onSubmit: SubmitHandler<CreateStudentFormValues> = async (data) => {
@@ -74,9 +85,9 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
       const payload = {
         name: data.studentName,
         stdRegNo: data.stdRegNo,
-        password: data.password,   // ✅ নতুন
+        password: data.password,
         classId: data.classId,
-        sectionId: data.sectionId,
+        batchId: data.batchId,
         parentPhone: data.parentPhone,
         address: data.address,
         gender: data.gender,
@@ -120,7 +131,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
         {/* Student Name */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Student&apos;s Name<span className="text-red-500">*</span>
+            Student's Name<span className="text-red-500">*</span>
           </label>
           <Controller
             name="studentName"
@@ -163,7 +174,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
           />
         </div>
 
-        {/* Password ✅ নতুন */}
+        {/* Password */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
             Password<span className="text-red-500">*</span>
@@ -240,15 +251,15 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
           />
         </div>
 
-        {/* Section */}
+        {/* Batch */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Section<span className="text-red-500">*</span>
+            Batch<span className="text-red-500">*</span>
           </label>
           <Controller
-            name="sectionId"
+            name="batchId"
             control={form.control}
-            rules={{ required: "Section is required" }}
+            rules={{ required: "Batch is required" }}
             render={({ field, fieldState: { error } }) => (
               <div className="relative">
                 <select
@@ -256,10 +267,10 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
                   disabled={!selectedClassId}
                   className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select Section</option>
-                  {sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.sectionName}
+                  <option value="">Select Batch</option>
+                  {filteredBatches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.name} ({batch.startTime} - {batch.endTime})
                     </option>
                   ))}
                 </select>
@@ -273,7 +284,7 @@ const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
         {/* Parent Phone */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Parent&apos;s Phone No.<span className="text-red-500">*</span>
+            Parent's Phone No.<span className="text-red-500">*</span>
           </label>
           <Controller
             name="parentPhone"

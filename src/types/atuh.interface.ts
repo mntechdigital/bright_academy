@@ -39,6 +39,7 @@ export interface TTeacherJwtPayload extends JwtPayload {
   name: string;
   phone: string;
   designation: string;
+  regNo: string;
   subject?: string;
   profilePhoto?: string;
   iat: number;

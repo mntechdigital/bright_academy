@@ -16,10 +16,10 @@ interface Student {
   id: string;
   name: string;
   classId: string;
-  sectionId: string;
+  batchId?: string;
   parentPhone: string;
   avatar?: string;
-  section?: { id: string; sectionName: string };
+  batch?: { id: string; name: string };
   stdClass?: { id: string; className: string };
 }
 
@@ -28,7 +28,7 @@ export interface MonthlyResult {
   studentId: string;
   student: Student;
   className?: string;
-  sectionName?: string;
+  batchName?: string;
   results: ResultSubject[];
   totalMarks: number;
   gpa: number;
@@ -55,8 +55,8 @@ export default function ViewMonthlyResultForm({ result }: Props) {
 
   const studentClassName =
     result.student?.stdClass?.className || result.className || "N/A";
-  const studentSectionName =
-    result.student?.section?.sectionName || result.sectionName || "N/A";
+  const studentBatchName =
+    result.student?.batch?.name || result.batchName || "N/A";
 
   const handleDownloadPdf = async () => {
     setGeneratingPdf(true);
@@ -86,7 +86,7 @@ export default function ViewMonthlyResultForm({ result }: Props) {
 
       pdf.text(`Student: ${result.student?.name || "N/A"}`, 14, 30);
       pdf.text(`Class: ${studentClassName}`, 14, 36);
-      pdf.text(`Section: ${studentSectionName}`, 14, 42);
+      pdf.text(`Batch: ${studentBatchName}`, 14, 42);
       pdf.text(`Parent Phone: ${result.student?.parentPhone || "N/A"}`, 14, 48);
 
       pdf.text(`Total Marks: ${totalAchieved}/${result.totalMarks}`, 120, 30);
@@ -178,7 +178,7 @@ export default function ViewMonthlyResultForm({ result }: Props) {
                   {studentClassName}
                 </span>
                 <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
-                  Section {studentSectionName}
+                  Batch {studentBatchName}
                 </span>
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
                   {result.student?.parentPhone}
