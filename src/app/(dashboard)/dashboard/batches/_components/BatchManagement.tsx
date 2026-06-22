@@ -11,6 +11,14 @@ import {
 import Link from "next/link";
 import DeleteBatchDialog from "./DeleteBatchDialog";
 
+const formatTime = (time: string) => {
+  if (!time) return "N/A";
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
 const BatchManagement = ({
   batchData = [],
 }: {
@@ -98,10 +106,10 @@ const BatchManagement = ({
                       {batch.stdClass?.className || "N/A"}
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {batch.startTime || "N/A"}
+                      {formatTime(batch.startTime)}
                     </td>
                     <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {batch.endTime || "N/A"}
+                      {formatTime(batch.endTime)}
                     </td>
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
