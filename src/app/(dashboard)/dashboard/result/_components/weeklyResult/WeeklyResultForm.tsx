@@ -18,7 +18,7 @@ import { months, weeks } from "@/src/constant/weeklyResult.constant";
 interface ClassData {
   id: string;
   className: string;
-  batches?: { id: string; name: string }[];
+  batches?: { id: string; name: string; startTime: string; endTime: string }[];
   subjects?: { id: string; subjectName: string }[];
 }
 
@@ -26,6 +26,14 @@ interface WeeklyResultFormProps {
   classesData?: ClassData[];
   onResultCreated?: () => void;
 }
+
+const formatTime = (time: string) => {
+  if (!time) return "";
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
@@ -264,7 +272,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
                     <option value="">Select Batch</option>
                     {batches.map((batch) => (
                       <option key={batch.id} value={batch.id}>
-                        {batch.name}
+                        {batch.name} ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
                       </option>
                     ))}
                   </select>

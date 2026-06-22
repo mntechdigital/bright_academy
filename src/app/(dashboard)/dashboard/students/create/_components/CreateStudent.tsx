@@ -45,6 +45,14 @@ interface CreateStudentProps {
   batchesData?: BatchData[];
 }
 
+const formatTime = (time: string) => {
+  if (!time) return "";
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
 const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -270,7 +278,7 @@ const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProp
                   <option value="">Select Batch</option>
                   {filteredBatches.map((batch) => (
                     <option key={batch.id} value={batch.id}>
-                      {batch.name} ({batch.startTime} - {batch.endTime})
+                      {batch.name} ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
                     </option>
                   ))}
                 </select>
