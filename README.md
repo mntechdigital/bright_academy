@@ -37,3 +37,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Figma file link 
 Link: [Figma] (https://www.figma.com/design/OBdOVVeQiaULpRgRKIysHM/Bright-Academy-%7C-Student-Result-Management-Portal?node-id=1-2&p=f&t=AlCNP8iMFeq4PL0H-0)
+
+## visit website.
+Link: [Brightacademy] (https://thebrightacademy.online)
