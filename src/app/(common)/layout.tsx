@@ -6,7 +6,6 @@ const CommonLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <div>
       <Navber />
-      
       {children}
       <Footer />
     </div>
