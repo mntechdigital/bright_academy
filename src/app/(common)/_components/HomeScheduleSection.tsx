@@ -7,22 +7,22 @@ import schedule4 from "../../../../public/BG (7).png";
 
 const schedules = [
   {
-    grade: "৫ম – ১০ম শ্রেণি",
+    grade: "৭ম – ১০ম শ্রেণি",
     time: "সকাল ৭ টা – ১০ টা",
     image: schedule1,
   },
   {
-    grade: "৩য় – ১০ম শ্রেণি",
+    grade: "৭ম – ৮ম শ্রেণি",
     time: "সকাল ৯ টা – ১২ টা",
     image: schedule2,
   },
   {
-    grade: "৩য় – ১২ শ্রেণি",
+    grade: "৭ম – ১২ শ্রেণি",
     time: "দুপুর ২টা – ৫ টা",
     image: schedule3,
   },
   {
-    grade: "৩য় – ১২ শ্রেণি",
+    grade: "৩য় – ১০ম শ্রেণি",
     time: "বিকাল ৫টা – ৮ টা",
     image: schedule4,
   },
