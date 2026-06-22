@@ -124,10 +124,6 @@ export function Navbar({ adminData }: NavbarProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem className="cursor-pointer">
-              <Link href={`/dashboard/general-setting`}>Settings</Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               Logout
             </DropdownMenuItem>
