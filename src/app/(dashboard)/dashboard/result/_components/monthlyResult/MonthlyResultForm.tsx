@@ -11,7 +11,7 @@ import MonthlyResultTable from "./MonthlyResultTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Batch  { id: string; name: string }
+interface Batch  { id: string; name: string; startTime: string; endTime: string }
 interface Subject  { id: string; subjectName: string }
 interface Student  { id: string; name?: string; studentName?: string; fullName?: string; sectionId?: string }
 
@@ -42,6 +42,14 @@ const MONTHS = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December",
 ];
+
+const formatTime = (time: string) => {
+  if (!time) return "";
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
 
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
@@ -186,7 +194,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
               render={({ field }) => (
                 <SelectField {...field} disabled={!selectedClassId}>
                   <option value="">Select Batch</option>
-                  {batches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  {batches.map((b) => <option key={b.id} value={b.id}>{b.name} ({formatTime(b.startTime)} - {formatTime(b.endTime)})</option>)}
                 </SelectField>
               )}
             />

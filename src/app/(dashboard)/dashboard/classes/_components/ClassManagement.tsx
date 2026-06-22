@@ -11,6 +11,14 @@ import {
 import Link from "next/link";
 import DeleteStdClassesDialog from "./DeleteStdClassesDialog";
 
+const formatTime = (time: string) => {
+  if (!time) return "";
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
 const ClassManagement = ({
   studentClassData = [],
 }: {
@@ -117,7 +125,7 @@ const ClassManagement = ({
                               className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-green-600 rounded-lg text-sm font-medium whitespace-nowrap"
                             >
                               <span className="w-2 h-2 bg-green-500 rounded-full shrink-0"></span>
-                              {batch.name}
+                              {batch.name} ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
                             </span>
                           ))
                         ) : (
