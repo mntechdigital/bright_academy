@@ -46,7 +46,7 @@ export default function HeroSection() {
           {/* CTA Button */}
           <div>
             <a
-              href="#"
+              href="/about"
               className="inline-flex items-center gap-3 border border-gray-800 hover:border-orange-500 hover:text-orange-500 text-gray-800 text-sm font-semibold px-5 py-3 rounded transition-all duration-150 no-underline group"
             >
               আমাদের সম্পর্কে জানুন

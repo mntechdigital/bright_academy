@@ -2,12 +2,11 @@ import Image from "next/image";
 import logo from "../../../public/logo.png";
 
 const quickLinks = [
-  { label: "হোম", href: "#" },
-  { label: "আমাদের সম্পর্কে", href: "#" },
-  { label: "কোর্স সমূহ", href: "#" },
-  { label: "শিক্ষকমণ্ডলী", href: "#" },
-  { label: "সংবাদ", href: "#" },
-  { label: "গ্যালারি", href: "#" },
+  { label: "হোম", href: "/" },
+  { label: "আমাদের সম্পর্কে", href: "/about" },
+  { label: "কোর্স সমূহ", href: "/courses" },
+  { label: "শিক্ষকমণ্ডলী", href: "/faculty" },
+  { label: "সংবাদ", href: "/news" },
 ];
 
 const contactInfo = [
@@ -144,8 +143,8 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="w-full bg-gray-900 py-4 px-6">
         <p className="text-center text-gray-400 text-sm">
-          © 2025 Bright Academic | All Rights Reserved. Designed and Developed by{" "}
-          <a href="#" className="text-orange-400 hover:text-orange-300 font-semibold no-underline transition-colors">
+          © {new Date().getFullYear()} Bright Academic | All Rights Reserved. Designed and Developed by{" "}
+          <a href="https://mntechdigital.com/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 font-semibold no-underline transition-colors">
             MNTECH DIGITAL
           </a>
         </p>

@@ -72,6 +72,7 @@ const DashboardPage = async (props: {
   const totalStudents = studentsData?.data?.meta?.totalItems || 0;
   const totalTeachers = teacherData?.meta?.totalItems || 0;
   const totalClasses = classesData?.data?.meta?.totalItems || 0;
+  console.log("totalClasses", totalClasses);
 
   return (
     <DashboardWrapper>

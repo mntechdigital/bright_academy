@@ -22,7 +22,7 @@ export const createBatch = async (payload: Record<string, any>) => {
 
 export const getBatches = async (query: TQuery[]) => {
   const params = new URLSearchParams();
-  if (query.length > 1) {
+  if (query.length > 0) {
     query.forEach((q) => {
       params.append(q.key, q.value);
     });
