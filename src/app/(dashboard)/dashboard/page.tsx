@@ -20,7 +20,7 @@ const DashboardPage = async (props: {
   const teacherQuery: TQuery[] = [
     {
       key: "orderBy",
-      value: JSON.stringify({ createdAt: "desc" }),
+      value: JSON.stringify({ regNo: "asc" }),
     },
     {
       key: "searchTerm",

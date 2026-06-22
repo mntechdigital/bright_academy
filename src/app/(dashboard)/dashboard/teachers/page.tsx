@@ -15,7 +15,7 @@ const page = async (props: {
   const query: TQuery[] = [
     {
       key: "orderBy",
-      value: JSON.stringify({ createdAt: "desc" }),
+      value: JSON.stringify({ regNo: "asc" }),
     },
     {
       key: "searchTerm",
