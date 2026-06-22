@@ -30,7 +30,7 @@ export default function Navbar() {
             <Image src={logo} alt="Bright Academy" fill className="object-cover" priority />
           </div>
           <span className="text-[17px] font-semibold text-orange-500 whitespace-nowrap tracking-wide">
-            ব্রাইট একাডেমিক
+            ব্রাইট একাডেমি
           </span>
         </a>
 
