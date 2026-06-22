@@ -17,6 +17,7 @@ interface Teacher {
   id: string;
   name: string;
   regNo: string;
+  password?: string;
 }
 
 interface Props {
@@ -26,7 +27,7 @@ interface Props {
 export default function UpdateTeacherPassword({ teacher }: Props) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(true);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -39,7 +40,7 @@ export default function UpdateTeacherPassword({ teacher }: Props) {
   } = useForm<UpdatePasswordFormValues>({
     mode: "onBlur",
     defaultValues: {
-      currentPassword: "",
+      currentPassword: teacher.password || "",
       newPassword: "",
       confirmPassword: "",
     },
