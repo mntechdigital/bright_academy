@@ -5,6 +5,7 @@ import { Search, Plus, Edit2, HelpCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DeleteSubjectDialog from "./DeleteSubjectDialog";
+import { useState } from "react";
 
 interface Subject {
   id: string;
@@ -29,6 +30,7 @@ interface GroupedClass {
 
 const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
   const router = useRouter();
+  const [hoveredSubject, setHoveredSubject] = useState<string | null>(null);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -139,6 +141,14 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                             className="group inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-sm font-medium"
                           >
                             {subject.subjectName}
+                            <Link
+                              href={`/dashboard/subjects/edit/${subject.id}`}
+                              className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-200 transition-colors"
+                              onMouseEnter={() => setHoveredSubject(subject.id)}
+                              onMouseLeave={() => setHoveredSubject(null)}
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Link>
                             <DeleteSubjectDialog
                               id={subject.id}
                               trigger={
