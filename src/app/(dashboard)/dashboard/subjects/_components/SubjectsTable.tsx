@@ -59,7 +59,11 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
     {},
   );
 
-  const groupedData = Object.values(groupedByClass);
+  const groupedData = Object.values(groupedByClass).sort((a, b) => {
+    const numA = parseInt(a.className.replace(/\D/g, "")) || 0;
+    const numB = parseInt(b.className.replace(/\D/g, "")) || 0;
+    return numA - numB;
+  });
 
   return (
     <div className="">

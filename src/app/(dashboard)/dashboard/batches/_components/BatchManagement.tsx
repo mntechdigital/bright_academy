@@ -19,10 +19,34 @@ const formatTime = (time: string) => {
   return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 };
 
+interface Batch {
+  id: string;
+  name: string;
+  classId: string;
+  stdClass: {
+    id: string;
+    className: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+  updatedAt: string;
+  studentCount?: number;
+}
+
+interface GroupedClass {
+  classId: string;
+  className: string;
+  batches: Batch[];
+  createdAt: string;
+}
+
 const BatchManagement = ({
   batchData = [],
 }: {
-  batchData?: any[];
+  batchData?: Batch[];
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -30,7 +54,29 @@ const BatchManagement = ({
     batch.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  console.log("see batches data==>", batchData);
+  // Group batches by class
+  const groupedByClass = filteredBatches.reduce<Record<string, GroupedClass>>(
+    (acc, batch) => {
+      const classId = batch.classId;
+      if (!acc[classId]) {
+        acc[classId] = {
+          classId,
+          className: batch.stdClass?.className || "N/A",
+          batches: [],
+          createdAt: batch.createdAt,
+        };
+      }
+      acc[classId].batches.push(batch);
+      return acc;
+    },
+    {},
+  );
+
+  const groupedData = Object.values(groupedByClass).sort((a, b) => {
+    const numA = parseInt(a.className.replace(/\D/g, "")) || 0;
+    const numB = parseInt(b.className.replace(/\D/g, "")) || 0;
+    return numA - numB;
+  });
 
   return (
     <div className="">
@@ -74,53 +120,50 @@ const BatchManagement = ({
               <tr>
                 <th className="px-6 lg:px-12 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    Batch Name
+                    Class Name
                     <HelpCircle className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 </th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Class
-                </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Start Time
-                </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  End Time
-                </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Action
+                  Batches
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredBatches.length > 0 ? (
-                filteredBatches.map((batch) => (
+              {groupedData.length > 0 ? (
+                groupedData.map((cls) => (
                   <tr
-                    key={batch.id}
+                    key={cls.classId}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
-                      {batch.name || "N/A"}
+                      {cls.className}
                     </td>
-                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {batch.stdClass?.className || "N/A"}
-                    </td>
-                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {formatTime(batch.startTime)}
-                    </td>
-                    <td className="px-6 py-6 text-gray-700 whitespace-nowrap text-base">
-                      {formatTime(batch.endTime)}
-                    </td>
-                    <td className="px-6 py-6">
-                      <div className="flex items-center gap-4">
-                        <DeleteBatchDialog id={batch.id} />
-
-                        <Link
-                          href={`/dashboard/batches/edit/${batch.id}`}
-                          className="text-purple-500 hover:text-purple-600 transition-colors"
-                        >
-                          <Edit2 className="w-5 h-5" />
-                        </Link>
+                    <td className="px-6 py-6 text-gray-600 text-base">
+                      <div className="flex flex-wrap gap-2">
+                        {cls?.batches?.map((batch) => (
+                          <span
+                            key={batch.id}
+                            className="group inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-50 text-purple-600 text-sm font-medium"
+                          >
+                            {batch.name}
+                            <span className="text-purple-400">
+                              ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
+                            </span>
+                            {batch.studentCount !== undefined && (
+                              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                {batch.studentCount} students
+                              </span>
+                            )}
+                            <Link
+                              href={`/dashboard/batches/edit/${batch.id}`}
+                              className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-purple-200 transition-colors"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Link>
+                            <DeleteBatchDialog id={batch.id} />
+                          </span>
+                        ))}
                       </div>
                     </td>
                   </tr>
@@ -128,7 +171,7 @@ const BatchManagement = ({
               ) : (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={2}
                     className="px-6 py-12 text-center text-gray-500 text-base"
                   >
                     No batches found
