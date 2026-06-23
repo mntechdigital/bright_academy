@@ -33,6 +33,7 @@ interface Batch {
   endTime: string;
   createdAt: string;
   updatedAt: string;
+  studentCount?: number;
 }
 
 interface GroupedClass {
@@ -126,9 +127,6 @@ const BatchManagement = ({
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   Batches
                 </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Created At
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -152,6 +150,11 @@ const BatchManagement = ({
                             <span className="text-purple-400">
                               ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
                             </span>
+                            {batch.studentCount !== undefined && (
+                              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                {batch.studentCount} students
+                              </span>
+                            )}
                             <Link
                               href={`/dashboard/batches/edit/${batch.id}`}
                               className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-purple-200 transition-colors"
@@ -163,17 +166,12 @@ const BatchManagement = ({
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
-                      {cls.createdAt
-                        ? new Date(cls.createdAt).toLocaleDateString()
-                        : "N/A"}
-                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan={3}
+                    colSpan={2}
                     className="px-6 py-12 text-center text-gray-500 text-base"
                   >
                     No batches found
