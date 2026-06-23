@@ -6,11 +6,10 @@ import { TQuery } from "@/src/types/query.types";
 import PaginationWrapper from "@/src/components/PaginationWrapper";
 
 const BatchesPage = async (props: {
-  searchParams: Promise<{ search: string; page: string }>;
+  searchParams: Promise<{ search: string }>;
 }) => {
   const searchParams = await props.searchParams;
   const search = searchParams.search || "";
-  const page = parseInt(searchParams.page) || 1;
   const query: TQuery[] = [
     {
       key: "orderBy",
@@ -21,12 +20,8 @@ const BatchesPage = async (props: {
       value: search,
     },
     {
-      key: "page",
-      value: page.toString(),
-    },
-    {
       key: "limit",
-      value: "10",
+      value: "1000",
     },
   ];
   
@@ -41,13 +36,6 @@ const BatchesPage = async (props: {
   return (
     <DashboardWrapper>
       <BatchManagement batchData={batchData?.data?.data || []} />
-      {batchData?.data?.meta?.totalPages > 1 && (
-        <PaginationWrapper
-          active={page}
-          totalPages={batchData?.data?.meta?.totalPages || 1}
-          totalItems={batchData?.data?.meta?.totalItems || 0}
-        />
-      )}
     </DashboardWrapper>
   );
 };
