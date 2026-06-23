@@ -27,6 +27,8 @@ interface ClassData {
   batches?: {
     id: string;
     name: string;
+    startTime: string;
+    endTime: string;
   }[];
   subjects?: {
     id: string;

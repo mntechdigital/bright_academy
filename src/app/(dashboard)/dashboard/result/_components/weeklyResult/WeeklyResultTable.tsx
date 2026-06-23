@@ -20,7 +20,7 @@ const WeeklyResultTable = ({
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.batch?.name}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.batch?.name}-${result.id}`,
         result,
       ])
     ).values()
@@ -53,7 +53,10 @@ const WeeklyResultTable = ({
             return (
               <CarouselItem key={result.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                 <div
-                  onClick={() => onCardClick?.(result)}
+                  onClick={() => {
+                    console.log("Card clicked in table:", result.id);
+                    onCardClick?.(result);
+                  }}
                   className={`relative h-full bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer ${
                     isSelected
                       ? "border-green-500 ring-2 ring-green-200"
@@ -62,7 +65,7 @@ const WeeklyResultTable = ({
                 >
                   {/* Delete button — top right */}
                   <div className="absolute top-2 right-2 z-10">
-                    <DeleteWeeklyResultDialog batchId={result.sectionId} stdClassId={result.stdClassId} />
+                    <DeleteWeeklyResultDialog id={result.id} />
                   </div>
 
                   {/* Card Header */}

@@ -1,7 +1,7 @@
 export default function AnnouncementBanner() {
   const announcements = [
     'নতুন ব্যাচ শুরু হচ্ছে! ভর্তি চলছে। সীমিত আসন।',
-    '📞 কল করুন: ০১৭১৬৬১১২০৮',
+    '📞 কল করুন: 01911-80 95 71',
   ];
 
   return (
