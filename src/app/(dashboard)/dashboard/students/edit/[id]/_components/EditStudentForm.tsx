@@ -20,7 +20,7 @@ import { getStudentById, updateStudent } from "@/src/services/students";
 interface EditStudentFormValues {
   name: string;
   classId: string;
-  sectionId: string;
+  batchId: string;
   parentPhone: string;
   address: string;
   gender: string;
@@ -29,9 +29,11 @@ interface EditStudentFormValues {
 interface ClassData {
   id: string;
   className: string;
-  sections?: {
+  batches?: {
     id: string;
-    sectionName: string;
+    name: string;
+    startTime: string;
+    endTime: string;
   }[];
 }
 
@@ -39,6 +41,14 @@ interface EditStudentFormProps {
   studentId: string;
   classesData?: ClassData[];
 }
+
+const formatTime = (time: string) => {
+  if (!time) return "";
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const formattedHours = hours % 12 || 12;
+  return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
 
 const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) => {
   const router = useRouter();
@@ -49,16 +59,16 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
     defaultValues: {
       name: "",
       classId: "",
-      sectionId: "",
+      batchId: "",
       parentPhone: "",
       address: "",
       gender: "",
     },
   });
 
-  // Get sections for selected class
+  // Get batches for selected class
   const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
-  const sections = selectedClass?.sections || [];
+  const batches = selectedClass?.batches || [];
 
   useEffect(() => {
     const fetchStudent = async () => {
@@ -69,7 +79,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
         form.reset({
           name: student.name || "",
           classId: student.classId || "",
-          sectionId: student.sectionId || "",
+          batchId: student.batchId || "",
           parentPhone: student.parentPhone || "",
           address: student.address || "",
           gender: student.gender || "",
@@ -82,7 +92,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
     form.setValue("classId", classId);
-    form.setValue("sectionId", ""); // Reset section when class changes
+    form.setValue("batchId", ""); // Reset batch when class changes
   };
 
   const onSubmit: SubmitHandler<EditStudentFormValues> = async (data) => {
@@ -90,7 +100,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
       const payload = {
         name: data.name,
         classId: data.classId,
-        sectionId: data.sectionId || undefined,
+        batchId: data.batchId || undefined,
         parentPhone: data.parentPhone,
         address: data.address,
         gender: data.gender || undefined,
@@ -191,13 +201,13 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
           />
         </div>
 
-        {/* Section Select */}
+        {/* Batch Select */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            Section
+            Batch
           </label>
           <Controller
-            name="sectionId"
+            name="batchId"
             control={form.control}
             render={({ field, fieldState: { error } }) => (
               <div className="relative">
@@ -206,10 +216,10 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
                   disabled={!selectedClassId}
                   className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select Section</option>
-                  {sections.map((section) => (
-                    <option key={section.id} value={section.id}>
-                      {section.sectionName}
+                  <option value="">Select Batch</option>
+                  {batches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      {batch.name} ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
                     </option>
                   ))}
                 </select>
