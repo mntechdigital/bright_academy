@@ -42,13 +42,13 @@ const GiveResultpage = async(props: {
       },
       // ✅ Filter students by classId and batchId from weekly result
       // ✅ Use "filter" key with JSON stringified object
-    ...(weeklyResultMeta?.stdClassId && weeklyResultMeta?.batchId
+    ...(weeklyResultMeta?.stdClass?.id && weeklyResultMeta?.batch?.id
       ? [
           {
             key: "filter",
             value: JSON.stringify({
-              classId: weeklyResultMeta.stdClassId,
-              batchId: weeklyResultMeta.sectionId,
+              classId: weeklyResultMeta.stdClass?.id,
+              batchId: weeklyResultMeta.batch?.id,
             }),
           },
         ]

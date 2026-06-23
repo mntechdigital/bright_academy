@@ -53,7 +53,10 @@ const WeeklyResultTable = ({
             return (
               <CarouselItem key={result.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                 <div
-                  onClick={() => onCardClick?.(result)}
+                  onClick={() => {
+                    console.log("Card clicked in table:", result.id);
+                    onCardClick?.(result);
+                  }}
                   className={`relative h-full bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer ${
                     isSelected
                       ? "border-green-500 ring-2 ring-green-200"

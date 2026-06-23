@@ -93,6 +93,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
       ];
 
       const studentRes = await getStudents(query);
+      console.log("Student API response:", studentRes);
+      console.log("Students found:", studentRes?.data?.data?.length || 0);
       setStudentData(studentRes?.data?.data || []);
       setStudentMeta({
         totalPages: studentRes?.data?.meta?.totalPages || 1,
@@ -102,12 +104,18 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
     fetchData();
   }, [search, page, selectedCard, refreshTrigger]);
 
+  const handleCardClick = (card: any) => {
+    console.log("Card clicked:", card);
+    console.log("Setting selectedCard to:", card.id);
+    setSelectedCard(card);
+  };
+
   return (
     <DashboardWrapper>
       <WeeklyResultTable 
         weeklyResults={weeklyResultsData}
         selectedCard={selectedCard}
-        onCardClick={setSelectedCard}
+        onCardClick={handleCardClick}
       />
       {weeklyResultMeta && activeWeeklyResults.length > 0 && (
         <WeeklyResultTakeTable
