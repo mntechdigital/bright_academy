@@ -17,19 +17,17 @@ import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { deleteWeeklyResult, deleteWeeklyResultByClassAndSection } from "@/src/services/weeklyResult";
 
 interface DeleteWeeklyResultDialogProps {
-  batchId: string;
-  stdClassId: string;
   id?: string;
   trigger?: ReactNode;
 }
 
-const DeleteWeeklyResultDialog = ({ batchId, stdClassId, trigger }: DeleteWeeklyResultDialogProps) => {
+const DeleteWeeklyResultDialog = ({ id, trigger }: DeleteWeeklyResultDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = async () => {
     startTransition(async () => {
-      const result = await deleteWeeklyResultByClassAndSection({ sectionId: batchId, stdClassId });
+      const result = await deleteWeeklyResult(id);
       console.log("delete response ==>",result)
       if (result.statusCode === 200) {
         setIsOpen(false);

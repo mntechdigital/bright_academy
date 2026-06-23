@@ -1,8 +1,6 @@
-
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { getClasses } from "@/src/services/classes";
 import { getWeeklyResults } from "@/src/services/weeklyResult";
 import { getStudents } from "@/src/services/students";
@@ -27,25 +25,39 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
 
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
-  const weeklyResultMeta = selectedCard || weeklyResultsData[0];
-  const activeWeeklyResults = weeklyResultMeta
-    ? weeklyResultsData.filter((result) => {
-        return (
-          String(result.stdClassId) === String(weeklyResultMeta.stdClassId) &&
-          String(result.sectionId) === String(weeklyResultMeta.sectionId) &&
-          String(result.subject?.id) === String(weeklyResultMeta.subject?.id) &&
-          String(result.week) === String(weeklyResultMeta.week) &&
-          String(result.month) === String(weeklyResultMeta.month) &&
-          String(result.year) === String(weeklyResultMeta.year)
-        );
-      })
-    : [];
+
+  // Calculate weekly result meta based on selected card or first result
+  const weeklyResultMeta = useMemo(() => {
+    return selectedCard || weeklyResultsData[0] || null;
+  }, [selectedCard, weeklyResultsData]);
+
+  // Calculate active weekly results based on selected card
+  const activeWeeklyResults = useMemo(() => {
+    if (!weeklyResultMeta || weeklyResultsData.length === 0) {
+      return [];
+    }
+    return weeklyResultsData.filter((result) => {
+      return (
+        String(result.stdClass?.id) === String(weeklyResultMeta.stdClass?.id) &&
+        String(result.batch?.id) === String(weeklyResultMeta.batch?.id) &&
+        String(result.subject?.id) === String(weeklyResultMeta.subject?.id) &&
+        String(result.week) === String(weeklyResultMeta.week) &&
+        String(result.month) === String(weeklyResultMeta.month) &&
+        String(result.year) === String(weeklyResultMeta.year)
+      );
+    });
+  }, [weeklyResultMeta, weeklyResultsData]);
 
   useEffect(() => {
     const fetchData = async () => {
       const weeklyResultsRes = await getWeeklyResults([]);
       const weeklyResults = weeklyResultsRes?.data?.data || [];
       setWeeklyResultsData(weeklyResults);
+
+      // Set first card as selected if none is selected
+      if (!selectedCard && weeklyResults.length > 0) {
+        setSelectedCard(weeklyResults[0]);
+      }
 
       // Use selected card if available, otherwise use the first weekly result
       const weeklyResultMeta = selectedCard || weeklyResults[0];
@@ -67,13 +79,13 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
           key: "limit",
           value: "10",
         },
-        ...(weeklyResultMeta?.stdClassId && weeklyResultMeta?.sectionId
+        ...(weeklyResultMeta?.stdClass?.id && weeklyResultMeta?.batch?.id
           ? [
               {
                 key: "filter",
                 value: JSON.stringify({
-                  classId: weeklyResultMeta.stdClassId,
-                  batchId: weeklyResultMeta.sectionId,
+                  classId: weeklyResultMeta.stdClass?.id,
+                  batchId: weeklyResultMeta.batch?.id,
                 }),
               },
             ]
@@ -97,7 +109,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
         selectedCard={selectedCard}
         onCardClick={setSelectedCard}
       />
-      {weeklyResultMeta && (
+      {weeklyResultMeta && activeWeeklyResults.length > 0 && (
         <WeeklyResultTakeTable
           studentsData={studentData}
           weeklyResults={activeWeeklyResults}
@@ -116,4 +128,3 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
 };
 
 export default WeeklyResult;
-

@@ -10,10 +10,9 @@ const quickLinks = [
 ];
 
 const contactInfo = [
-  { label: "Phone", value: "০১৭১৬৬১১২০৮" },
-  { label: "Phone", value: "০১৭১২৯৬৪০০৮" },
-  { label: "Phone", value: "০১৭১৮৪২৮৪৫২" },
-  { label: "Email", value: "info@brightacademiccare.com" },
+  { label: "Phone", value: "01911-80 95 71" },
+  { label: "Phone", value: "01779-60 77 12" },
+  { label: "Email", value: "brightsu89@gmail.com" },
   { label: "Location", value: "বরিশাল, বাংলাদেশ" },
 ];
 

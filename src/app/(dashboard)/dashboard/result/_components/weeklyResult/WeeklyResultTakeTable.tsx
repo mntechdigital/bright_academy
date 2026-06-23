@@ -13,17 +13,15 @@ import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 type WeeklyResult = {
   id: string;
   totalMarks: number;
-  subject: { id: string };
+  subject: { id: string; subjectName: string };
   week: string;
   year: string;
   month: string;
   publishedDate: string;
-  sectionId: string;
-  stdClassId: string;
+  batch: { id: string; name: string };
+  stdClass: { id: string; className: string };
   studentId: string | null;
   obtainedMarks: number | null;
-  batch?: { id: string; name: string };
-  stdClass?: { id: string; className: string };
 };
 
 const StudentRow = ({
@@ -66,7 +64,7 @@ const StudentRow = ({
       const payload = {
         studentId: student.id,
         stdClassId,
-        sectionId: batchId,
+        batchId,
         subjectId,
         obtainedMarks: parseInt(data.obtainedMarks, 10),
         totalMarks: totalMark,
@@ -185,9 +183,12 @@ const WeeklyResultTakeTable = ({
     year,
     month,
     publishedDate,
-    sectionId: batchId,
-    stdClassId,
+    batch,
+    stdClass,
   } = weeklyResultMeta;
+
+  const batchId = batch?.id || "";
+  const stdClassId = stdClass?.id || "";
 
   const filteredStudents = studentsData;
 

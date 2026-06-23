@@ -20,7 +20,7 @@ const WeeklyResultTable = ({
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.batch?.name}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.batch?.name}-${result.id}`,
         result,
       ])
     ).values()
@@ -62,7 +62,7 @@ const WeeklyResultTable = ({
                 >
                   {/* Delete button — top right */}
                   <div className="absolute top-2 right-2 z-10">
-                    <DeleteWeeklyResultDialog batchId={result.sectionId} stdClassId={result.stdClassId} />
+                    <DeleteWeeklyResultDialog id={result.id} />
                   </div>
 
                   {/* Card Header */}
