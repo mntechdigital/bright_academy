@@ -30,6 +30,12 @@ interface CreateStudentFormValues {
 interface ClassData {
   id: string;
   className: string;
+  batches?: {
+    id: string;
+    name: string;
+    startTime: string;
+    endTime: string;
+  }[];
 }
 
 interface BatchData {
@@ -42,7 +48,6 @@ interface BatchData {
 
 interface CreateStudentProps {
   classesData?: ClassData[];
-  batchesData?: BatchData[];
 }
 
 const formatTime = (time: string) => {
@@ -53,7 +58,7 @@ const formatTime = (time: string) => {
   return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
 };
 
-const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProps) => {
+const CreateStudent = ({ classesData = [] }: CreateStudentProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [selectedClassId, setSelectedClassId] = useState<string>("");
@@ -73,8 +78,9 @@ const CreateStudent = ({ classesData = [], batchesData = [] }: CreateStudentProp
     },
   });
 
-  // Get batches for selected class only
-  const filteredBatches = batchesData.filter((batch) => batch.classId === selectedClassId);
+  // Get batches for selected class only from the class data
+  const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
+  const filteredBatches = selectedClass?.batches || [];
 
   const handleClassChange = (classId: string) => {
     setSelectedClassId(classId);
