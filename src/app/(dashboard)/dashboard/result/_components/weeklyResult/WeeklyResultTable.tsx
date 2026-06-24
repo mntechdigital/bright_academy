@@ -20,7 +20,7 @@ const WeeklyResultTable = ({
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.subjectName}-${result.stdClass?.className}-${result.batch?.name}-${result.id}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}-${result.batch?.id}`,
         result,
       ])
     ).values()

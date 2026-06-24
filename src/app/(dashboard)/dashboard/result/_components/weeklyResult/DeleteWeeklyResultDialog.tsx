@@ -27,7 +27,7 @@ const DeleteWeeklyResultDialog = ({ id, trigger }: DeleteWeeklyResultDialogProps
 
   const handleDelete = async () => {
     startTransition(async () => {
-      const result = await deleteWeeklyResult(id);
+      const result = await deleteWeeklyResultByClassAndSection({ id,stdClassId, batchId, week});
       console.log("delete response ==>",result)
       if (result.statusCode === 200) {
         setIsOpen(false);
