@@ -119,12 +119,30 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
     setSelectedCardId(card.id);
   }, []);
 
+  const handleCardDelete = useCallback(() => {
+    const fetchWeeklyResults = async () => {
+      const res = await getWeeklyResults([]);
+      const data = res?.data?.data || [];
+      setWeeklyResultsData(data);
+
+      if (data.length > 0) {
+        setSelectedCardId(data[0].id);
+      } else {
+        setSelectedCardId(null);
+        setStudentData([]);
+        setStudentMeta({ totalPages: 1, totalItems: 0 });
+      }
+    };
+    fetchWeeklyResults();
+  }, []);
+
   return (
     <DashboardWrapper>
       <WeeklyResultTable 
         weeklyResults={weeklyResultsData}
         selectedCard={selectedCard}
         onCardClick={handleCardClick}
+        onDeleteSuccess={handleCardDelete}
       />
       {weeklyResultMeta && activeWeeklyResults.length > 0 && (
         <WeeklyResultTakeTable

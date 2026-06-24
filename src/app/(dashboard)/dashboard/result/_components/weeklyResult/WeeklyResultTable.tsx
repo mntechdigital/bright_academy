@@ -11,10 +11,12 @@ const WeeklyResultTable = ({
   weeklyResults,
   selectedCard,
   onCardClick,
+  onDeleteSuccess,
 }: {
   weeklyResults: any[];
   selectedCard?: any;
   onCardClick?: (card: any) => void;
+  onDeleteSuccess?: () => void;
 }) => {
 
   const uniqueResults = Array.from(
@@ -70,6 +72,7 @@ const WeeklyResultTable = ({
                       stdClassId={result.stdClass?.id}
                       batchId={result.batch?.id || result.batchId || result.student?.batchId}
                       week={result.week}
+                      onDeleteSuccess={onDeleteSuccess}
                     />
                   </div>
 

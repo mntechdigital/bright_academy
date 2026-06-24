@@ -21,9 +21,10 @@ interface DeleteWeeklyResultDialogProps {
   batchId?: string;
   week?: string;
   trigger?: ReactNode;
+  onDeleteSuccess?: () => void;
 }
 
-const DeleteWeeklyResultDialog = ({ id, stdClassId, batchId, week, trigger }: DeleteWeeklyResultDialogProps) => {
+const DeleteWeeklyResultDialog = ({ id, stdClassId, batchId, week, trigger, onDeleteSuccess }: DeleteWeeklyResultDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -41,6 +42,7 @@ const DeleteWeeklyResultDialog = ({ id, stdClassId, batchId, week, trigger }: De
       if (result.statusCode === 200) {
         setIsOpen(false);
         showSuccessToast(result.message);
+        onDeleteSuccess?.();
       } else {
         setIsOpen(false);
         showErrorToast(result.message);
