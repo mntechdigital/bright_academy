@@ -23,7 +23,6 @@ const LoginForm = () => {
   const onSubmit: SubmitHandler<FieldValues> = async (data) => {
     startTransition(async () => {
       const response = await login(data);
-      console.log("when click on login btn==>",response)
       if (response.statusCode === 200) {
         showSuccessToast(response.message);
         form.reset();

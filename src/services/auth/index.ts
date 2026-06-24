@@ -54,7 +54,6 @@ export const login = async (data: FieldValues) => {
 
     const result = await response.json();
 
-    console.log(result, 'from middleware')
 
     if (result.statusCode === 200) {
       const cookie = await cookies();

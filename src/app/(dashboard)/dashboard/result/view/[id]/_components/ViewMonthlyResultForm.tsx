@@ -48,7 +48,6 @@ interface Props {
 export default function ViewMonthlyResultForm({ result }: Props) {
   const router = useRouter();
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  console.log("see result ifn==>",result)
 
   const totalAchieved =
     result.results?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;

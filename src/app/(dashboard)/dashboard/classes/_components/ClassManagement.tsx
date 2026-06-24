@@ -30,7 +30,6 @@ const ClassManagement = ({
     cls.className.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  console.log("see classes data==>",studentClassData)
 
   return (
     <div className="">

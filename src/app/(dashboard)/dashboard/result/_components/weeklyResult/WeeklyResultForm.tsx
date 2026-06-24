@@ -72,7 +72,6 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
         ? data.publishedDate.toISOString()
         : undefined,
     });
-    console.log("see creatre weeklyresult res==>",res)
     if (res.statusCode === 201) {
       showSuccessToast("Weekly result created successfully!");
       reset();
