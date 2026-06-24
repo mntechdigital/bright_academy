@@ -77,7 +77,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
         },
         {
           key: "limit",
-          value: "10",
+          value: "20",
         },
         ...(weeklyResultMeta?.stdClass?.id && weeklyResultMeta?.batch?.id
           ? [

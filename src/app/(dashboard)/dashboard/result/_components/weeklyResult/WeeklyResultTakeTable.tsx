@@ -1,5 +1,5 @@
 "use client";
-import React, { useTransition } from "react";
+import React, { useTransition, useState } from "react";
 import { Student } from "../studentTableTypes";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ type WeeklyResult = {
   batch: { id: string; name: string };
   stdClass: { id: string; className: string };
   studentId: string | null;
+  stdRegNo: string | null;
   obtainedMarks: number | null;
 };
 
@@ -99,7 +100,7 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
           <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-          {student.studentId}
+          {student.stdRegNo}
         </span>
       </td>
       <td className="px-4 py-3">
@@ -130,6 +131,7 @@ const StudentRow = ({
             <div className="flex flex-col">
               <input
                 {...field}
+                data-student-id={student.id}
                 type="number"
                 placeholder="Enter obtain mark"
                 className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
