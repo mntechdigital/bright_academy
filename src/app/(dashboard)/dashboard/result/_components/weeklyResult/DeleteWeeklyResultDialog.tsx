@@ -12,26 +12,37 @@ import {
 } from "@/components/ui/dialog";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { deleteStudent } from "@/src/services/students";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { deleteWeeklyResult, deleteWeeklyResultByClassAndSection } from "@/src/services/weeklyResult";
+import { deleteWeeklyResultByClassAndSection } from "@/src/services/weeklyResult";
 
 interface DeleteWeeklyResultDialogProps {
   id?: string;
+  stdClassId?: string;
+  batchId?: string;
+  week?: string;
   trigger?: ReactNode;
+  onDeleteSuccess?: () => void;
 }
 
-const DeleteWeeklyResultDialog = ({ id, trigger }: DeleteWeeklyResultDialogProps) => {
+const DeleteWeeklyResultDialog = ({ id, stdClassId, batchId, week, trigger, onDeleteSuccess }: DeleteWeeklyResultDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = async () => {
+    console.log("Delete button clicked with payload:", { id, stdClassId, batchId, week });
     startTransition(async () => {
-      const result = await deleteWeeklyResult(id);
-      console.log("delete response ==>",result)
+      const payload: Record<string, any> = {};
+
+      if (id) payload.id = id;
+      if (stdClassId) payload.stdClassId = stdClassId;
+      if (batchId) payload.batchId = batchId;
+      if (week) payload.week = week;
+      const result = await deleteWeeklyResultByClassAndSection(payload);
+      
       if (result.statusCode === 200) {
         setIsOpen(false);
         showSuccessToast(result.message);
+        onDeleteSuccess?.();
       } else {
         setIsOpen(false);
         showErrorToast(result.message);
@@ -60,7 +71,7 @@ const DeleteWeeklyResultDialog = ({ id, trigger }: DeleteWeeklyResultDialogProps
             </DialogTitle>
             <DialogDescription className="text-gray-300">
               This action cannot be undone. This will permanently delete this
-              weekly result and remove their data from our servers.
+              weekly result{batchId ? ` for the selected batch` : ``} and remove their data from our servers.
             </DialogDescription>
             <div className="flex justify-end space-x-2 mt-4">
               <DialogClose asChild>

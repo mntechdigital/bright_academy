@@ -77,7 +77,7 @@ export const deleteWeeklyResult = async (id: string | undefined) => {
 export const deleteWeeklyResultByClassAndSection = async (
   payload: Record<string, any>,
 ) => {
-  const response = await apiRequest(`weekly-marks-sheets/section-class`, {
+  const response = await apiRequest(`weekly-marks-sheets/class/batch`, {
     method: "DELETE",
     body: JSON.stringify(payload),
     authRequired: true,

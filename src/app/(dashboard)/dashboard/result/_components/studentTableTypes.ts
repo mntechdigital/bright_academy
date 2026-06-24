@@ -4,6 +4,7 @@ export interface Student {
   username: string;
   avatarUrl?: string;
   studentId: string;
+  stdRegNo: string;
   totalMark: number;
   obtainedMarks?: number;
   classId: string;
