@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useState } from "react";
 import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
+import { downloadCSV } from "@/src/utils/downloadCSV";
 
 const GradeIcon = () => (
   <svg
@@ -221,6 +222,38 @@ export default function ShowMonthlyResultTable({
     (c) => c.id === selectedClassId,
   )?.className;
 
+  const handleDownloadCSV = () => {
+    const headers = [
+      "Student's Name",
+      "Student's ID",
+      "Batch",
+      "Total Mark",
+      "Achieved Mark",
+      "Grade",
+      "GPA",
+      "Position",
+    ];
+
+    const rows = filteredResults.map((result) => {
+      const achievedMarks = getAchievedMarks(result.results);
+      const fullMarks = getFullMarks(result.results, result.totalMarks);
+      const batchName = getBatchName(result);
+      return [
+        result.student?.name || "",
+        getStudentRegNo(result),
+        batchName,
+        fullMarks,
+        achievedMarks,
+        result.grade,
+        result.gpa,
+        result.position,
+      ];
+    });
+
+    const filename = `monthly_results_${selectedClassName || "all"}`;
+    downloadCSV(headers, rows, filename);
+  };
+
   return (
     <div>
       {/* Page Header */}
@@ -292,7 +325,10 @@ export default function ShowMonthlyResultTable({
           </select>
 
           {/* Download CSV */}
-          <button className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+          <button
+            onClick={handleDownloadCSV}
+            className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
             <svg
               className="w-4 h-4"
               fill="none"
