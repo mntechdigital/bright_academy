@@ -173,17 +173,19 @@ export default function MonthlyResultTable({
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
 
-  // Recalculate all rows when grading system changes
+  // When grading system changes, auto-fill fullMarks and recalculate
   useEffect(() => {
+    const defaultFullMarks = gradingSystem === "50" ? 50 : 100;
     setRows((prev) =>
       prev.map((row) => {
-        const marks = parseFloat(row.marksObtained);
-        const fullMarks = parseFloat(row.fullMarks);
+        const updatedRow = { ...row, fullMarks: defaultFullMarks.toString() };
+        const marks = parseFloat(updatedRow.marksObtained);
+        const fullMarks = parseFloat(updatedRow.fullMarks);
         if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
           const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
-          return { ...row, point: gradePoint.toFixed(2), grade: letterGrade };
+          return { ...updatedRow, point: gradePoint.toFixed(2), grade: letterGrade };
         }
-        return row;
+        return updatedRow;
       })
     );
   }, [gradingSystem]);
