@@ -401,8 +401,9 @@ export default function MonthlyResultTable({
                     <TextInput
                       value={summary.position}
                       onChange={(v) => updateSummary("position", v)}
-                      placeholder="12th"
+                      placeholder="Auto"
                       width="w-20"
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4">

@@ -3,6 +3,8 @@ import Link from "next/link";
 import React, { useState } from "react";
 import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
 import { downloadCSV } from "@/src/utils/downloadCSV";
+import { updateMonthlyResult } from "@/src/services/monthlyResult";
+import { showSuccessToast, showErrorToast } from "@/src/utils/toastMessage";
 
 const GradeIcon = () => (
   <svg
@@ -146,6 +148,35 @@ export default function ShowMonthlyResultTable({
 
   const getAchievedMarks = (results: ResultSubject[]) =>
     results.reduce((sum, r) => sum + r.marks, 0);
+
+  const calculatePositions = async () => {
+    // Sort filtered results by achieved marks descending
+    const sorted = [...filteredResults].sort((a, b) => {
+      const aMarks = getAchievedMarks(a.results);
+      const bMarks = getAchievedMarks(b.results);
+      return bMarks - aMarks;
+    });
+
+    // Assign positions: 1st, 2nd, 3rd, etc.
+    for (let i = 0; i < sorted.length; i++) {
+      const position = `${i + 1}${getOrdinalSuffix(i + 1)}`;
+      const result = sorted[i];
+
+      const res = await updateMonthlyResult(result.id, { position });
+
+      if (!res || res.statusCode >= 400) {
+        showErrorToast(`Failed to update position for ${result.student?.name}`);
+      }
+    }
+
+    showSuccessToast("Positions calculated successfully. Refresh the page to see updates.");
+  };
+
+  const getOrdinalSuffix = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
 
   const getFullMarks = (results: ResultSubject[], fallback: number) =>
     results.length > 0
@@ -323,6 +354,27 @@ export default function ShowMonthlyResultTable({
               </option>
             ))}
           </select>
+
+          {/* Calculate Position */}
+          <button
+            onClick={calculatePositions}
+            className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            Calculate Position
+          </button>
 
           {/* Download CSV */}
           <button
