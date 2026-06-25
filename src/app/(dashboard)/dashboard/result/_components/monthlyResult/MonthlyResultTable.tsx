@@ -142,15 +142,17 @@ export default function MonthlyResultTable({
     })),
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
+  const [gradingSystem, setGradingSystem] = useState<"100" | "50">("100");
 
   const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string) => {
     setRows((prev) => {
       const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row));
-      // Auto-calculate point & grade when marksObtained changes
-      if (field === "marksObtained") {
-        const marks = parseFloat(value);
-        if (!isNaN(marks) && marks >= 0) {
-          const { gradePoint, letterGrade } = getGradeFromMarks(marks);
+      // Auto-calculate point & grade when marksObtained or fullMarks changes
+      if (field === "marksObtained" || field === "fullMarks") {
+        const marks = parseFloat(newRows[idx].marksObtained);
+        const fullMarks = parseFloat(newRows[idx].fullMarks);
+        if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
+          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
           newRows[idx] = {
             ...newRows[idx],
             point: gradePoint.toFixed(2),
@@ -166,10 +168,25 @@ export default function MonthlyResultTable({
       }
       return newRows;
     });
-  }, []);
+  }, [gradingSystem]);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
+
+  // Recalculate all rows when grading system changes
+  useEffect(() => {
+    setRows((prev) =>
+      prev.map((row) => {
+        const marks = parseFloat(row.marksObtained);
+        const fullMarks = parseFloat(row.fullMarks);
+        if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
+          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
+          return { ...row, point: gradePoint.toFixed(2), grade: letterGrade };
+        }
+        return row;
+      })
+    );
+  }, [gradingSystem]);
 
   // Auto-recalculate summary whenever subject rows change
   useEffect(() => {
@@ -224,10 +241,21 @@ export default function MonthlyResultTable({
         {/* ── Main Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h2 className="text-[15px] font-bold text-gray-900">
               {studentName}
             </h2>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Grading System:</label>
+              <select
+                value={gradingSystem}
+                onChange={(e) => setGradingSystem(e.target.value as "100" | "50")}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+              >
+                <option value="100">Marks out of 100</option>
+                <option value="50">Marks out of 50</option>
+              </select>
+            </div>
           </div>
 
           {/* Subject Table */}
