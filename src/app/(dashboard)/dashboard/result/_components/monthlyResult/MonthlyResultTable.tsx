@@ -147,6 +147,28 @@ export default function MonthlyResultTable({
   const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string) => {
     setRows((prev) => {
       const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row));
+      // Validate: Highest Mark cannot exceed Full Marks
+      if (field === "highestMark") {
+        const fullMarks = parseFloat(newRows[idx].fullMarks);
+        const highestMark = parseFloat(value);
+        if (!isNaN(fullMarks) && fullMarks > 0 && !isNaN(highestMark) && highestMark > fullMarks) {
+          // Reset highest mark if it exceeds full marks
+          newRows[idx] = { ...newRows[idx], highestMark: "" };
+          return newRows;
+        }
+      }
+
+      // Validate: Marks Obtained cannot exceed Highest Mark
+      if (field === "marksObtained") {
+        const highestMark = parseFloat(newRows[idx].highestMark);
+        const marks = parseFloat(value);
+        if (!isNaN(highestMark) && highestMark > 0 && !isNaN(marks) && marks > highestMark) {
+          // If marks exceed highest mark, reset marksObtained to empty
+          newRows[idx] = { ...newRows[idx], marksObtained: "", point: "", grade: "" };
+          return newRows;
+        }
+      }
+
       // Auto-calculate point & grade when marksObtained or fullMarks changes
       if (field === "marksObtained" || field === "fullMarks") {
         const marks = parseFloat(newRows[idx].marksObtained);
