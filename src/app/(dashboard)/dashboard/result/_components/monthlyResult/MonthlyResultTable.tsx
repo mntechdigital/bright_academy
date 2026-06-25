@@ -2,7 +2,8 @@
 
 import { createMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { useState } from "react";
+import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import { useState, useCallback, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,16 +62,18 @@ type NumberInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  readOnly?: boolean;
 };
 
-function NumberInput({ value, onChange, placeholder }: NumberInputProps) {
+function NumberInput({ value, onChange, placeholder, readOnly = false }: NumberInputProps) {
   return (
     <input
       type="number"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`w-full min-w-16 ${inputBase}`}
+      readOnly={readOnly}
+      className={`w-full min-w-16 ${inputBase} ${readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
     />
   );
 }
@@ -82,6 +85,7 @@ type TextInputProps = {
   width?: string;
   uppercase?: boolean;
   maxLength?: number;
+  readOnly?: boolean;
 };
 
 function TextInput({
@@ -91,6 +95,7 @@ function TextInput({
   width = "w-full",
   uppercase = false,
   maxLength,
+  readOnly = false,
 }: TextInputProps) {
   return (
     <input
@@ -101,7 +106,8 @@ function TextInput({
       }
       placeholder={placeholder}
       maxLength={maxLength}
-      className={`${width} ${inputBase} ${uppercase ? "uppercase font-semibold" : ""}`}
+      readOnly={readOnly}
+      className={`${width} ${inputBase} ${uppercase ? "uppercase font-semibold" : ""} ${readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
     />
   );
 }
@@ -136,14 +142,90 @@ export default function MonthlyResultTable({
     })),
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
+  const [gradingSystem, setGradingSystem] = useState<"100" | "50">("100");
 
-  const updateRow = (idx: number, field: keyof SubjectRow, value: string) =>
-    setRows((prev) =>
-      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)),
-    );
+  const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string) => {
+    setRows((prev) => {
+      const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row));
+      // Validate: Highest Mark cannot exceed Full Marks
+      if (field === "highestMark") {
+        const fullMarks = parseFloat(newRows[idx].fullMarks);
+        const highestMark = parseFloat(value);
+        if (!isNaN(fullMarks) && fullMarks > 0 && !isNaN(highestMark) && highestMark > fullMarks) {
+          // Reset highest mark if it exceeds full marks
+          newRows[idx] = { ...newRows[idx], highestMark: "" };
+          return newRows;
+        }
+      }
+
+      // Validate: Marks Obtained cannot exceed Highest Mark
+      if (field === "marksObtained") {
+        const highestMark = parseFloat(newRows[idx].highestMark);
+        const marks = parseFloat(value);
+        if (!isNaN(highestMark) && highestMark > 0 && !isNaN(marks) && marks > highestMark) {
+          // If marks exceed highest mark, reset marksObtained to empty
+          newRows[idx] = { ...newRows[idx], marksObtained: "", point: "", grade: "" };
+          return newRows;
+        }
+      }
+
+      // Auto-calculate point & grade when marksObtained or fullMarks changes
+      if (field === "marksObtained" || field === "fullMarks") {
+        const marks = parseFloat(newRows[idx].marksObtained);
+        const fullMarks = parseFloat(newRows[idx].fullMarks);
+        if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
+          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
+          newRows[idx] = {
+            ...newRows[idx],
+            point: gradePoint.toFixed(2),
+            grade: letterGrade,
+          };
+        } else {
+          newRows[idx] = {
+            ...newRows[idx],
+            point: "",
+            grade: "",
+          };
+        }
+      }
+      return newRows;
+    });
+  }, [gradingSystem]);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
+
+  // When grading system changes, auto-fill fullMarks and recalculate
+  useEffect(() => {
+    const defaultFullMarks = gradingSystem === "50" ? 50 : 100;
+    setRows((prev) =>
+      prev.map((row) => {
+        const updatedRow = { ...row, fullMarks: defaultFullMarks.toString() };
+        const marks = parseFloat(updatedRow.marksObtained);
+        const fullMarks = parseFloat(updatedRow.fullMarks);
+        if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
+          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
+          return { ...updatedRow, point: gradePoint.toFixed(2), grade: letterGrade };
+        }
+        return updatedRow;
+      })
+    );
+  }, [gradingSystem]);
+
+  // Auto-recalculate summary whenever subject rows change
+  useEffect(() => {
+    const allMarks = rows.map((r) => parseFloat(r.marksObtained)).filter((v) => !isNaN(v));
+    const totalMarks = allMarks.reduce((sum, m) => sum + m, 0);
+    const points = rows.map((r) => parseFloat(r.point)).filter((v) => !isNaN(v));
+    const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
+
+    setSummary((prev) => ({
+      ...prev,
+      totalMarks: totalMarks > 0 ? totalMarks.toString() : "",
+      gpa: gpa > 0 ? gpa.toFixed(2) : "",
+      grade: gpa > 0 ? getGradeFromGPA(gpa) : "",
+    }));
+  }, [rows]);
 
   const handleSubmit = async () => {
     const payload = {
@@ -183,10 +265,21 @@ export default function MonthlyResultTable({
         {/* ── Main Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h2 className="text-[15px] font-bold text-gray-900">
               {studentName}
             </h2>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Grading System:</label>
+              <select
+                value={gradingSystem}
+                onChange={(e) => setGradingSystem(e.target.value as "100" | "50")}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
+              >
+                <option value="100">Marks out of 100</option>
+                <option value="50">Marks out of 50</option>
+              </select>
+            </div>
           </div>
 
           {/* Subject Table */}
@@ -237,6 +330,7 @@ export default function MonthlyResultTable({
                         value={row.point}
                         onChange={(v) => updateRow(idx, "point", v)}
                         placeholder="0.00"
+                        readOnly
                       />
                     </td>
                     <td className="px-3 py-3 text-center">
@@ -247,6 +341,7 @@ export default function MonthlyResultTable({
                         width="w-16"
                         uppercase
                         maxLength={2}
+                        readOnly
                       />
                     </td>
                   </tr>
@@ -280,6 +375,7 @@ export default function MonthlyResultTable({
                       value={summary.totalMarks}
                       onChange={(v) => updateSummary("totalMarks", v)}
                       placeholder="0"
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4">
@@ -287,6 +383,7 @@ export default function MonthlyResultTable({
                       value={summary.gpa}
                       onChange={(v) => updateSummary("gpa", v)}
                       placeholder="0.00"
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -297,14 +394,16 @@ export default function MonthlyResultTable({
                       width="w-16"
                       uppercase
                       maxLength={2}
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4 text-center">
                     <TextInput
                       value={summary.position}
                       onChange={(v) => updateSummary("position", v)}
-                      placeholder="12th"
+                      placeholder="Auto"
                       width="w-20"
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4">

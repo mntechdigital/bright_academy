@@ -39,7 +39,7 @@ const ResultOverviewPage = async (props: {
     },
     {
       key: "limit",
-      value: "10",
+      value: "20",
     },
   ];
 

@@ -3,7 +3,7 @@
 import React from "react";
 import { Search, Plus, Edit2, HelpCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import DeleteStudentDialog from "./DeleteStudentDialog";
 
 interface Student {
@@ -34,16 +34,24 @@ interface Student {
 interface StudentManagementProps {
   studentsData?: Student[];
   classesData?: any[];
+  totalStudents?: number;
 }
 
-const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManagementProps) => {
+const StudentManagement = ({ studentsData = [], classesData = [], totalStudents = 0 }: StudentManagementProps) => {
   const router = useRouter();
-  console.log("Students Data:", studentsData);
+  const searchParams = useSearchParams();
+  const currentSearch = searchParams.get("search") || "";
+
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const search = formData.get("search") as string;
     router.push(`/dashboard/students?search=${encodeURIComponent(search)}&page=1`);
+  };
+
+  const isHighlighted = (studentName: string) => {
+    if (!currentSearch) return false;
+    return studentName.toLowerCase().includes(currentSearch.toLowerCase());
   };
 
   return (
@@ -56,6 +64,9 @@ const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManag
             <span className="text-orange-500 font-medium bg-orange-100 px-2 py-1 rounded-full text-md">
               Bright Academy
             </span>
+            <span className="ml-auto text-lg text-gray-600">
+              Total Students: <strong>{totalStudents}</strong>
+            </span>
           </div>
           <div className="flex flex-col md:flex-row md:items-center gap-6 my-6">
             {/* Search Bar */}
@@ -65,6 +76,7 @@ const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManag
                 <input
                   type="text"
                   name="search"
+                  defaultValue={currentSearch}
                   placeholder="Search for students"
                   className="w-full pl-12 pr-4 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base placeholder:text-gray-400"
                 />
@@ -122,7 +134,11 @@ const StudentManagement = ({ studentsData = [], classesData = [] }: StudentManag
                 studentsData.map((student) => (
                   <tr
                     key={student.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className={`transition-colors ${
+                      isHighlighted(student.name || student.studentName || "")
+                        ? "bg-yellow-100 border-l-4 border-yellow-500 font-semibold"
+                        : "hover:bg-gray-50"
+                    }`}
                   >
                     <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
                       {student.name || "N/A"}
