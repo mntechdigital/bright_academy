@@ -2,7 +2,8 @@
 
 import { createMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { useState } from "react";
+import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import { useState, useCallback, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,16 +62,18 @@ type NumberInputProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  readOnly?: boolean;
 };
 
-function NumberInput({ value, onChange, placeholder }: NumberInputProps) {
+function NumberInput({ value, onChange, placeholder, readOnly = false }: NumberInputProps) {
   return (
     <input
       type="number"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`w-full min-w-16 ${inputBase}`}
+      readOnly={readOnly}
+      className={`w-full min-w-16 ${inputBase} ${readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
     />
   );
 }
@@ -82,6 +85,7 @@ type TextInputProps = {
   width?: string;
   uppercase?: boolean;
   maxLength?: number;
+  readOnly?: boolean;
 };
 
 function TextInput({
@@ -91,6 +95,7 @@ function TextInput({
   width = "w-full",
   uppercase = false,
   maxLength,
+  readOnly = false,
 }: TextInputProps) {
   return (
     <input
@@ -101,7 +106,8 @@ function TextInput({
       }
       placeholder={placeholder}
       maxLength={maxLength}
-      className={`${width} ${inputBase} ${uppercase ? "uppercase font-semibold" : ""}`}
+      readOnly={readOnly}
+      className={`${width} ${inputBase} ${uppercase ? "uppercase font-semibold" : ""} ${readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
     />
   );
 }
@@ -137,13 +143,48 @@ export default function MonthlyResultTable({
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
 
-  const updateRow = (idx: number, field: keyof SubjectRow, value: string) =>
-    setRows((prev) =>
-      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)),
-    );
+  const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string) => {
+    setRows((prev) => {
+      const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row));
+      // Auto-calculate point & grade when marksObtained changes
+      if (field === "marksObtained") {
+        const marks = parseFloat(value);
+        if (!isNaN(marks) && marks >= 0) {
+          const { gradePoint, letterGrade } = getGradeFromMarks(marks);
+          newRows[idx] = {
+            ...newRows[idx],
+            point: gradePoint.toFixed(2),
+            grade: letterGrade,
+          };
+        } else {
+          newRows[idx] = {
+            ...newRows[idx],
+            point: "",
+            grade: "",
+          };
+        }
+      }
+      return newRows;
+    });
+  }, []);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
+
+  // Auto-recalculate summary whenever subject rows change
+  useEffect(() => {
+    const allMarks = rows.map((r) => parseFloat(r.marksObtained)).filter((v) => !isNaN(v));
+    const totalMarks = allMarks.reduce((sum, m) => sum + m, 0);
+    const points = rows.map((r) => parseFloat(r.point)).filter((v) => !isNaN(v));
+    const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
+
+    setSummary((prev) => ({
+      ...prev,
+      totalMarks: totalMarks > 0 ? totalMarks.toString() : "",
+      gpa: gpa > 0 ? gpa.toFixed(2) : "",
+      grade: gpa > 0 ? getGradeFromGPA(gpa) : "",
+    }));
+  }, [rows]);
 
   const handleSubmit = async () => {
     const payload = {
@@ -237,6 +278,7 @@ export default function MonthlyResultTable({
                         value={row.point}
                         onChange={(v) => updateRow(idx, "point", v)}
                         placeholder="0.00"
+                        readOnly
                       />
                     </td>
                     <td className="px-3 py-3 text-center">
@@ -247,6 +289,7 @@ export default function MonthlyResultTable({
                         width="w-16"
                         uppercase
                         maxLength={2}
+                        readOnly
                       />
                     </td>
                   </tr>
@@ -280,6 +323,7 @@ export default function MonthlyResultTable({
                       value={summary.totalMarks}
                       onChange={(v) => updateSummary("totalMarks", v)}
                       placeholder="0"
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4">
@@ -287,6 +331,7 @@ export default function MonthlyResultTable({
                       value={summary.gpa}
                       onChange={(v) => updateSummary("gpa", v)}
                       placeholder="0.00"
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -297,6 +342,7 @@ export default function MonthlyResultTable({
                       width="w-16"
                       uppercase
                       maxLength={2}
+                      readOnly
                     />
                   </td>
                   <td className="px-4 py-4 text-center">
