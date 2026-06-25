@@ -32,7 +32,7 @@ const DashboardPage = async (props: {
     },
     {
       key: "limit",
-      value: "10",
+      value: "20",
     },
   ];
 
@@ -51,7 +51,7 @@ const DashboardPage = async (props: {
     },
     {
       key: "limit",
-      value: "10",
+      value: "20",
     },
   ];
 
@@ -97,6 +97,7 @@ const DashboardPage = async (props: {
         <StudentManagement
           studentsData={studentsData?.data?.data || []}
           classesData={classesData?.data?.data || []}
+          totalStudents={studentsData?.data?.meta?.totalItems || 0}
         />
         {studentsData?.data?.meta?.totalPages > 1 && (
           <PaginationWrapper
