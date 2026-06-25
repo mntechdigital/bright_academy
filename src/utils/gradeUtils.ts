@@ -21,7 +21,7 @@ export const GRADE_SYSTEM_50 = [
 ];
 
 /**
- * Get grade based on percentage (marks / fullMarks * 100)
+ * Get grade based on marks and full marks.
  * @param marks - Marks obtained
  * @param fullMarks - Full marks (default 100)
  * @param gradingSystem - Optional: "100" or "50" to force a specific grading system
@@ -32,14 +32,19 @@ export function getGradeFromMarks(marks: number, fullMarks: number = 100, gradin
 } {
   if (fullMarks <= 0) return { gradePoint: 0, letterGrade: "F" };
 
-  // Calculate percentage
-  const percentage = (marks / fullMarks) * 100;
+  // When grading system is explicitly "50", marks are out of 50 — compare directly against raw marks
+  if (gradingSystem === "50") {
+    for (const grade of GRADE_SYSTEM_50) {
+      if (marks >= grade.minMark && marks <= grade.maxMark) {
+        return { gradePoint: grade.gradePoint, letterGrade: grade.grade };
+      }
+    }
+    return { gradePoint: 0, letterGrade: "F" };
+  }
 
-  // Use provided grading system, or auto-detect based on fullMarks
-  const system = gradingSystem === "50" ? GRADE_SYSTEM_50 : GRADE_SYSTEM_100;
-
-  for (const grade of system) {
-    if (percentage >= grade.minMark && percentage <= grade.maxMark) {
+  // For "100" grading system, marks are out of 100 — compare directly against raw marks
+  for (const grade of GRADE_SYSTEM_100) {
+    if (marks >= grade.minMark && marks <= grade.maxMark) {
       return { gradePoint: grade.gradePoint, letterGrade: grade.grade };
     }
   }
