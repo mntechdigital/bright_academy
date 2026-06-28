@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { getRoles } from "@/src/services/role";
 import { Navbar } from "./_components/DashboardNavbar";
 import { Sidebar } from "./_components/DashboardSidebar";
+import TokenExpiryChecker from "@/src/components/TokenExpiryChecker";
 
 export default async function DashboardLayout({
   children,
@@ -63,14 +64,16 @@ export default async function DashboardLayout({
   };
 
   return (
-    <section className="flex min-h-screen flex-col">
-      <Navbar adminData={adminData} />
-      <div className="flex flex-1">
-        <Sidebar adminData={adminData} />
-        <main className="flex-1 overflow-auto ml-0 md:ml-56 pt-0 mt-0">
-          {children}
-        </main>
-      </div>
-    </section>
+    <TokenExpiryChecker>
+      <section className="flex min-h-screen flex-col">
+        <Navbar adminData={adminData} />
+        <div className="flex flex-1">
+          <Sidebar adminData={adminData} />
+          <main className="flex-1 overflow-auto ml-0 md:ml-56 pt-0 mt-0">
+            {children}
+          </main>
+        </div>
+      </section>
+    </TokenExpiryChecker>
   );
 }
