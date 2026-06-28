@@ -1,9 +1,8 @@
 "use client";
-import React, { useTransition, useState } from "react";
+import React, { useTransition, useState, useCallback } from "react";
 import { Student } from "../studentTableTypes";
-import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   createWeeklyResultForSingleStd,
   updateWeeklyResultForSingleStd,
@@ -28,71 +27,28 @@ type WeeklyResult = {
 const StudentRow = ({
   student,
   totalMark,
-  subjectId,
-  week,
-  year,
-  month,
-  publishedDate,
-  batchId,
-  stdClassId,
-  defaultObtainedMarks,
-  weeklyResults,
+  marksMap,
+  onMarksChange,
+  existingResult,
+  onUpdate,
+  isUpdating,
 }: {
   student: Student;
   totalMark: number;
-  subjectId: string;
-  week: string;
-  year: string;
-  month: string;
-  publishedDate: string;
-  batchId: string;
-  stdClassId: string;
-  defaultObtainedMarks: number | null;
-  weeklyResults: WeeklyResult[];
+  marksMap: Record<string, string>;
+  onMarksChange: (studentId: string, value: string) => void;
+  existingResult: WeeklyResult | undefined;
+  onUpdate: (studentId: string, resultId: string, marks: number) => void;
+  isUpdating: boolean;
 }) => {
-  const [isPending, startTransition] = useTransition();
-  const existingResult = weeklyResults.find((r) => r.studentId === student.id);
   const isEditing = !!existingResult;
-
-  const form = useForm({
-    defaultValues: {
-      obtainedMarks: defaultObtainedMarks ? Number(defaultObtainedMarks) : "",
-    },
-  });
-
-  const onSubmit = async (data: any) => {
-    startTransition(async () => {
-      const payload = {
-        studentId: student.id,
-        stdClassId,
-        batchId,
-        subjectId,
-        obtainedMarks: parseInt(data.obtainedMarks, 10),
-        totalMarks: totalMark,
-        week,
-        year,
-        month,
-        publishedDate,
-      };
-
-      let res;
-      if (isEditing) {
-        res = await updateWeeklyResultForSingleStd(existingResult.id, payload);
-      } else {
-        res = await createWeeklyResultForSingleStd(payload);
-      }
-
-      if (res.statusCode === (isEditing ? 200 : 201)) {
-        showSuccessToast(res.message);
-      } else {
-        showErrorToast(res.message);
-      }
-    });
-  };
+  const inputValue =
+    marksMap[student.id] !== undefined
+      ? marksMap[student.id]
+      : existingResult?.obtainedMarks ?? "";
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      
       <td className="px-4 py-3">
         <div className="font-medium text-gray-900 text-sm">{student.name}</div>
         <div className="text-xs text-gray-500">{student.username}</div>
@@ -123,47 +79,40 @@ const StudentRow = ({
         {totalMark}
       </td>
       <td className="px-4 py-3">
-        <Controller
-          name="obtainedMarks"
-          control={form.control}
-          rules={{ required: "Obtain mark is required" }}
-          render={({ field, fieldState: { error } }) => (
-            <div className="flex flex-col">
-              <input
-                {...field}
-                data-student-id={student.id}
-                type="number"
-                placeholder="Enter obtain mark"
-                className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                onChange={(e) => field.onChange(Number(e.target.value))}
-                value={field.value}
-              />
-              {error && (
-                <p className="mt-1 text-sm text-red-500">{error.message}</p>
-              )}
-            </div>
-          )}
-        />
+        <div className="flex flex-col">
+          <input
+            type="number"
+            placeholder="Enter obtain mark"
+            className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+            value={inputValue}
+            onChange={(e) => onMarksChange(student.id, e.target.value)}
+          />
+        </div>
       </td>
       <td className="px-4 py-3">
-        <Button
-          type="button"
-          disabled={isPending}
-          onClick={form.handleSubmit(onSubmit)}
-          className="rounded-lg bg-[#F97316] px-4 py-2 font-semibold text-white transition-all hover:bg-[#EA580C] h-10 cursor-pointer whitespace-nowrap"
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              Submit
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </Button>
+        {isEditing && (
+          <Button
+            type="button"
+            disabled={isUpdating}
+            onClick={() =>
+              onUpdate(
+                student.id,
+                existingResult.id,
+                Number(inputValue || 0),
+              )
+            }
+            className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-all hover:bg-blue-700 h-10 cursor-pointer whitespace-nowrap"
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </Button>
+        )}
       </td>
     </tr>
   );
@@ -171,13 +120,18 @@ const StudentRow = ({
 
 const WeeklyResultTakeTable = ({
   studentsData,
-  weeklyResults,
+  weeklyResults: initialWeeklyResults,
   weeklyResultMeta,
 }: {
   studentsData: Student[];
   weeklyResults: WeeklyResult[];
   weeklyResultMeta: WeeklyResult;
 }) => {
+  const [isPending, startTransition] = useTransition();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [marksMap, setMarksMap] = useState<Record<string, string>>({});
+  const [localWeeklyResults, setLocalWeeklyResults] = useState<WeeklyResult[]>(initialWeeklyResults);
+
   const {
     totalMarks,
     subject,
@@ -191,22 +145,149 @@ const WeeklyResultTakeTable = ({
 
   const batchId = batch?.id || "";
   const stdClassId = stdClass?.id || "";
-
   const filteredStudents = studentsData;
+
+  const onMarksChange = useCallback((studentId: string, value: string) => {
+    setMarksMap((prev) => ({ ...prev, [studentId]: value }));
+  }, []);
+
+  const handleUpdate = useCallback(
+    (studentId: string, resultId: string, obtainedMarks: number) => {
+      setUpdatingId(studentId);
+      startTransition(async () => {
+        const payload = {
+          studentId,
+          stdClassId,
+          batchId,
+          subjectId: subject?.id,
+          obtainedMarks,
+          totalMarks,
+          week,
+          year,
+          month,
+          publishedDate,
+        };
+        const res = await updateWeeklyResultForSingleStd(resultId, payload);
+        if (res.statusCode === 200) {
+          showSuccessToast(res.message);
+        } else {
+          showErrorToast(res.message);
+        }
+        setUpdatingId(null);
+      });
+    },
+    [stdClassId, batchId, subject?.id, totalMarks, week, year, month, publishedDate],
+  );
+
+  const handleSubmitAll = useCallback(() => {
+    // Collect all students WITHOUT existing results (use localWeeklyResults to check)
+    const newStudents = filteredStudents.filter(
+      (s) => !localWeeklyResults.find((r) => r.studentId === s.id),
+    );
+
+    startTransition(async () => {
+      let successCount = 0;
+      let errorCount = 0;
+      const newlyCreatedResults: WeeklyResult[] = [];
+
+      for (const student of newStudents) {
+        const obtainedMarks = marksMap[student.id];
+        if (!obtainedMarks || obtainedMarks === "") {
+          errorCount++;
+          continue;
+        }
+
+        const payload = {
+          studentId: student.id,
+          stdClassId,
+          batchId,
+          subjectId: subject?.id,
+          obtainedMarks: parseInt(obtainedMarks, 10),
+          totalMarks,
+          week,
+          year,
+          month,
+          publishedDate,
+        };
+
+        const res = await createWeeklyResultForSingleStd(payload);
+        if (res.statusCode === 201) {
+          successCount++;
+          // Construct a local result object so the Update button appears immediately
+          newlyCreatedResults.push({
+            id: res?.data?.id || res?.data?._id || `temp-${student.id}`,
+            totalMarks,
+            subject: subject || { id: "", subjectName: "" },
+            week,
+            year,
+            month,
+            publishedDate,
+            batch: batch || { id: "", name: "" },
+            stdClass: stdClass || { id: "", name: "" },
+            studentId: student.id,
+            stdRegNo: null,
+            obtainedMarks: parseInt(obtainedMarks, 10),
+          });
+        } else {
+          errorCount++;
+        }
+      }
+
+      if (newlyCreatedResults.length > 0) {
+        setLocalWeeklyResults((prev) => [...prev, ...newlyCreatedResults]);
+        // Clear marks for these students
+        setMarksMap((prev) => {
+          const updated = { ...prev };
+          newlyCreatedResults.forEach((r) => {
+            if (r.studentId) delete updated[r.studentId];
+          });
+          return updated;
+        });
+      }
+
+      if (successCount > 0) {
+        showSuccessToast(
+          `Successfully submitted ${successCount} student(s) result!`,
+        );
+      }
+      if (errorCount > 0) {
+        showErrorToast(`Failed to submit ${errorCount} student(s) result.`);
+      }
+    });
+  }, [
+    filteredStudents,
+    localWeeklyResults,
+    marksMap,
+    stdClassId,
+    batchId,
+    subject,
+    totalMarks,
+    week,
+    year,
+    month,
+    publishedDate,
+    batch,
+    stdClass,
+  ]);
+
+  const hasNewStudents = filteredStudents.some(
+    (s) => !localWeeklyResults.find((r) => r.studentId === s.id),
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
-      <div className="flex items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 mr-3">Students</h2>
-        <span className="bg-orange-100 text-orange-600 text-xs font-medium px-3 py-1 rounded-full">
-          {filteredStudents.length} Students
-        </span>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <h2 className="text-xl font-semibold text-gray-900 mr-3">Students</h2>
+          <span className="bg-orange-100 text-orange-600 text-xs font-medium px-3 py-1 rounded-full">
+            {filteredStudents.length} Students
+          </span>
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto">
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-              
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
                 Student's Name
               </th>
@@ -249,23 +330,19 @@ const WeeklyResultTakeTable = ({
           <tbody className="divide-y divide-gray-100">
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {
-                const existingResult = weeklyResults.find(
-                  (r) => r.studentId === student.id,
+                const existingResult = localWeeklyResults.find(
+                  (r: WeeklyResult) => r.studentId === student.id,
                 );
                 return (
                   <StudentRow
                     key={student.id}
                     student={student}
                     totalMark={existingResult?.totalMarks ?? totalMarks ?? 0}
-                    subjectId={subject?.id}
-                    week={week}
-                    year={year}
-                    month={month}
-                    publishedDate={publishedDate}
-                    batchId={batchId}
-                    stdClassId={stdClassId}
-                    defaultObtainedMarks={existingResult?.obtainedMarks ?? null}
-                    weeklyResults={weeklyResults}
+                    marksMap={marksMap}
+                    onMarksChange={onMarksChange}
+                    existingResult={existingResult}
+                    onUpdate={handleUpdate}
+                    isUpdating={updatingId === student.id}
                   />
                 );
               })
@@ -282,6 +359,27 @@ const WeeklyResultTakeTable = ({
           </tbody>
         </table>
       </div>
+
+      {/* Single Submit All button at the bottom */}
+      {hasNewStudents && (
+        <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
+          <Button
+            type="button"
+            disabled={isPending}
+            onClick={handleSubmitAll}
+            className="rounded-lg bg-[#F97316] px-6 py-3 font-semibold text-white transition-all hover:bg-[#EA580C] h-12 cursor-pointer whitespace-nowrap text-base"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Submitting All...
+              </>
+            ) : (
+              "Submit All Results"
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
