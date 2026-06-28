@@ -122,9 +122,6 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   Subjects
                 </th>
-                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
-                  Created At
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -165,12 +162,6 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
-                      {cls.createdAt
-                        ? new Date(cls.createdAt).toLocaleDateString()
-                        : "N/A"}
-                    </td>
-                    
                   </tr>
                 ))
               ) : (

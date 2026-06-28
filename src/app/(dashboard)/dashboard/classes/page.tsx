@@ -24,10 +24,6 @@ const StudentClassesPage = async (props: {
       key: "page",
       value: page.toString(),
     },
-    {
-      key: "limit",
-      value: "4",
-    },
   ];
   const studentClassData = await getClasses(query);
   return (

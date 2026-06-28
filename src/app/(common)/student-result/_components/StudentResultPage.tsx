@@ -169,8 +169,6 @@ export default function StudentResultsDashboard() {
   const [week, setWeek] = useState("Week 1");
   const [publishedDate, setPublishedDate] = useState("");
   const [year, setYear] = useState("2026");
-  const [cls, setCls] = useState("Eight");
-  const [section, setSection] = useState("A");
 
   useEffect(() => {
     (async () => {
@@ -238,8 +236,6 @@ export default function StudentResultsDashboard() {
     : ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const weeks = allWeeks.length ? allWeeks : ["Week 1","Week 2","Week 3","Week 4"];
   const years = allYears.length ? allYears : ["2025","2026"];
-  const classes = ["Six","Seven","Eight","Nine","Ten"];
-  const sections = ["A","B","C","D"];
 
   const noData = monthlyResults.length === 0 && weeklyMarks.length === 0;
 
@@ -273,7 +269,7 @@ export default function StudentResultsDashboard() {
 
       {/* Dark filter bar */}
       <div className=" px-4 pt-4 pb-6 md:px-8">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           <SelectField label="Month" value={month} options={months} onChange={setMonth} />
           <SelectField label="Week" value={week} options={weeks} onChange={setWeek} />
 
@@ -294,8 +290,6 @@ export default function StudentResultsDashboard() {
           </div>
 
           <SelectField label="Year" value={year} options={years} onChange={setYear} />
-          <SelectField label="Class" value={cls} options={classes} onChange={setCls} />
-          <SelectField label="Section" value={section} options={sections} onChange={setSection} />
         </div>
       </div>
 
@@ -333,9 +327,6 @@ export default function StudentResultsDashboard() {
                     <div className="px-6 pt-5 pb-3 border-b border-gray-100 flex items-center gap-3">
                       <span className="text-sm font-semibold text-gray-700">
                         {activeMonthly?.month} — Monthly Result
-                      </span>
-                      <span className="text-xs bg-orange-100 text-orange-600 rounded-full px-3 py-1 font-medium">
-                        Position: {activeMonthly?.position}
                       </span>
                     </div>
 
@@ -402,7 +393,6 @@ export default function StudentResultsDashboard() {
                                   ["Total Marks", "Sum of all marks obtained"],
                                   ["GPA", "Grade Point Average"],
                                   ["Grade", "Overall letter grade"],
-                                  ["Position", "Rank in class"],
                                   ["Present", "Days attended"],
                                   ["Absent", "Days missed"],
                                 ] as [string, string][]
@@ -426,9 +416,6 @@ export default function StudentResultsDashboard() {
                               </td>
                               <td className="py-4 px-4 text-center">
                                 <GradeBadge grade={activeMonthly?.grade} />
-                              </td>
-                              <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                {activeMonthly?.position ?? "-"}
                               </td>
                               <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                                 {activeMonthly?.present ?? "-"}
