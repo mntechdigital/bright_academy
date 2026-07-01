@@ -32,8 +32,13 @@ export function getGradeFromMarks(marks: number, fullMarks: number = 100, gradin
 } {
   if (fullMarks <= 0) return { gradePoint: 0, letterGrade: "F" };
 
-  // When grading system is explicitly "50", marks are out of 50 — compare directly against raw marks
-  if (gradingSystem === "50") {
+  // Determine which grading system to use:
+  // - If fullMarks === 50, always use GRADE_SYSTEM_50 (individual subject fullMarks takes priority)
+  // - If gradingSystem is explicitly "50", use GRADE_SYSTEM_50
+  // - Otherwise, use GRADE_SYSTEM_100
+  const useSystem50 = fullMarks === 50 || gradingSystem === "50";
+
+  if (useSystem50) {
     for (const grade of GRADE_SYSTEM_50) {
       if (marks >= grade.minMark && marks <= grade.maxMark) {
         return { gradePoint: grade.gradePoint, letterGrade: grade.grade };
@@ -42,7 +47,7 @@ export function getGradeFromMarks(marks: number, fullMarks: number = 100, gradin
     return { gradePoint: 0, letterGrade: "F" };
   }
 
-  // For "100" grading system, marks are out of 100 — compare directly against raw marks
+  // For "100" grading system or any other fullMarks value, use GRADE_SYSTEM_100
   for (const grade of GRADE_SYSTEM_100) {
     if (marks >= grade.minMark && marks <= grade.maxMark) {
       return { gradePoint: grade.gradePoint, letterGrade: grade.grade };
