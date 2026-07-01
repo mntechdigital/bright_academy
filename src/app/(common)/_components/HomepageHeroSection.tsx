@@ -1,5 +1,6 @@
 import Image from "next/image";
 import heroCollage from "../../../../public/Union__1_.png";
+import aboutImage from "../../../../public/brightacademyposter.jpeg";
 
 const stats = [
   { icon: "🎓", value: "৭০০ +", label: "সফল শিক্ষার্থী" },
@@ -78,7 +79,7 @@ export default function HeroSection() {
         {/* Right — Hero Collage Image */}
         <div className="relative flex items-center justify-center h-95 lg:h-105">
           <Image
-            src={heroCollage}
+            src={aboutImage}
             alt="Bright Academy Students"
             fill
             className="object-contain"

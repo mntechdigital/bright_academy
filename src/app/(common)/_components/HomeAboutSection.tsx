@@ -1,5 +1,6 @@
 import Image from "next/image";
 import aboutImage from "../../../../public/brightacademyposter.jpeg";
+import heroCollage from "../../../../public/Union__1_.png";
 import topleft from "../../../../public/homeabouttopleft.png";
 import bottomright from "../../../../public/homeaboutbottomright.png";
 
@@ -30,7 +31,7 @@ export default function HomeAboutSection() {
           {/* Main image */}
           <div className="relative z-20 w-full max-w-lg md:max-w-xl lg:max-w-2xl rounded-3xl overflow-hidden shadow-xl mx-auto">
             <Image
-              src={aboutImage}
+              src={heroCollage}
               alt="Bright Academy Classroom"
               width={580}
               height={560}
