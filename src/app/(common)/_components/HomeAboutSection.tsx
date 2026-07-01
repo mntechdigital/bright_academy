@@ -16,7 +16,7 @@ export default function HomeAboutSection() {
     <section className="w-full bg-white py-16 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
         {/* Left — Image with decorative elements */}
-        <div className="relative flex items-center justify-center min-h-[420px] lg:min-h-[560px]">
+        <div className="relative flex items-center justify-center min-h-105 lg:min-h-140">
           {/* Top-left decorative image */}
           <div className="absolute top-0 left-0 w-32 h-32 z-0">
             <Image src={topleft} alt="" fill className="object-contain" />
