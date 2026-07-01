@@ -20,7 +20,7 @@ const contacts = [
       </svg>
     ),
     title: "ফোন নম্বর",
-    lines: ["০১৭১৬৬১১২০৮", "০১৭১৯৯৬৪০০৮", "০১৭১৮৪২৮৪৫২"],
+    lines: ["01911-80 95 71", "01779-60 77 12"],
   },
   {
     icon: (
@@ -30,7 +30,7 @@ const contacts = [
       </svg>
     ),
     title: "ইমেইল",
-    lines: ["Info@Brightacademiccare.Com"],
+    lines: ["brightsu89@gmail.com"],
   },
   {
     icon: (
