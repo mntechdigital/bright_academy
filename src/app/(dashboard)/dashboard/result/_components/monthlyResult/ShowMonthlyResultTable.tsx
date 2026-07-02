@@ -238,7 +238,11 @@ export default function ShowMonthlyResultTable({
   // Filter table rows
   const filteredResults = monthlyResultsData.filter((result) => {
     const matchesSearch = search
-      ? result.student?.name?.toLowerCase().includes(search.toLowerCase())
+      ? result.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        result.stdRegNo?.toLowerCase().includes(search.toLowerCase()) ||
+        result.student?.stdRegNo?.toLowerCase().includes(search.toLowerCase()) ||
+        result.student?.username?.toLowerCase().includes(search.toLowerCase()) ||
+        result.student?.parentPhone?.toLowerCase().includes(search.toLowerCase())
       : true;
     const matchesClass = selectedClassId
       ? result.student?.classId === selectedClassId

@@ -1,6 +1,5 @@
 import Image from "next/image";
-import aboutImage from "../../../../public/brightacademyposter.jpeg";
-import heroCollage from "../../../../public/Union__1_.png";
+import heroCollage from "../../../../public/bright-academy-teachers.jpeg";
 import topleft from "../../../../public/homeabouttopleft.png";
 import bottomright from "../../../../public/homeaboutbottomright.png";
 
