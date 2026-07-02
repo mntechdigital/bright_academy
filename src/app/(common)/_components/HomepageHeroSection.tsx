@@ -12,15 +12,6 @@ const stats = [
 export default function HeroSection() {
   return (
     <section className="w-full bg-gray-100 min-h-130 flex items-center overflow-hidden relative">
-      {/* Right side scroll buttons */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
-        <button className="w-9 h-9 bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center rounded transition-colors">
-          ↗
-        </button>
-        <button className="w-9 h-9 bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center rounded transition-colors">
-          ↙
-        </button>
-      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-16 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { getMyResults } from "@/src/services/students";
-import { ChevronDown, Calendar, Printer, HelpCircle } from "lucide-react";
+import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +46,26 @@ interface ApiResponse {
     monthlyResults?: MonthlyResult[];
     weeklyMarks?: WeeklyMark[];
   };
+}
+
+// ─── Utility: Read studentInfo cookie ─────────────────────────────────────────
+
+function getStudentFromCookie(): { name: string; stdRegNo?: string } | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("studentInfo="));
+  if (!match) return null;
+  try {
+    const decoded = decodeURIComponent(match.split("=")[1]);
+    const info = JSON.parse(decoded);
+    return {
+      name: info?.name || "",
+      stdRegNo: info?.stdRegNo || info?.username || "",
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -197,17 +217,26 @@ export default function StudentResultsDashboard() {
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.write(`
-      <html><head><title>Result</title>
+      <html><head><title>Bright Academy</title>
       <style>
         body { font-family: sans-serif; padding: 24px; }
-        table { width: 100%; border-collapse: collapse; }
+        .student-header { text-align: center; margin-bottom: 24px; }
+        .student-header h2 { font-size: 18px; margin: 0; color: #1f2937; }
+        .student-header p { margin: 4px 0 0; font-size: 13px; color: #6b7280; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
         th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: center; font-size: 13px; }
         th { background: #f9fafb; font-weight: 600; }
         td:nth-child(2) { text-align: left; }
         h2, h3 { margin: 0 0 12px; }
         .header { margin-bottom: 16px; }
       </style>
-      </head><body>${printContents}</body></html>
+      </head><body>
+        <div class="student-header">
+          <h2>${studentInfo?.name || "Student"}</h2>
+          ${studentInfo?.stdRegNo ? `<p>ID: ${studentInfo.stdRegNo}</p>` : ""}
+        </div>
+        ${printContents}
+      </body></html>
     `);
     w.document.close();
     w.print();
@@ -238,6 +267,9 @@ export default function StudentResultsDashboard() {
   const years = allYears.length ? allYears : ["2025","2026"];
 
   const noData = monthlyResults.length === 0 && weeklyMarks.length === 0;
+
+  // ── Student info from cookie ─────────────────────────────────────────────
+  const studentInfo = useMemo(() => getStudentFromCookie(), []);
 
   // ── Loading / Error ───────────────────────────────────────────────────────
 
@@ -295,6 +327,21 @@ export default function StudentResultsDashboard() {
 
       {/* Main content */}
       <div className="flex-1 px-4 py-4 md:px-8 md:py-6 pb-4">
+
+        {/* Student Info Header */}
+        {studentInfo?.name && (
+          <div className="flex items-center gap-3 mb-4 bg-white rounded-xl px-5 py-3 shadow-sm border border-gray-100">
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+              <User size={18} className="text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{studentInfo.name}</p>
+              {studentInfo.stdRegNo && (
+                <p className="text-xs text-gray-400">ID: {studentInfo.stdRegNo}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-4 bg-white rounded-xl px-3 py-2 shadow-sm border border-gray-100 w-fit">

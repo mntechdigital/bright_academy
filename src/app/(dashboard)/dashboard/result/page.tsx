@@ -14,16 +14,11 @@ import { getMonthlyResults } from "@/src/services/monthlyResult";
 const ResultOverviewPage = async (props: {
   searchParams: Promise<{ search: string; page: string }>;
 }) => {
+  
   const searchParams = await props.searchParams;
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
-
-  const monthlyResultsRes = await getMonthlyResults([]);
-  const monthlyResultsData = monthlyResultsRes?.data?.data || [];
-
-  const classesRes = await getClasses([]);
-  const classesData = classesRes?.data?.data;
-
+  
   const query: TQuery[] = [
     {
       key: "orderBy",
@@ -42,6 +37,13 @@ const ResultOverviewPage = async (props: {
       value: "20",
     },
   ];
+
+  const monthlyResultsRes = await getMonthlyResults(query);
+  const monthlyResultsData = monthlyResultsRes?.data?.data || [];
+
+  const classesRes = await getClasses([]);
+  const classesData = classesRes?.data?.data;
+
 
   return (
     <DashboardWrapper>
