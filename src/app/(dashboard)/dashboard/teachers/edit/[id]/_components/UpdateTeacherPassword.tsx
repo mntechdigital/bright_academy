@@ -40,7 +40,7 @@ export default function UpdateTeacherPassword({ teacher }: Props) {
   } = useForm<UpdatePasswordFormValues>({
     mode: "onBlur",
     defaultValues: {
-      currentPassword: teacher.password || "",
+      currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     },
