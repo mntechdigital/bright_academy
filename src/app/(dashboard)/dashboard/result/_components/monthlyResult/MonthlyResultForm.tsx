@@ -91,7 +91,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
 
   const { control, watch, setValue, handleSubmit, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
-      month: "",
+      month: MONTHS[new Date().getMonth()],
       year: currentYear.toString(),
       publishedDate: new Date(),
       classId: "",
