@@ -119,13 +119,15 @@ interface MonthlyResultTableProps {
   studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
   month: string;
+  subjectHighestMarks?: Record<string, string>;
 }
 
 export default function MonthlyResultTable({
   studentId,
   studentName,
   subjects,
-  month
+  month,
+  subjectHighestMarks = {}
 }: MonthlyResultTableProps) {
   const subjectNames =
     subjects && subjects.length > 0
@@ -135,7 +137,7 @@ export default function MonthlyResultTable({
     subjectNames.map((name) => ({
       name,
       fullMarks: "",
-      highestMark: "",
+      highestMark: subjectHighestMarks[name] ?? "",
       marksObtained: "",
       point: "",
       grade: "",
@@ -143,6 +145,20 @@ export default function MonthlyResultTable({
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
   const [gradingSystem, setGradingSystem] = useState<"100" | "50">("100");
+
+  // When studentId changes (new student submitted), clear only marks obtained, point, grade & summary
+  // Keep fullMarks and highestMark intact so user doesn't need to re-enter them
+  useEffect(() => {
+    setRows((prev) =>
+      prev.map((row) => ({
+        ...row,
+        marksObtained: "",
+        point: "",
+        grade: "",
+      }))
+    );
+    setSummary(INITIAL_SUMMARY);
+  }, [studentId]);
 
   const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string) => {
     setRows((prev) => {
