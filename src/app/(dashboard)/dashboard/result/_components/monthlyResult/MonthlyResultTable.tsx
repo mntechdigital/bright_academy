@@ -35,7 +35,7 @@ const INITIAL_ROWS: SubjectRow[] = [
   "Mathematics",
 ].map((name) => ({
   name,
-  fullMarks: "",
+  fullMarks: "100",
   highestMark: "",
   marksObtained: "",
   point: "",
@@ -116,7 +116,7 @@ export default function MonthlyResultTable({
   const [rows, setRows] = useState<SubjectRow[]>(
     subjectNames.map((name) => ({
       name,
-      fullMarks: "",
+      fullMarks: "100",
       highestMark: subjectHighestMarks[name] ?? "",
       marksObtained: "",
       point: "",
@@ -124,7 +124,6 @@ export default function MonthlyResultTable({
     })),
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
-  const [gradingSystem, setGradingSystem] = useState<"100" | "50">("100");
 
   // When studentId changes (new student submitted), clear only marks obtained, point, grade & summary
   // Keep fullMarks and highestMark intact so user doesn't need to re-enter them
@@ -170,7 +169,8 @@ export default function MonthlyResultTable({
         const marks = parseFloat(newRows[idx].marksObtained);
         const fullMarks = parseFloat(newRows[idx].fullMarks);
         if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
-          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
+          // getGradeFromMarks automatically uses 50-mark system when fullMarks === 50
+          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks);
           newRows[idx] = {
             ...newRows[idx],
             point: gradePoint.toFixed(2),
@@ -186,27 +186,10 @@ export default function MonthlyResultTable({
       }
       return newRows;
     });
-  }, [gradingSystem]);
+  }, []);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
-
-  // When grading system changes, auto-fill fullMarks and recalculate
-  useEffect(() => {
-    const defaultFullMarks = gradingSystem === "50" ? 50 : 100;
-    setRows((prev) =>
-      prev.map((row) => {
-        const updatedRow = { ...row, fullMarks: defaultFullMarks.toString() };
-        const marks = parseFloat(updatedRow.marksObtained);
-        const fullMarks = parseFloat(updatedRow.fullMarks);
-        if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
-          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks, gradingSystem);
-          return { ...updatedRow, point: gradePoint.toFixed(2), grade: letterGrade };
-        }
-        return updatedRow;
-      })
-    );
-  }, [gradingSystem]);
 
   // Auto-recalculate summary whenever subject rows change
   useEffect(() => {
@@ -215,11 +198,16 @@ export default function MonthlyResultTable({
     const points = rows.map((r) => parseFloat(r.point)).filter((v) => !isNaN(v));
     const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
 
+    const present = rows.filter((r) => r.marksObtained.trim() !== "").length;
+    const absent = rows.length - present;
+
     setSummary((prev) => ({
       ...prev,
       totalMarks: totalMarks > 0 ? totalMarks.toString() : "",
       gpa: gpa > 0 ? gpa.toFixed(2) : "",
       grade: gpa > 0 ? getGradeFromGPA(gpa) : "",
+      present: present > 0 ? present.toString() : "",
+      absent: absent > 0 ? absent.toString() : "",
     }));
   }, [rows]);
 
@@ -261,21 +249,10 @@ export default function MonthlyResultTable({
         {/* ── Main Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="px-6 py-4 border-b border-gray-100">
             <h2 className="text-[15px] font-bold text-gray-900">
               {studentName}
             </h2>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Grading System:</label>
-              <select
-                value={gradingSystem}
-                onChange={(e) => setGradingSystem(e.target.value as "100" | "50")}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
-              >
-                <option value="100">Marks out of 100</option>
-                <option value="50">Marks out of 50</option>
-              </select>
-            </div>
           </div>
 
           {/* Subject Table */}
@@ -443,12 +420,9 @@ export default function MonthlyResultTable({
                       type="text"
                       inputMode="numeric"
                       value={summary.present}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, "");
-                        updateSummary("present", val);
-                      }}
                       placeholder="0"
-                      className={`w-full min-w-16 ${inputBase}`}
+                      readOnly
+                      className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
                     />
                   </td>
                   <td className="px-4 py-4">
@@ -456,12 +430,9 @@ export default function MonthlyResultTable({
                       type="text"
                       inputMode="numeric"
                       value={summary.absent}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, "");
-                        updateSummary("absent", val);
-                      }}
                       placeholder="0"
-                      className={`w-full min-w-16 ${inputBase}`}
+                      readOnly
+                      className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
                     />
                   </td>
                 </tr>
