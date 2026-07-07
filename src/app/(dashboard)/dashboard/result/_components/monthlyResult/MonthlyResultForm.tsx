@@ -233,15 +233,19 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
                 const subjectName = subject.subjectName;
                 return (
                   <div key={subject.id || subjectName} className="flex items-center gap-4 px-6 py-3">
-                    <label className="text-sm font-medium text-gray-700 min-w-[180px]">
+                    <label className="text-sm font-medium text-gray-700 min-w-45">
                       {subjectName}
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={subjectHighestMarks[subjectName] ?? ""}
-                      onChange={(e) => handleHighestMarkChange(subjectName, e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        handleHighestMarkChange(subjectName, val);
+                      }}
                       placeholder="Enter highest mark"
-                      className={inputBase + " max-w-[200px]"}
+                      className={inputBase + " max-w-50"}
                     />
                   </div>
                 );
