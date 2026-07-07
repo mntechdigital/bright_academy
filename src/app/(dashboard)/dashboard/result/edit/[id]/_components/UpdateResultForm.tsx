@@ -13,6 +13,8 @@ interface ResultSubject {
   marks: number;
   fullMarks: number;
   highestMark: number;
+  grade: string;
+  point: number;
 }
 
 interface Student {
@@ -54,6 +56,8 @@ interface FormValues {
     fullMarks: number;
     marks: number;
     highestMark: number;
+    grade: string;
+    point: number;
   }[];
 }
 
@@ -79,6 +83,8 @@ export default function UpdateResultForm({ result }: Props) {
         fullMarks: r.fullMarks,
         marks: r.marks,
         highestMark: r.highestMark,
+        grade: r.grade ?? "",
+        point: r.point ?? 0,
       })),
     },
   });
@@ -100,8 +106,11 @@ export default function UpdateResultForm({ result }: Props) {
       absent: data.absent,
       results: data.results.map((r) => ({
         id: r.id,
+        fullMarks: Number(r.fullMarks),
         marks: Number(r.marks),
         highestMark: Number(r.highestMark),
+        grade: r.grade,
+        point: Number(r.point),
       })),
     };
     const res = await updateMonthlyResult(result.id, payload);
@@ -183,18 +192,34 @@ export default function UpdateResultForm({ result }: Props) {
                 key={field.id}
                 className="grid grid-cols-12 items-center gap-3"
               >
-                <div className="col-span-4">
+                <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-800">
                     {field.subjectName}
                   </p>
-                  <p className="text-xs text-gray-400">
-                    Full: {field.fullMarks}
-                  </p>
                 </div>
 
-                <div className="col-span-4">
+                <div className="col-span-2">
                   <label className="text-xs text-gray-500 mb-1 block">
-                    Marks Obtained
+                    Full Marks
+                  </label>
+                  <Controller
+                    control={control}
+                    name={`results.${index}.fullMarks`}
+                    render={({ field: f }) => (
+                      <input
+                        {...f}
+                        type="number"
+                        min={0}
+                        onChange={(e) => f.onChange(Number(e.target.value))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                      />
+                    )}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Marks
                   </label>
                   <Controller
                     control={control}
@@ -212,9 +237,9 @@ export default function UpdateResultForm({ result }: Props) {
                   />
                 </div>
 
-                <div className="col-span-4">
+                <div className="col-span-2">
                   <label className="text-xs text-gray-500 mb-1 block">
-                    Highest Mark
+                    Highest
                   </label>
                   <Controller
                     control={control}
@@ -226,6 +251,52 @@ export default function UpdateResultForm({ result }: Props) {
                         min={0}
                         max={field.fullMarks}
                         onChange={(e) => f.onChange(Number(e.target.value))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                      />
+                    )}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Grade
+                  </label>
+                  <Controller
+                    control={control}
+                    name={`results.${index}.grade`}
+                    render={({ field: f }) => (
+                      <select
+                        {...f}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition bg-white"
+                      >
+                        <option value="">Select</option>
+                        {gradeOptions.map((g) => (
+                          <option key={g} value={g}>
+                            {g}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    Point
+                  </label>
+                  <Controller
+                    control={control}
+                    name={`results.${index}.point`}
+                    defaultValue={field.point ?? 0}
+                    render={({ field: f }) => (
+                      <input
+                        {...f}
+                        value={f.value ?? 0}
+                        onChange={(e) => f.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        max={5}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
                     )}

@@ -1,18 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { ChevronDown, Eye, Menu } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
@@ -20,12 +15,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import logo from "../../../../public/bright Academy.png";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { useRouter } from "next/navigation";
 import { logout } from "@/src/services/auth";
-import { Sidebar } from "./DashboardSidebar";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { jwtDecode } from "jwt-decode";
+import { ChevronDown, Eye, Menu } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import logo from "../../../../public/bright Academy.png";
+import { Sidebar } from "./DashboardSidebar";
 
 interface NavbarProps {
   adminData: any;
@@ -38,7 +37,7 @@ export function Navbar({ adminData }: NavbarProps) {
   const handleLogout = async () => {
     // Determine redirect path based on user role BEFORE logout deletes cookies
     let redirectPath = "/login";
-    
+
     // Read token from client-side cookies
     const getCookie = (name: string) => {
       const value = `; ${document.cookie}`;
@@ -46,9 +45,9 @@ export function Navbar({ adminData }: NavbarProps) {
       if (parts.length === 2) return parts.pop()?.split(";").shift();
       return undefined;
     };
-    
+
     const accessToken = getCookie("accessToken");
-    
+
     if (accessToken) {
       try {
         const decoded = jwtDecode<{ role?: string }>(accessToken);
@@ -57,10 +56,10 @@ export function Navbar({ adminData }: NavbarProps) {
         redirectPath = "/login";
       }
     }
-    
+
     const res = await logout();
-    console.log("logout res==>",res);
-    
+    console.log("logout res==>", res);
+
     router.push(redirectPath);
     router.refresh();
   };

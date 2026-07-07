@@ -10,6 +10,7 @@ import UpdateResultForm from "./_components/UpdateResultForm";
 const EditMonthlyResultpage = async ({ params }: EditPageProps) => {
   const { id } = await params;
   const getMonthlyResultRes = await getMonthlyResultById(id);
+  console.log("single student resutl==>", getMonthlyResultRes);
   return (
     <DashboardWrapper>
       <UpdateResultForm result={getMonthlyResultRes.data} />

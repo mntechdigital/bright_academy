@@ -84,14 +84,27 @@ function SelectField({ children, ...props }: React.SelectHTMLAttributes<HTMLSele
   );
 }
 
+// ─── Input base style ─────────────────────────────────────────────────────────
+
+const inputBase =
+  "w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-orange-400 focus:ring-1 focus:ring-orange-400";
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFormProps) {
-  const [tableData, setTableData] = useState<{ studentName: string; subjects: Subject[]; studentId: string } | null>(null);
+  const [tableData, setTableData] = useState<{
+    studentName: string;
+    subjects: Subject[];
+    studentId: string;
+    subjectHighestMarks: Record<string, string>;
+  } | null>(null);
+
+  // State for per-subject highest marks entered in the form
+  const [subjectHighestMarks, setSubjectHighestMarks] = useState<Record<string, string>>({});
 
   const { control, watch, setValue, handleSubmit, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
-      month: "",
+      month: MONTHS[new Date().getMonth()],
       year: currentYear.toString(),
       publishedDate: new Date(),
       classId: "",
@@ -105,6 +118,16 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
 
   const selectedClass = classesData.find((c) => c.id === selectedClassId);
   const batches = selectedClass?.batches ?? [];
+  const subjects = selectedClass?.subjects ?? [];
+
+  // Reset highest marks when class changes
+  const handleClassChange = (classId: string) => {
+    setValue("classId", classId);
+    setValue("batchId", "");
+    setValue("studentId", "");
+    // Keep existing highest marks for the new class subjects (so they persist)
+    // We don't reset here — user can keep what they entered
+  };
 
   const students = (selectedClass?.students ?? [])
     .filter((s) => !s.sectionId || s.sectionId === selectedBatchId)
@@ -114,13 +137,14 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     const student = students.find((s) => s.id === data.studentId);
     setTableData({
       studentName: student?.name ?? "Unnamed",
-      subjects: selectedClass?.subjects ?? [],
+      subjects: subjects,
       studentId: data.studentId,
+      subjectHighestMarks: { ...subjectHighestMarks },
     });
-    // Reset form after submit
-    handleSubmit((formData) => {
-      // Form submission logic here
-    })();
+  };
+
+  const handleHighestMarkChange = (subjectName: string, value: string) => {
+    setSubjectHighestMarks((prev) => ({ ...prev, [subjectName]: value }));
   };
 
   return (
@@ -178,7 +202,13 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           <Field label="Class" error={errors.classId?.message}>
             <Controller name="classId" control={control} rules={{ required: "Class is required" }}
               render={({ field }) => (
-                <SelectField {...field}>
+                <SelectField
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    handleClassChange(e.target.value);
+                  }}
+                >
                   <option value="">Select Class</option>
                   {classesData.map((c) => <option key={c.id} value={c.id}>{c.className}</option>)}
                 </SelectField>
@@ -186,6 +216,43 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
             />
           </Field>
         </div>
+
+        {/* Subject Highest Marks Section — shown when class is selected */}
+        {selectedClassId && subjects.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Set Highest Marks per Subject
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Set once per subject. These will auto-fill when entering student results.
+              </p>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {subjects.map((subject) => {
+                const subjectName = subject.subjectName;
+                return (
+                  <div key={subject.id || subjectName} className="flex items-center gap-4 px-6 py-3">
+                    <label className="text-sm font-medium text-gray-700 min-w-45">
+                      {subjectName}
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={subjectHighestMarks[subjectName] ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        handleHighestMarkChange(subjectName, val);
+                      }}
+                      placeholder="Enter highest mark"
+                      className={inputBase + " max-w-50"}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Row 3 — Batch & Student */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,6 +290,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
             subjects={tableData.subjects}
             studentId={tableData.studentId}
             month={watch("month")}
+            subjectHighestMarks={tableData.subjectHighestMarks}
           />
         </div>
       )}

@@ -34,7 +34,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "ব্রাইট একাডেমিক",
+  title: "ব্রাইট একাডেমি",
   description:
     "© Bright Academic 2024. All rights reserved. Bright Academic is an educational platform dedicated to providing quality learning resources and support for students and educators.",
 };
