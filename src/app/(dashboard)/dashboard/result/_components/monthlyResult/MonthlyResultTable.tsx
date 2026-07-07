@@ -58,26 +58,6 @@ const inputBase =
 
 // ─── Reusable inputs ──────────────────────────────────────────────────────────
 
-type NumberInputProps = {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  readOnly?: boolean;
-};
-
-function NumberInput({ value, onChange, placeholder, readOnly = false }: NumberInputProps) {
-  return (
-    <input
-      type="number"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      readOnly={readOnly}
-      className={`w-full min-w-16 ${inputBase} ${readOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
-    />
-  );
-}
-
 type TextInputProps = {
   value: string;
   onChange: (value: string) => void;
@@ -321,32 +301,56 @@ export default function MonthlyResultTable({
                       {row.name}
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput
+                      <input
+                        type="text"
+                        inputMode="decimal"
                         value={row.fullMarks}
-                        onChange={(v) => updateRow(idx, "fullMarks", v)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9.]/g, "");
+                          updateRow(idx, "fullMarks", val);
+                        }}
                         placeholder="100"
+                        className={`w-full min-w-16 ${inputBase}`}
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput
+                      <input
+                        type="text"
+                        inputMode="decimal"
                         value={row.highestMark}
-                        onChange={(v) => updateRow(idx, "highestMark", v)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9.]/g, "");
+                          updateRow(idx, "highestMark", val);
+                        }}
                         placeholder="100"
+                        className={`w-full min-w-16 ${inputBase}`}
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput
+                      <input
+                        type="text"
+                        inputMode="decimal"
                         value={row.marksObtained}
-                        onChange={(v) => updateRow(idx, "marksObtained", v)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9.]/g, "");
+                          updateRow(idx, "marksObtained", val);
+                        }}
                         placeholder="0"
+                        className={`w-full min-w-16 ${inputBase}`}
                       />
                     </td>
                     <td className="px-3 py-3">
-                      <NumberInput
+                      <input
+                        type="text"
+                        inputMode="decimal"
                         value={row.point}
-                        onChange={(v) => updateRow(idx, "point", v)}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9.]/g, "");
+                          updateRow(idx, "point", val);
+                        }}
                         placeholder="0.00"
                         readOnly
+                        className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
                       />
                     </td>
                     <td className="px-3 py-3 text-center">
@@ -387,19 +391,31 @@ export default function MonthlyResultTable({
               <tbody>
                 <tr>
                   <td className="px-4 py-4">
-                    <NumberInput
+                    <input
+                      type="text"
+                      inputMode="decimal"
                       value={summary.totalMarks}
-                      onChange={(v) => updateSummary("totalMarks", v)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        updateSummary("totalMarks", val);
+                      }}
                       placeholder="0"
                       readOnly
+                      className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
                     />
                   </td>
                   <td className="px-4 py-4">
-                    <NumberInput
+                    <input
+                      type="text"
+                      inputMode="decimal"
                       value={summary.gpa}
-                      onChange={(v) => updateSummary("gpa", v)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9.]/g, "");
+                        updateSummary("gpa", val);
+                      }}
                       placeholder="0.00"
                       readOnly
+                      className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
                     />
                   </td>
                   <td className="px-4 py-4 text-center">
@@ -423,17 +439,29 @@ export default function MonthlyResultTable({
                     />
                   </td>
                   <td className="px-4 py-4">
-                    <NumberInput
+                    <input
+                      type="text"
+                      inputMode="numeric"
                       value={summary.present}
-                      onChange={(v) => updateSummary("present", v)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        updateSummary("present", val);
+                      }}
                       placeholder="0"
+                      className={`w-full min-w-16 ${inputBase}`}
                     />
                   </td>
                   <td className="px-4 py-4">
-                    <NumberInput
+                    <input
+                      type="text"
+                      inputMode="numeric"
                       value={summary.absent}
-                      onChange={(v) => updateSummary("absent", v)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, "");
+                        updateSummary("absent", val);
+                      }}
                       placeholder="0"
+                      className={`w-full min-w-16 ${inputBase}`}
                     />
                   </td>
                 </tr>
