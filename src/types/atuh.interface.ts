@@ -4,6 +4,7 @@ import { TDepartmentHead } from "./departmentHead.types";
 export interface TCustomJwtPayload extends JwtPayload {
   id?: string;
   email: string;
+  regNo?: string;
   role: string;
   status: string;
   name: string;
