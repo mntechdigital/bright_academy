@@ -114,6 +114,7 @@ export default function UpdateResultForm({ result }: Props) {
       })),
     };
     const res = await updateMonthlyResult(result.id, payload);
+    console.log("update result res==>", res);
     if (res.statusCode === 200) {
       showSuccessToast("Result updated successfully!");
     } else {
@@ -208,9 +209,12 @@ export default function UpdateResultForm({ result }: Props) {
                     render={({ field: f }) => (
                       <input
                         {...f}
-                        type="number"
-                        min={0}
-                        onChange={(e) => f.onChange(Number(e.target.value))}
+                        type="text"
+                        inputMode="numeric"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          f.onChange(val);
+                        }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
                     )}
@@ -227,10 +231,12 @@ export default function UpdateResultForm({ result }: Props) {
                     render={({ field: f }) => (
                       <input
                         {...f}
-                        type="number"
-                        min={0}
-                        max={field.fullMarks}
-                        onChange={(e) => f.onChange(Number(e.target.value))}
+                        type="text"
+                        inputMode="numeric"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          f.onChange(val);
+                        }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
                     )}
@@ -247,10 +253,12 @@ export default function UpdateResultForm({ result }: Props) {
                     render={({ field: f }) => (
                       <input
                         {...f}
-                        type="number"
-                        min={0}
-                        max={field.fullMarks}
-                        onChange={(e) => f.onChange(Number(e.target.value))}
+                        type="text"
+                        inputMode="numeric"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          f.onChange(val);
+                        }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
                     )}
@@ -292,11 +300,14 @@ export default function UpdateResultForm({ result }: Props) {
                       <input
                         {...f}
                         value={f.value ?? 0}
-                        onChange={(e) => f.onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        max={5}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9.]/g, "");
+                          const dotCount = val.split(".").length - 1;
+                          if (dotCount > 1) return;
+                          f.onChange(val === "" ? "0" : val);
+                        }}
+                        type="text"
+                        inputMode="decimal"
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
                     )}
@@ -345,11 +356,14 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    max={5}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    type="text"
+                    inputMode="decimal"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9.]/g, "");
+                      const dotCount = val.split(".").length - 1;
+                      if (dotCount > 1) return;
+                      field.onChange(val === "" ? "0" : val);
+                    }}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                   />
                 )}
@@ -366,9 +380,12 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
-                    type="number"
-                    min={1}
-                    onChange={(e) => field.onChange(e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      field.onChange(val);
+                    }}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                   />
                 )}
@@ -385,9 +402,12 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
-                    type="number"
-                    min={0}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      field.onChange(val);
+                    }}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                   />
                 )}
@@ -404,9 +424,12 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
-                    type="number"
-                    min={0}
-                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      field.onChange(val);
+                    }}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                   />
                 )}
@@ -419,7 +442,7 @@ export default function UpdateResultForm({ result }: Props) {
         <div className="flex items-center justify-end">
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors shadow-sm"
+            className="px-6 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors shadow-sm cursor-pointer"
           >
             Update Result
           </button>

@@ -69,7 +69,6 @@ export const login = async (data: FieldValues) => {
     return result;
   } catch (error) {
     console.error("Login error:", error);
-    throw new Error("Login failed. Please try again.");
   }
 };
 
