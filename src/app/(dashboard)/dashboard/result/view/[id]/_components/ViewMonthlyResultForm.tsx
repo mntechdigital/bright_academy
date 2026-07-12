@@ -85,8 +85,7 @@ export default function ViewMonthlyResultForm({ result }: Props) {
 
       pdf.text(`Student: ${result.student?.name || "N/A"}`, 14, 30);
       pdf.text(`Class: ${studentClassName}`, 14, 36);
-      pdf.text(`Batch: ${studentBatchName}`, 14, 42);
-      pdf.text(`Parent Phone: ${result.student?.parentPhone || "N/A"}`, 14, 48);
+      pdf.text(`Parent Phone: ${result.student?.parentPhone || "N/A"}`, 14, 42);
 
       pdf.text(`Total Marks: ${totalAchieved}/${result.totalMarks}`, 120, 30);
       pdf.text(`Grade: ${result.grade}`, 120, 36);
@@ -176,9 +175,11 @@ export default function ViewMonthlyResultForm({ result }: Props) {
                 <span className="text-xs bg-orange-50 text-orange-500 border border-orange-200 px-2 py-0.5 rounded-full font-medium">
                   {studentClassName}
                 </span>
-                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
-                  Batch {studentBatchName}
-                </span>
+                {(result.student?.batch?.name || result.batchName) && (
+                  <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                    Batch {result.student?.batch?.name || result.batchName}
+                  </span>
+                )}
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
                   {result.student?.parentPhone}
                 </span>
