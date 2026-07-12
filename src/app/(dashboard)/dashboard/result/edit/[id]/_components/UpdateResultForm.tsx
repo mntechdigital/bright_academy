@@ -394,7 +394,7 @@ export default function UpdateResultForm({ result }: Props) {
 
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">
-                Present Days
+                Present
               </label>
               <Controller
                 control={control}
@@ -416,7 +416,7 @@ export default function UpdateResultForm({ result }: Props) {
 
             <div className="col-span-2">
               <label className="text-xs font-medium text-gray-500 mb-1 block">
-                Absent Days
+                Absent
               </label>
               <Controller
                 control={control}
