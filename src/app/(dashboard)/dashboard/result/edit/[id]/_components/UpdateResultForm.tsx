@@ -1,7 +1,8 @@
 "use client";
 import { updateMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import React from "react";
+import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import React, { useEffect, useCallback } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -70,7 +71,7 @@ const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
 export default function UpdateResultForm({ result }: Props) {
   const router = useRouter();
 
-  const { control, handleSubmit, watch } = useForm<FormValues>({
+  const { control, handleSubmit, watch, setValue } = useForm<FormValues>({
     defaultValues: {
       gpa: result.gpa,
       grade: result.grade,
@@ -94,6 +95,45 @@ export default function UpdateResultForm({ result }: Props) {
   const watchedResults = watch("results");
   const totalAchieved =
     watchedResults?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
+
+  // Auto-calculate subject grade & point when marks or fullMarks change
+  const handleMarksChange = useCallback(
+    (index: number, marks: number, fullMarks: number) => {
+      if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
+        const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks);
+        // Use setValue with shouldDirty to avoid marking entire form as dirty
+        setValue(`results.${index}.grade`, letterGrade);
+        setValue(`results.${index}.point`, gradePoint);
+      } else {
+        setValue(`results.${index}.grade`, "");
+        setValue(`results.${index}.point`, 0);
+      }
+    },
+    [setValue]
+  );
+
+  // Auto-calculate overall GPA & grade whenever results change
+  useEffect(() => {
+    if (!watchedResults) return;
+
+    const points = watchedResults
+      .map((r) => Number(r.point))
+      .filter((p) => !isNaN(p) && p > 0);
+
+    const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
+    const letterGrade = gpa > 0 ? getGradeFromGPA(gpa) : "";
+
+    setValue("gpa", gpa);
+    setValue("grade", letterGrade);
+
+    // Auto-calculate present/absent
+    const present = watchedResults.filter(
+      (r) => String(r.marks).trim() !== ""
+    ).length;
+    const absent = watchedResults.length - present;
+    setValue("present", present);
+    setValue("absent", absent);
+  }, [watchedResults, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     const payload = {
@@ -236,6 +276,12 @@ export default function UpdateResultForm({ result }: Props) {
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, "");
                           f.onChange(val);
+                          // Auto-calculate grade & point on marks change
+                          const numericMarks = parseFloat(val);
+                          const fullMarks = parseFloat(
+                            String(watchedResults?.[index]?.fullMarks ?? 0)
+                          );
+                          handleMarksChange(index, numericMarks, fullMarks);
                         }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
@@ -273,17 +319,12 @@ export default function UpdateResultForm({ result }: Props) {
                     control={control}
                     name={`results.${index}.grade`}
                     render={({ field: f }) => (
-                      <select
+                      <input
                         {...f}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition bg-white"
-                      >
-                        <option value="">Select</option>
-                        {gradeOptions.map((g) => (
-                          <option key={g} value={g}>
-                            {g}
-                          </option>
-                        ))}
-                      </select>
+                        value={f.value ?? ""}
+                        readOnly
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none bg-gray-100 cursor-not-allowed"
+                      />
                     )}
                   />
                 </div>
@@ -300,15 +341,10 @@ export default function UpdateResultForm({ result }: Props) {
                       <input
                         {...f}
                         value={f.value ?? 0}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, "");
-                          const dotCount = val.split(".").length - 1;
-                          if (dotCount > 1) return;
-                          f.onChange(val === "" ? "0" : val);
-                        }}
+                        readOnly
                         type="text"
                         inputMode="decimal"
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none bg-gray-100 cursor-not-allowed"
                       />
                     )}
                   />
@@ -332,16 +368,12 @@ export default function UpdateResultForm({ result }: Props) {
                 control={control}
                 name="grade"
                 render={({ field }) => (
-                  <select
+                  <input
                     {...field}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition bg-white"
-                  >
-                    {gradeOptions.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
+                    value={field.value ?? ""}
+                    readOnly
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none bg-gray-100 cursor-not-allowed"
+                  />
                 )}
               />
             </div>
@@ -356,15 +388,11 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
+                    value={typeof field.value === "number" ? field.value.toFixed(2) : field.value}
+                    readOnly
                     type="text"
                     inputMode="decimal"
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^0-9.]/g, "");
-                      const dotCount = val.split(".").length - 1;
-                      if (dotCount > 1) return;
-                      field.onChange(val === "" ? "0" : val);
-                    }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none bg-gray-100 cursor-not-allowed"
                   />
                 )}
               />
@@ -402,13 +430,11 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
+                    value={field.value ?? 0}
+                    readOnly
                     type="text"
                     inputMode="numeric"
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      field.onChange(val);
-                    }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none bg-gray-100 cursor-not-allowed"
                   />
                 )}
               />
@@ -424,13 +450,11 @@ export default function UpdateResultForm({ result }: Props) {
                 render={({ field }) => (
                   <input
                     {...field}
+                    value={field.value ?? 0}
+                    readOnly
                     type="text"
                     inputMode="numeric"
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      field.onChange(val);
-                    }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none bg-gray-100 cursor-not-allowed"
                   />
                 )}
               />
