@@ -4,7 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
 import { downloadCSV } from "@/src/utils/downloadCSV";
-import { updateMonthlyResult } from "@/src/services/monthlyResult";
+import {
+  updateMonthlyResult,
+  calculatePositionsByClass, // 👈 নতুন import
+} from "@/src/services/monthlyResult";
 import { showSuccessToast, showErrorToast } from "@/src/utils/toastMessage";
 
 const GradeIcon = () => (
@@ -135,6 +138,7 @@ export default function ShowMonthlyResultTable({
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [isCalculating, setIsCalculating] = useState(false); // 👈 নতুন loading state
 
   // These are now synced with the URL (?classId=&batchId=&search=) so the
   // server can filter+paginate correctly instead of filtering only the
@@ -195,33 +199,31 @@ export default function ShowMonthlyResultTable({
   const getAchievedMarks = (results: ResultSubject[]) =>
     results.reduce((sum, r) => sum + r.marks, 0);
 
+  // 👇 পুরনো client-side loop বাদ দিয়ে নতুন class-wise backend calculation
   const calculatePositions = async () => {
-    // Sort the currently loaded (already filtered/paginated) results by achieved marks descending
-    const sorted = [...monthlyResultsData].sort((a, b) => {
-      const aMarks = getAchievedMarks(a.results);
-      const bMarks = getAchievedMarks(b.results);
-      return bMarks - aMarks;
-    });
-
-    // Assign positions: 1st, 2nd, 3rd, etc.
-    for (let i = 0; i < sorted.length; i++) {
-      const position = `${i + 1}${getOrdinalSuffix(i + 1)}`;
-      const result = sorted[i];
-
-      const res = await updateMonthlyResult(result.id, { position });
-
-      if (!res || res.statusCode >= 400) {
-        showErrorToast(`Failed to update position for ${result.student?.name}`);
-      }
+    if (!selectedClassId) {
+      showErrorToast("Position calculate করার আগে একটা Class সিলেক্ট করুন।");
+      return;
     }
 
-    showSuccessToast("Positions calculated successfully. Refresh the page to see updates.");
-  };
+    setIsCalculating(true);
+    try {
+      const res = await calculatePositionsByClass(selectedClassId);
 
-  const getOrdinalSuffix = (n: number) => {
-    const s = ["th", "st", "nd", "rd"];
-    const v = n % 100;
-    return s[(v - 20) % 10] || s[v] || s[0];
+      if (!res || res?.statusCode >= 400) {
+        showErrorToast(res?.message || "Failed to calculate positions");
+        return;
+      }
+
+      showSuccessToast(
+        `Positions calculated for ${res.data.totalStudents} students.`,
+      );
+      router.refresh();
+    } catch (error) {
+      showErrorToast("Something went wrong while calculating positions");
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
   const getFullMarks = (results: ResultSubject[], fallback: number) =>
@@ -434,7 +436,13 @@ export default function ShowMonthlyResultTable({
           {/* Calculate Position */}
           <button
             onClick={calculatePositions}
-            className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            disabled={!selectedClassId || isCalculating}
+            title={
+              !selectedClassId
+                ? "Select a class first"
+                : "Calculate positions for this class"
+            }
+            className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -449,7 +457,7 @@ export default function ShowMonthlyResultTable({
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            Calculate Position
+            {isCalculating ? "Calculating..." : "Calculate Position"}
           </button>
 
           {/* Download CSV */}

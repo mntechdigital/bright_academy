@@ -72,3 +72,20 @@ export const deleteMonthlyResult = async (id: string | undefined) => {
 
   return response;
 };
+
+
+export const calculatePositionsByClass = async (
+  classId: string,
+  month?: string,
+) => {
+  const response = await apiRequest("monthly-results/calculate-positions", {
+    method: "POST",
+    body: JSON.stringify({ classId, month }),
+    authRequired: true,
+  });
+
+  revalidatePath("/dashboard/result", "layout");
+  revalidatePath("/", "layout");
+
+  return response;
+};
