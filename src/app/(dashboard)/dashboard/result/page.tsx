@@ -12,38 +12,41 @@ import ShowMonthlyResultTable from "./_components/monthlyResult/ShowMonthlyResul
 import { getMonthlyResults } from "@/src/services/monthlyResult";
 
 const ResultOverviewPage = async (props: {
-  searchParams: Promise<{ search: string; page: string }>;
+  searchParams: Promise<{
+    search: string;
+    page: string;
+    classId?: string;
+    batchId?: string;
+  }>;
 }) => {
-  
   const searchParams = await props.searchParams;
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page) || 1;
-  
+  const classId = searchParams.classId || "";
+  const batchId = searchParams.batchId || "";
+
   const query: TQuery[] = [
-    {
-      key: "orderBy",
-      value: JSON.stringify({ createdAt: "desc" }),
-    },
-    {
-      key: "searchTerm",
-      value: search,
-    },
-    {
-      key: "page",
-      value: page.toString(),
-    },
-    {
-      key: "limit",
-      value: "20",
-    },
+    { key: "orderBy", value: JSON.stringify({ createdAt: "desc" }) },
+    { key: "searchTerm", value: search },
+    { key: "page", value: page.toString() },
+    { key: "limit", value: "20" },
   ];
 
+  // builderQuery এর "filter" param এর সাথে ম্যাচ করানোর জন্য
+  const filter: Record<string, string> = {};
+  if (classId) filter.classId = classId;
+  if (batchId) filter.batchId = batchId;
+
+  if (Object.keys(filter).length > 0) {
+    query.push({ key: "filter", value: JSON.stringify(filter) });
+  }
+
   const monthlyResultsRes = await getMonthlyResults(query);
+  console.log("monthlyResultsRes==>", monthlyResultsRes);
   const monthlyResultsData = monthlyResultsRes?.data?.data || [];
 
   const classesRes = await getClasses([]);
   const classesData = classesRes?.data?.data;
-
 
   return (
     <DashboardWrapper>

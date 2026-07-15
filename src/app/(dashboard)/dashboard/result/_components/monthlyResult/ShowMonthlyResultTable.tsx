@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
 import { downloadCSV } from "@/src/utils/downloadCSV";
 import { updateMonthlyResult } from "@/src/services/monthlyResult";
@@ -128,11 +129,56 @@ export default function ShowMonthlyResultTable({
   monthlyResultsData = [],
   classesData = [],
 }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [checkedAll, setCheckedAll] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const [selectedClassId, setSelectedClassId] = useState<string>("");
-  const [selectedBatchId, setSelectedBatchId] = useState<string>("");
-  const [search, setSearch] = useState("");
+
+  // These are now synced with the URL (?classId=&batchId=&search=) so the
+  // server can filter+paginate correctly instead of filtering only the
+  // 20 rows already loaded on the current page.
+  const [selectedClassId, setSelectedClassId] = useState(
+    searchParams.get("classId") || "",
+  );
+  const [selectedBatchId, setSelectedBatchId] = useState(
+    searchParams.get("batchId") || "",
+  );
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+
+  // Pushes filter changes into the URL. Always resets to page 1, since the
+  // previous page number may no longer be valid for the new filter set.
+  const updateFilters = (next: {
+    classId?: string;
+    batchId?: string;
+    search?: string;
+  }) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    const apply = (key: string, value: string | undefined) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    };
+
+    if ("classId" in next) apply("classId", next.classId);
+    if ("batchId" in next) apply("batchId", next.batchId);
+    if ("search" in next) apply("search", next.search);
+
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  // Debounce the search box before pushing to the URL / hitting the backend
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (search !== (searchParams.get("search") || "")) {
+        updateFilters({ search });
+      }
+    }, 400);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const toggleAll = () => {
     const next = !checkedAll;
@@ -150,8 +196,8 @@ export default function ShowMonthlyResultTable({
     results.reduce((sum, r) => sum + r.marks, 0);
 
   const calculatePositions = async () => {
-    // Sort filtered results by achieved marks descending
-    const sorted = [...filteredResults].sort((a, b) => {
+    // Sort the currently loaded (already filtered/paginated) results by achieved marks descending
+    const sorted = [...monthlyResultsData].sort((a, b) => {
       const aMarks = getAchievedMarks(a.results);
       const bMarks = getAchievedMarks(b.results);
       return bMarks - aMarks;
@@ -189,8 +235,25 @@ export default function ShowMonthlyResultTable({
 
   // Handle class change — reset batch when class changes
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedClassId(e.target.value);
+    const classId = e.target.value;
+    setSelectedClassId(classId);
     setSelectedBatchId("");
+    updateFilters({ classId, batchId: "" });
+  };
+
+  const handleBatchChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const batchId = e.target.value;
+    setSelectedBatchId(batchId);
+    updateFilters({ batchId });
+  };
+
+  const hasActiveFilters = !!(selectedClassId || selectedBatchId || search);
+
+  const clearFilters = () => {
+    setSelectedClassId("");
+    setSelectedBatchId("");
+    setSearch("");
+    router.push(pathname);
   };
 
   // Build a lookup map for student regNo from classesData
@@ -235,23 +298,9 @@ export default function ShowMonthlyResultTable({
     return "—";
   };
 
-  // Filter table rows
-  const filteredResults = monthlyResultsData.filter((result) => {
-    const matchesSearch = search
-      ? result.student?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        result.stdRegNo?.toLowerCase().includes(search.toLowerCase()) ||
-        result.student?.stdRegNo?.toLowerCase().includes(search.toLowerCase()) ||
-        result.student?.username?.toLowerCase().includes(search.toLowerCase()) ||
-        result.student?.parentPhone?.toLowerCase().includes(search.toLowerCase())
-      : true;
-    const matchesClass = selectedClassId
-      ? result.student?.classId === selectedClassId
-      : true;
-    const matchesBatch = selectedBatchId
-      ? result.student?.batchId === selectedBatchId
-      : true;
-    return matchesSearch && matchesClass && matchesBatch;
-  });
+  // The server already applies search/classId/batchId filtering and pagination
+  // (see updateFilters + page.tsx), so monthlyResultsData is used directly.
+  const results = monthlyResultsData;
 
   const selectedClassName = classesData.find(
     (c) => c.id === selectedClassId,
@@ -269,7 +318,7 @@ export default function ShowMonthlyResultTable({
       "Position",
     ];
 
-    const rows = filteredResults.map((result) => {
+    const rows = results.map((result) => {
       const achievedMarks = getAchievedMarks(result.results);
       const fullMarks = getFullMarks(result.results, result.totalMarks);
       const batchName = getBatchName(result);
@@ -347,7 +396,7 @@ export default function ShowMonthlyResultTable({
           {/* Select Batch — only show batches of selected class */}
           <select
             value={selectedBatchId}
-            onChange={(e) => setSelectedBatchId(e.target.value)}
+            onChange={handleBatchChange}
             disabled={!selectedClassId}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-32.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -358,6 +407,29 @@ export default function ShowMonthlyResultTable({
               </option>
             ))}
           </select>
+
+          {/* Clear Filter — only shown when a filter is active */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Clear Filter
+            </button>
+          )}
 
           {/* Calculate Position */}
           <button
@@ -512,7 +584,7 @@ export default function ShowMonthlyResultTable({
               </tr>
             </thead>
             <tbody>
-              {filteredResults.length === 0 ? (
+              {results.length === 0 ? (
                 <tr>
                   <td
                     colSpan={10}
@@ -522,7 +594,7 @@ export default function ShowMonthlyResultTable({
                   </td>
                 </tr>
               ) : (
-                filteredResults.map((result) => {
+                results.map((result) => {
                   const achievedMarks = getAchievedMarks(result.results);
                   const fullMarks = getFullMarks(
                     result.results,
