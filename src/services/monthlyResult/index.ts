@@ -13,7 +13,7 @@ export const createMonthlyResult = async (payload: Record<string, any>) => {
   });
 
   ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
-    revalidatePath(path);
+    revalidatePath(path, "layout");
   });
 
   return response;
@@ -54,9 +54,8 @@ export const updateMonthlyResult = async (
     authRequired: true,
   });
 
-  ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
-    revalidatePath(path);
-  });
+  revalidatePath("/dashboard/result", "layout");
+  revalidatePath("/", "layout");
 
   return response;
 };
@@ -68,11 +67,8 @@ export const deleteMonthlyResult = async (id: string | undefined) => {
   });
 
   ["/", "/dashboard", "/dashboard/result"].forEach((path) => {
-    revalidatePath(path);
+    revalidatePath(path, "layout");
   });
 
   return response;
 };
-
-
-

@@ -3,7 +3,7 @@ import { updateMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
 import React, { useEffect, useCallback } from "react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
@@ -92,7 +92,9 @@ export default function UpdateResultForm({ result }: Props) {
 
   const { fields } = useFieldArray({ control, name: "results" });
 
-  const watchedResults = watch("results");
+  // useWatch ব্যবহার করা হচ্ছে watch() এর বদলে — useFieldArray এর সাথে
+  // watch() এক রেন্ডার সাইকেল পিছিয়ে থাকে, useWatch সবসময় সিঙ্ক্রোনাসলি আপডেটেড থাকে
+  const watchedResults = useWatch({ control, name: "results" });
   const totalAchieved =
     watchedResults?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
 
@@ -116,12 +118,29 @@ export default function UpdateResultForm({ result }: Props) {
   useEffect(() => {
     if (!watchedResults) return;
 
-    const points = watchedResults
-      .map((r) => Number(r.point))
-      .filter((p) => !isNaN(p) && p > 0);
+    // grade set হয়েছে মানেই ঐ সাবজেক্টে marks entry হয়েছে (F সহ)
+    const validResults = watchedResults.filter(
+      (r) => r.grade && r.grade.trim() !== ""
+    );
 
-    const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
-    const letterGrade = gpa > 0 ? getGradeFromGPA(gpa) : "";
+    let gpa = 0;
+    let letterGrade = "";
+
+    if (validResults.length > 0) {
+      // কোনো একটা সাবজেক্টেও F থাকলে overall result F, GPA = 0
+      const hasFail = validResults.some(
+        (r) => r.grade.trim().toUpperCase() === "F"
+      );
+
+      if (hasFail) {
+        gpa = 0;
+        letterGrade = "F";
+      } else {
+        const points = validResults.map((r) => Number(r.point));
+        gpa = calculateGPAFromPoints(points);
+        letterGrade = getGradeFromGPA(gpa);
+      }
+    }
 
     setValue("gpa", gpa);
     setValue("grade", letterGrade);
@@ -157,6 +176,7 @@ export default function UpdateResultForm({ result }: Props) {
     console.log("update result res==>", res);
     if (res.statusCode === 200) {
       showSuccessToast("Result updated successfully!");
+      router.refresh(); // server component-এর ডেটা রিভ্যালিডেট করে, রিলোড ছাড়াই আপডেট দেখাবে
     } else {
       showErrorToast("Failed to update result. Please try again.");
     }
@@ -254,6 +274,12 @@ export default function UpdateResultForm({ result }: Props) {
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, "");
                           f.onChange(val);
+                          // fullMarks বদলালে grade/point-ও রিক্যালকুলেট করতে হবে
+                          const numericMarks = parseFloat(
+                            String(watchedResults?.[index]?.marks ?? "")
+                          );
+                          const fullMarks = parseFloat(val);
+                          handleMarksChange(index, numericMarks, fullMarks);
                         }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
                       />
