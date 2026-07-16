@@ -382,9 +382,7 @@ export default function StudentResultsDashboard() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-100 bg-gray-50/60">
-                            <th className="py-3 px-6 text-left font-medium text-gray-400 w-8">
-                              <input type="checkbox" className="rounded" />
-                            </th>
+                            
                             <th className="py-3 px-4 text-left font-medium text-gray-400">Subject</th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                               Full Marks <Tooltip text="Maximum marks for this subject" />
@@ -407,9 +405,6 @@ export default function StudentResultsDashboard() {
                               key={row.id ?? i}
                               className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
                             >
-                              <td className="py-4 px-6">
-                                <input type="checkbox" className="rounded" />
-                              </td>
                               <td className="py-4 px-4 font-medium text-gray-800">
                                 {row.subjectName}
                               </td>
@@ -440,6 +435,7 @@ export default function StudentResultsDashboard() {
                                   ["Total Marks", "Sum of all marks obtained"],
                                   ["GPA", "Grade Point Average"],
                                   ["Grade", "Overall letter grade"],
+                                  ["Position", "Student's rank in the class"],
                                   ["Present", "Days attended"],
                                   ["Absent", "Days missed"],
                                 ] as [string, string][]
@@ -462,7 +458,14 @@ export default function StudentResultsDashboard() {
                                 {activeMonthly?.gpa ?? "-"}
                               </td>
                               <td className="py-4 px-4 text-center">
-                                <GradeBadge grade={activeMonthly?.grade} />
+                                {activeMonthly?.grade?.toUpperCase() === "F" ? (
+                                  <span className="text-gray-300">-</span>
+                                ) : (
+                                  <GradeBadge grade={activeMonthly?.grade} />
+                                )}
+                              </td>
+                              <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
+                                {activeMonthly?.position ?? "-"}
                               </td>
                               <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                                 {activeMonthly?.present ?? "-"}
