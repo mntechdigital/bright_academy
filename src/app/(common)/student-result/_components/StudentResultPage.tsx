@@ -246,15 +246,13 @@ const handlePrint = () => {
           font-size: 12.5px;
         }
 
-        .sheet { border: 2.5px solid #000; }
-
         /* ── Top banner ───────────────────────────── */
         .banner {
           display: flex;
           align-items: center;
           gap: 10px;
-          border-bottom: 2px solid #000;
-          padding: 8px 14px;
+          border-bottom: 1px solid #d1d5db;
+          padding: 8px 4px 12px;
         }
         .banner .shield {
           width: 46px; height: 46px;
@@ -269,7 +267,7 @@ const handlePrint = () => {
         .banner .title-ribbon p { margin: 1px 0 0; font-size: 11px; color: #374151; }
         .banner .contact-box {
           font-size: 9.5px; color: #1f2937; line-height: 1.55;
-          border: 1px solid #000; border-radius: 6px;
+          border: 1px solid #d1d5db; border-radius: 6px;
           padding: 5px 10px; max-width: 165px; flex-shrink: 0;
         }
         .banner .contact-box .head { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
@@ -277,7 +275,7 @@ const handlePrint = () => {
         /* ── Exam title bar ───────────────────────── */
         .exam-title {
           text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
-          padding: 10px 8px 8px; border-bottom: 2px solid #000;
+          padding: 10px 8px 8px; border-bottom: 1px solid #d1d5db;
         }
 
         /* ── Info grid ────────────────────────────── */
@@ -286,23 +284,19 @@ const handlePrint = () => {
         table.info-grid td.label { font-size: 11px; color: #1f2937; width: 14%; }
         table.info-grid td.value { font-weight: 600; font-size: 12.5px; }
 
-        /* ── FORCE BORDERS ON EVERY TABLE FROM printContents ──────
-           printContents uses Tailwind classes (w-full, border-b,
-           border-gray-100, etc.) which mean nothing here because
-           Tailwind's stylesheet isn't loaded in this popup window.
-           So target plain tags, not those class names. ────────── */
+        div { overflow: visible !important; }
+
         table {
           width: 100% !important;
           border-collapse: collapse !important;
           margin-bottom: 16px;
-        }
-        table, table th, table td {
-          border: 1px solid #000 !important;
+          border: 1px solid #d1d5db !important;
         }
         th, td {
           padding: 7px 10px !important;
           font-size: 12px !important;
           text-align: center !important;
+          border: 1px solid #d1d5db !important;
         }
         th {
           background: #e5e7eb !important;
@@ -311,11 +305,8 @@ const handlePrint = () => {
         }
         th *, td * { color: inherit !important; }
         td:first-child, th:first-child { text-align: left !important; }
-
-        /* kill all Tailwind background utility remnants + row striping */
         tr { background: transparent !important; }
 
-        /* grade shown as plain colored text — no pill, no dot */
         span[class*="rounded-full"][class*="inline-flex"] {
           border: none !important; background: transparent !important;
           padding: 0 !important; border-radius: 0 !important;
@@ -323,16 +314,14 @@ const handlePrint = () => {
         }
         span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
 
-        /* "Exam Summary" heading text that appears inside printContents */
         h3 {
           text-align: center; font-weight: 700; font-size: 13px;
-          padding: 6px; margin: 0;
-          border-top: 1px solid #000; border-bottom: 1px solid #000;
-          background: #f9fafb;
+          padding: 6px; margin: 0 0 10px;
+          border-bottom: 1px solid #000;
+          background: transparent;
         }
 
-        /* ── Signatures ───────────────────────────── */
-        .signatures { display: flex; justify-content: space-between; padding: 50px 24px 20px; }
+        .signatures { display: flex; justify-content: space-between; padding: 50px 4px 20px; }
         .signature { text-align: left; width: 42%; }
         .signature .line { border-top: 1px solid #000; margin-bottom: 5px; }
         .signature .role { font-size: 12px; font-weight: 600; }
@@ -395,6 +384,25 @@ const handlePrint = () => {
         </div>
 
       </div>
+
+      <script>
+        // Force borders via inline style — guaranteed to win over any
+        // Tailwind class remnants copied in from the live page, since
+        // inline style has the highest specificity of all.
+        (function () {
+          document.querySelectorAll('table').forEach(function (t) {
+            t.style.setProperty('border-collapse', 'collapse', 'important');
+            t.style.setProperty('border', '1.5px solid #000', 'important');
+          });
+          document.querySelectorAll('table th, table td').forEach(function (cell) {
+            cell.style.setProperty('border', '1px solid #000', 'important');
+          });
+          document.querySelectorAll('table th').forEach(function (th) {
+            th.style.setProperty('background', '#e5e7eb', 'important');
+            th.style.setProperty('font-weight', '700', 'important');
+          });
+        })();
+      </script>
 
     </body>
     </html>
