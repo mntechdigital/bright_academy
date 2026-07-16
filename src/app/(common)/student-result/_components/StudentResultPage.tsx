@@ -384,19 +384,19 @@ export default function StudentResultsDashboard() {
                           <tr className="border-b border-gray-100 bg-gray-50/60">
                             
                             <th className="py-3 px-4 text-left font-medium text-gray-400">Subject</th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Full Marks <Tooltip text="Maximum marks for this subject" />
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                              Full Marks
                             </th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Highest Mark <Tooltip text="Highest mark scored in class" />
+                              Highest Mark
+                            </th>
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                              Marks Obtained
                             </th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Marks Obtained <Tooltip text="Your score in this subject" />
+                              Point
                             </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Point <Tooltip text="Grade point for this subject" />
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400">Grade ↓</th>
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 bg-slate-100">Grade</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -408,11 +408,11 @@ export default function StudentResultsDashboard() {
                               <td className="py-4 px-4 font-medium text-gray-800">
                                 {row.subjectName}
                               </td>
-                              <td className="py-4 px-4 text-center text-gray-600">{row.fullMarks}</td>
+                              <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">{row.fullMarks}</td>
                               <td className="py-4 px-4 text-center text-gray-600">{row.highestMark}</td>
-                              <td className="py-4 px-4 text-center text-gray-600">{row.marks}</td>
+                              <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">{row.marks}</td>
                               <td className="py-4 px-4 text-center text-gray-600">{row.point}</td>
-                              <td className="py-4 px-4 text-center">
+                              <td className="py-4 px-4 text-center bg-slate-100">
                                 <GradeBadge grade={row.grade} />
                               </td>
                             </tr>
@@ -444,7 +444,7 @@ export default function StudentResultsDashboard() {
                                   key={label}
                                   className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
                                 >
-                                  {label} <Tooltip text={tip} />
+                                  {label}
                                 </th>
                               ))}
                             </tr>
