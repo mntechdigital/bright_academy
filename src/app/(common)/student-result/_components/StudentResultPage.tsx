@@ -123,7 +123,9 @@ function SelectField({
           className="w-full appearance-none bg-white border border-gray-200 rounded-lg px-4 py-3 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
         >
           {options.map((o) => (
-            <option key={o} value={o}>{o}</option>
+            <option key={o} value={o}>
+              {o}
+            </option>
           ))}
         </select>
         <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -169,7 +171,10 @@ function GradeBadge({ grade }: { grade?: string }) {
       className="inline-flex items-center gap-1.5 border rounded-full px-2.5 py-0.5 text-xs font-semibold"
       style={{ color, borderColor: `${color}40` }}
     >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+      <span
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: color }}
+      />
       {grade}
     </span>
   );
@@ -211,36 +216,200 @@ export default function StudentResultsDashboard() {
     })();
   }, []);
 
-  const handlePrint = () => {
-    if (!printRef.current) return;
-    const printContents = printRef.current.innerHTML;
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`
-      <html><head><title>Bright Academy</title>
+const handlePrint = () => {
+  if (!printRef.current) return;
+  const printContents = printRef.current.innerHTML;
+  const w = window.open("", "_blank");
+  if (!w) return;
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+  });
+
+  const monthName = activeMonthly?.month || month;
+  const examTitle =
+    activeTab === "monthly"
+      ? `Monthly Assessment — ${monthName} ${year}`
+      : `Weekly Marks Report`;
+
+  w.document.write(`
+    <html>
+    <head>
+      <title>Bright Academy — Result</title>
       <style>
-        body { font-family: sans-serif; padding: 24px; }
-        .student-header { text-align: center; margin-bottom: 24px; }
-        .student-header h2 { font-size: 18px; margin: 0; color: #1f2937; }
-        .student-header p { margin: 4px 0 0; font-size: 13px; color: #6b7280; }
-        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        th, td { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: center; font-size: 13px; }
-        th { background: #f9fafb; font-weight: 600; }
-        td:nth-child(2) { text-align: left; }
-        h2, h3 { margin: 0 0 12px; }
-        .header { margin-bottom: 16px; }
+        @page { size: A4; margin: 10mm; }
+        * { box-sizing: border-box; }
+        body {
+          font-family: 'Segoe UI', Arial, sans-serif;
+          color: #111827;
+          margin: 0;
+          font-size: 12.5px;
+        }
+
+        /* ── Top banner ───────────────────────────── */
+        .banner {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border-bottom: 1px solid #d1d5db;
+          padding: 8px 4px 12px;
+        }
+        .banner .shield {
+          width: 46px; height: 46px;
+          border-radius: 50%;
+          border: 2px solid #1f2937;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 8px; font-weight: 700; color: #1f2937;
+          text-align: center; flex-shrink: 0;
+        }
+        .banner .title-ribbon { flex: 1; text-align: center; }
+        .banner .title-ribbon h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: 1px; }
+        .banner .title-ribbon p { margin: 1px 0 0; font-size: 11px; color: #374151; }
+        .banner .contact-box {
+          font-size: 9.5px; color: #1f2937; line-height: 1.55;
+          border: 1px solid #d1d5db; border-radius: 6px;
+          padding: 5px 10px; max-width: 165px; flex-shrink: 0;
+        }
+        .banner .contact-box .head { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
+
+        /* ── Exam title bar ───────────────────────── */
+        .exam-title {
+          text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
+          padding: 10px 8px 8px; border-bottom: 1px solid #d1d5db;
+        }
+
+        /* ── Info grid ────────────────────────────── */
+        table.info-grid { width: 100%; border-collapse: collapse; }
+        table.info-grid td { border: 1px solid #000; padding: 6px 12px; }
+        table.info-grid td.label { font-size: 11px; color: #1f2937; width: 14%; }
+        table.info-grid td.value { font-weight: 600; font-size: 12.5px; }
+
+        div { overflow: visible !important; }
+
+        table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          margin-bottom: 16px;
+          border: 1px solid #d1d5db !important;
+        }
+        th, td {
+          padding: 7px 10px !important;
+          font-size: 12px !important;
+          text-align: center !important;
+          border: 1px solid #d1d5db !important;
+        }
+        th {
+          background: #e5e7eb !important;
+          color: #111827 !important;
+          font-weight: 700 !important;
+        }
+        th *, td * { color: inherit !important; }
+        td:first-child, th:first-child { text-align: left !important; }
+        tr { background: transparent !important; }
+
+        span[class*="rounded-full"][class*="inline-flex"] {
+          border: none !important; background: transparent !important;
+          padding: 0 !important; border-radius: 0 !important;
+          font-weight: 700 !important; display: inline !important;
+        }
+        span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
+
+        h3 {
+          text-align: center; font-weight: 700; font-size: 13px;
+          padding: 6px; margin: 0 0 10px;
+          border-bottom: 1px solid #000;
+          background: transparent;
+        }
+
+        .signatures { display: flex; justify-content: space-between; padding: 50px 4px 20px; }
+        .signature { text-align: left; width: 42%; }
+        .signature .line { border-top: 1px solid #000; margin-bottom: 5px; }
+        .signature .role { font-size: 12px; font-weight: 600; }
+        .signature .date { margin-top: 12px; font-size: 11px; color: #374151; }
+
+        @media print { .no-print { display: none !important; } }
       </style>
-      </head><body>
-        <div class="student-header">
-          <h2>${studentInfo?.name || "Student"}</h2>
-          ${studentInfo?.stdRegNo ? `<p>ID: ${studentInfo.stdRegNo}</p>` : ""}
+    </head>
+    <body>
+
+      <div class="sheet">
+
+        <div class="banner">
+          <div class="shield">BRIGHT<br/>ACADEMY</div>
+          <div class="title-ribbon">
+            <h1>ব্রাইট একাডেমি</h1>
+            <p>পরিচালকঃ সুমন স্যার</p>
+          </div>
+          <div class="contact-box">
+            <div class="head">যোগাযোগঃ</div>
+            বরিশাল, বাংলাদেশ<br/>
+            ☎ 01911-80 95 71<br/>
+            ☎ 01779-60 77 12<br/>
+            ✉ brightsu89@gmail.com
+          </div>
         </div>
+
+        <div class="exam-title">${examTitle}</div>
+
+        <table class="info-grid">
+          <tr>
+            <td class="label">Roll / ID</td>
+            <td class="value">${studentInfo?.stdRegNo || "-"}</td>
+            <td class="label">Date of Publication</td>
+            <td class="value">${today}</td>
+            <td class="label">Month</td>
+            <td class="value">${monthName}</td>
+          </tr>
+          <tr>
+            <td class="label">Name</td>
+            <td class="value" colspan="3">${studentInfo?.name || "-"}</td>
+            <td class="label">Year</td>
+            <td class="value">${year}</td>
+          </tr>
+        </table>
+
         ${printContents}
-      </body></html>
-    `);
-    w.document.close();
-    w.print();
-  };
+
+        <div class="signatures">
+          <div class="signature">
+            <div class="line">&nbsp;</div>
+            <div class="role">Guardian's Signature</div>
+            <div class="date">Date: ....................................</div>
+          </div>
+          <div class="signature">
+            <div class="line">&nbsp;</div>
+            <div class="role">Director's Signature</div>
+            <div class="date">Date: ....................................</div>
+          </div>
+        </div>
+
+      </div>
+
+      <script>
+        // Force borders via inline style — guaranteed to win over any
+        // Tailwind class remnants copied in from the live page, since
+        // inline style has the highest specificity of all.
+        (function () {
+          document.querySelectorAll('table').forEach(function (t) {
+            t.style.setProperty('border-collapse', 'collapse', 'important');
+            t.style.setProperty('border', '1.5px solid #000', 'important');
+          });
+          document.querySelectorAll('table th, table td').forEach(function (cell) {
+            cell.style.setProperty('border', '1px solid #000', 'important');
+          });
+          document.querySelectorAll('table th').forEach(function (th) {
+            th.style.setProperty('background', '#e5e7eb', 'important');
+            th.style.setProperty('font-weight', '700', 'important');
+          });
+        })();
+      </script>
+
+    </body>
+    </html>
+  `);
+  w.document.close();
+  w.print();
+};
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
@@ -262,9 +431,24 @@ export default function StudentResultsDashboard() {
 
   const months = allMonths.length
     ? allMonths
-    : ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const weeks = allWeeks.length ? allWeeks : ["Week 1","Week 2","Week 3","Week 4"];
-  const years = allYears.length ? allYears : ["2025","2026"];
+    : [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+  const weeks = allWeeks.length
+    ? allWeeks
+    : ["Week 1", "Week 2", "Week 3", "Week 4"];
+  const years = allYears.length ? allYears : ["2025", "2026"];
 
   const noData = monthlyResults.length === 0 && weeklyMarks.length === 0;
 
@@ -298,12 +482,21 @@ export default function StudentResultsDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-
       {/* Dark filter bar */}
       <div className=" px-4 pt-4 pb-6 md:px-8">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-          <SelectField label="Month" value={month} options={months} onChange={setMonth} />
-          <SelectField label="Week" value={week} options={weeks} onChange={setWeek} />
+          <SelectField
+            label="Month"
+            value={month}
+            options={months}
+            onChange={setMonth}
+          />
+          <SelectField
+            label="Week"
+            value={week}
+            options={weeks}
+            onChange={setWeek}
+          />
 
           {/* Published Date */}
           <div className="flex flex-col gap-1">
@@ -321,13 +514,17 @@ export default function StudentResultsDashboard() {
             </div>
           </div>
 
-          <SelectField label="Year" value={year} options={years} onChange={setYear} />
+          <SelectField
+            label="Year"
+            value={year}
+            options={years}
+            onChange={setYear}
+          />
         </div>
       </div>
 
       {/* Main content */}
       <div className="flex-1 px-4 py-4 md:px-8 md:py-6 pb-4">
-
         {/* Student Info Header */}
         {studentInfo?.name && (
           <div className="flex items-center gap-3 mb-4 bg-white rounded-xl px-5 py-3 shadow-sm border border-gray-100">
@@ -335,9 +532,13 @@ export default function StudentResultsDashboard() {
               <User size={18} className="text-orange-600" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{studentInfo.name}</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {studentInfo.name}
+              </p>
               {studentInfo.stdRegNo && (
-                <p className="text-xs text-gray-400">ID: {studentInfo.stdRegNo}</p>
+                <p className="text-xs text-gray-400">
+                  ID: {studentInfo.stdRegNo}
+                </p>
               )}
             </div>
           </div>
@@ -345,22 +546,32 @@ export default function StudentResultsDashboard() {
 
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-4 bg-white rounded-xl px-3 py-2 shadow-sm border border-gray-100 w-fit">
-          <TabButton active={activeTab === "monthly"} onClick={() => setActiveTab("monthly")}>
+          <TabButton
+            active={activeTab === "monthly"}
+            onClick={() => setActiveTab("monthly")}
+          >
             Monthly Results
           </TabButton>
-          <TabButton active={activeTab === "weekly"} onClick={() => setActiveTab("weekly")}>
+          <TabButton
+            active={activeTab === "weekly"}
+            onClick={() => setActiveTab("weekly")}
+          >
             Weekly Marks
           </TabButton>
         </div>
 
         {noData ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
-            <h2 className="text-xl font-semibold text-gray-700">কোনো ফলাফল প্রকাশিত হয়নি</h2>
+            <h2 className="text-xl font-semibold text-gray-700">
+              কোনো ফলাফল প্রকাশিত হয়নি
+            </h2>
             <p className="text-gray-400 mt-2 text-sm">পরে আবার চেক করুন।</p>
           </div>
         ) : (
-          <div ref={printRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
+          <div
+            ref={printRef}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+          >
             {/* ── MONTHLY TAB ──────────────────────────────────────────── */}
             {activeTab === "monthly" && (
               <>
@@ -382,23 +593,24 @@ export default function StudentResultsDashboard() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-100 bg-gray-50/60">
-                            <th className="py-3 px-6 text-left font-medium text-gray-400 w-8">
-                              <input type="checkbox" className="rounded" />
+                            <th className="py-3 px-4 text-left font-medium text-gray-400">
+                              Subject
                             </th>
-                            <th className="py-3 px-4 text-left font-medium text-gray-400">Subject</th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Full Marks <Tooltip text="Maximum marks for this subject" />
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Highest Mark <Tooltip text="Highest mark scored in class" />
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                              Full Marks
                             </th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Marks Obtained <Tooltip text="Your score in this subject" />
+                              Highest Mark
+                            </th>
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                              Marks Obtained
                             </th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Point <Tooltip text="Grade point for this subject" />
+                              Point
                             </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400">Grade ↓</th>
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 bg-slate-100">
+                              Grade
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -407,17 +619,22 @@ export default function StudentResultsDashboard() {
                               key={row.id ?? i}
                               className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
                             >
-                              <td className="py-4 px-6">
-                                <input type="checkbox" className="rounded" />
-                              </td>
                               <td className="py-4 px-4 font-medium text-gray-800">
                                 {row.subjectName}
                               </td>
-                              <td className="py-4 px-4 text-center text-gray-600">{row.fullMarks}</td>
-                              <td className="py-4 px-4 text-center text-gray-600">{row.highestMark}</td>
-                              <td className="py-4 px-4 text-center text-gray-600">{row.marks}</td>
-                              <td className="py-4 px-4 text-center text-gray-600">{row.point}</td>
-                              <td className="py-4 px-4 text-center">
+                              <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
+                                {row.fullMarks}
+                              </td>
+                              <td className="py-4 px-4 text-center text-gray-600">
+                                {row.highestMark}
+                              </td>
+                              <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
+                                {row.marks}
+                              </td>
+                              <td className="py-4 px-4 text-center text-gray-600">
+                                {row.point}
+                              </td>
+                              <td className="py-4 px-4 text-center bg-slate-100">
                                 <GradeBadge grade={row.grade} />
                               </td>
                             </tr>
@@ -440,6 +657,7 @@ export default function StudentResultsDashboard() {
                                   ["Total Marks", "Sum of all marks obtained"],
                                   ["GPA", "Grade Point Average"],
                                   ["Grade", "Overall letter grade"],
+                                  ["Position", "Student's rank in the class"],
                                   ["Present", "Days attended"],
                                   ["Absent", "Days missed"],
                                 ] as [string, string][]
@@ -448,7 +666,7 @@ export default function StudentResultsDashboard() {
                                   key={label}
                                   className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
                                 >
-                                  {label} <Tooltip text={tip} />
+                                  {label}
                                 </th>
                               ))}
                             </tr>
@@ -462,7 +680,14 @@ export default function StudentResultsDashboard() {
                                 {activeMonthly?.gpa ?? "-"}
                               </td>
                               <td className="py-4 px-4 text-center">
-                                <GradeBadge grade={activeMonthly?.grade} />
+                                {activeMonthly?.grade?.toUpperCase() === "F" ? (
+                                  <span className="text-gray-300">-</span>
+                                ) : (
+                                  <GradeBadge grade={activeMonthly?.grade} />
+                                )}
+                              </td>
+                              <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
+                                {activeMonthly?.position ?? "-"}
                               </td>
                               <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                                 {activeMonthly?.present ?? "-"}
@@ -492,16 +717,25 @@ export default function StudentResultsDashboard() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-100 bg-gray-50/60">
-                          <th className="py-3 px-6 text-left font-medium text-gray-400">Subject</th>
+                          <th className="py-3 px-6 text-left font-medium text-gray-400">
+                            Subject
+                          </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Total Marks <Tooltip text="Maximum marks for this test" />
+                            Total Marks{" "}
+                            <Tooltip text="Maximum marks for this test" />
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Obtained Marks <Tooltip text="Your score" />
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">Week</th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">Month</th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">Year</th>
+                          <th className="py-3 px-4 text-center font-medium text-gray-400">
+                            Week
+                          </th>
+                          <th className="py-3 px-4 text-center font-medium text-gray-400">
+                            Month
+                          </th>
+                          <th className="py-3 px-4 text-center font-medium text-gray-400">
+                            Year
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -513,11 +747,21 @@ export default function StudentResultsDashboard() {
                             <td className="py-4 px-6 font-medium text-gray-800">
                               {row.subject?.subjectName ?? "-"}
                             </td>
-                            <td className="py-4 px-4 text-center text-gray-600">{row.totalMarks}</td>
-                            <td className="py-4 px-4 text-center text-gray-600">{row.obtainedMarks}</td>
-                            <td className="py-4 px-4 text-center text-gray-500">{row.week}</td>
-                            <td className="py-4 px-4 text-center text-gray-500">{row.month}</td>
-                            <td className="py-4 px-4 text-center text-gray-500">{row.year}</td>
+                            <td className="py-4 px-4 text-center text-gray-600">
+                              {row.totalMarks}
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-600">
+                              {row.obtainedMarks}
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {row.week}
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {row.month}
+                            </td>
+                            <td className="py-4 px-4 text-center text-gray-500">
+                              {row.year}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -526,7 +770,6 @@ export default function StudentResultsDashboard() {
                 )}
               </>
             )}
-
           </div>
         )}
       </div>
@@ -541,7 +784,6 @@ export default function StudentResultsDashboard() {
           Print
         </button>
       </div>
-
     </div>
   );
 }
