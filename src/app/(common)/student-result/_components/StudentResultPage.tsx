@@ -216,215 +216,16 @@ export default function StudentResultsDashboard() {
     })();
   }, []);
 
-const handlePrint = () => {
-  if (!printRef.current) return;
-  const printContents = printRef.current.innerHTML;
-  const w = window.open("", "_blank");
-  if (!w) return;
-
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-
-  const monthName = activeMonthly?.month || month;
-  const examTitle =
-    activeTab === "monthly"
-      ? `Monthly Assessment — ${monthName} ${year}`
-      : `Weekly Marks Report`;
-
-  w.document.write(`
-    <html>
-    <head>
-      <title>Bright Academy — Result</title>
-      <style>
-        @page { size: A4; margin: 10mm; }
-        * { box-sizing: border-box; }
-        body {
-          font-family: 'Segoe UI', Arial, sans-serif;
-          color: #111827;
-          margin: 0;
-          font-size: 12.5px;
-        }
-
-        /* ── Top banner ───────────────────────────── */
-        .banner {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          border-bottom: 1px solid #d1d5db;
-          padding: 8px 4px 12px;
-        }
-        .banner .shield {
-          width: 46px; height: 46px;
-          border-radius: 50%;
-          border: 2px solid #1f2937;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 8px; font-weight: 700; color: #1f2937;
-          text-align: center; flex-shrink: 0;
-        }
-        .banner .title-ribbon { flex: 1; text-align: center; }
-        .banner .title-ribbon h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: 1px; }
-        .banner .title-ribbon p { margin: 1px 0 0; font-size: 11px; color: #374151; }
-        .banner .contact-box {
-          font-size: 9.5px; color: #1f2937; line-height: 1.55;
-          border: 1px solid #d1d5db; border-radius: 6px;
-          padding: 5px 10px; max-width: 165px; flex-shrink: 0;
-        }
-        .banner .contact-box .head { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
-
-        /* ── Exam title bar ───────────────────────── */
-        .exam-title {
-          text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
-          padding: 10px 8px 8px; border-bottom: 1px solid #d1d5db;
-        }
-
-        /* ── Info grid ────────────────────────────── */
-        table.info-grid { width: 100%; border-collapse: collapse; }
-        table.info-grid td { border: 1px solid #000; padding: 6px 12px; }
-        table.info-grid td.label { font-size: 11px; color: #1f2937; width: 14%; }
-        table.info-grid td.value { font-weight: 600; font-size: 12.5px; }
-
-        div { overflow: visible !important; }
-
-        table {
-          width: 100% !important;
-          border-collapse: collapse !important;
-          margin-bottom: 16px;
-          border: 1px solid #d1d5db !important;
-        }
-        th, td {
-          padding: 7px 10px !important;
-          font-size: 12px !important;
-          text-align: center !important;
-          border: 1px solid #d1d5db !important;
-        }
-        th {
-          background: #e5e7eb !important;
-          color: #111827 !important;
-          font-weight: 700 !important;
-        }
-        th *, td * { color: inherit !important; }
-        td:first-child, th:first-child { text-align: left !important; }
-        tr { background: transparent !important; }
-
-        span[class*="rounded-full"][class*="inline-flex"] {
-          border: none !important; background: transparent !important;
-          padding: 0 !important; border-radius: 0 !important;
-          font-weight: 700 !important; display: inline !important;
-        }
-        span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
-
-        h3 {
-          text-align: center; font-weight: 700; font-size: 13px;
-          padding: 6px; margin: 0 0 10px;
-          border-bottom: 1px solid #000;
-          background: transparent;
-        }
-
-        .signatures { display: flex; justify-content: space-between; padding: 50px 4px 20px; }
-        .signature { text-align: left; width: 42%; }
-        .signature .line { border-top: 1px solid #000; margin-bottom: 5px; }
-        .signature .role { font-size: 12px; font-weight: 600; }
-        .signature .date { margin-top: 12px; font-size: 11px; color: #374151; }
-
-        @media print { .no-print { display: none !important; } }
-      </style>
-    </head>
-    <body>
-
-      <div class="sheet">
-
-        <div class="banner">
-          <div class="shield">BRIGHT<br/>ACADEMY</div>
-          <div class="title-ribbon">
-            <h1>ব্রাইট একাডেমি</h1>
-            <p>পরিচালকঃ সুমন স্যার</p>
-          </div>
-          <div class="contact-box">
-            <div class="head">যোগাযোগঃ</div>
-            বরিশাল, বাংলাদেশ<br/>
-            ☎ 01911-80 95 71<br/>
-            ☎ 01779-60 77 12<br/>
-            ✉ brightsu89@gmail.com
-          </div>
-        </div>
-
-        <div class="exam-title">${examTitle}</div>
-
-        <table class="info-grid">
-          <tr>
-            <td class="label">Roll / ID</td>
-            <td class="value">${studentInfo?.stdRegNo || "-"}</td>
-            <td class="label">Date of Publication</td>
-            <td class="value">${today}</td>
-            <td class="label">Month</td>
-            <td class="value">${monthName}</td>
-          </tr>
-          <tr>
-            <td class="label">Name</td>
-            <td class="value" colspan="3">${studentInfo?.name || "-"}</td>
-            <td class="label">Year</td>
-            <td class="value">${year}</td>
-          </tr>
-        </table>
-
-        ${printContents}
-
-        <div class="signatures">
-          <div class="signature">
-            <div class="line">&nbsp;</div>
-            <div class="role">Guardian's Signature</div>
-            <div class="date">Date: ....................................</div>
-          </div>
-          <div class="signature">
-            <div class="line">&nbsp;</div>
-            <div class="role">Director's Signature</div>
-            <div class="date">Date: ....................................</div>
-          </div>
-        </div>
-
-      </div>
-
-      <script>
-        // Force borders via inline style — guaranteed to win over any
-        // Tailwind class remnants copied in from the live page, since
-        // inline style has the highest specificity of all.
-        (function () {
-          document.querySelectorAll('table').forEach(function (t) {
-            t.style.setProperty('border-collapse', 'collapse', 'important');
-            t.style.setProperty('border', '1.5px solid #000', 'important');
-          });
-          document.querySelectorAll('table th, table td').forEach(function (cell) {
-            cell.style.setProperty('border', '1px solid #000', 'important');
-          });
-          document.querySelectorAll('table th').forEach(function (th) {
-            th.style.setProperty('background', '#e5e7eb', 'important');
-            th.style.setProperty('font-weight', '700', 'important');
-          });
-        })();
-      </script>
-
-    </body>
-    </html>
-  `);
-  w.document.close();
-  w.print();
-};
-
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const monthlyResults = resultData?.data?.monthlyResults ?? [];
   const weeklyMarks = resultData?.data?.weeklyMarks ?? [];
 
-  // For monthly tab: use the first (or all) monthlyResult's nested results[]
-  // and the parent for summary
-  const activeMonthly = monthlyResults[0]; // can be extended to filter by selected month
+  const activeMonthly = monthlyResults[0];
   const subjectRows: SubjectResult[] = activeMonthly?.results ?? [];
 
-  // For weekly tab: flat rows
   const weeklyRows = weeklyMarks;
 
-  // Derive unique filter options from data
   const allMonths = [...new Set(monthlyResults.map((r) => r.month))];
   const allWeeks = [...new Set(weeklyMarks.map((r) => r.week))];
   const allYears = [...new Set(weeklyMarks.map((r) => r.year))];
@@ -454,6 +255,203 @@ const handlePrint = () => {
 
   // ── Student info from cookie ─────────────────────────────────────────────
   const studentInfo = useMemo(() => getStudentFromCookie(), []);
+
+  // ── Print handler ─────────────────────────────────────────────────────────
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printContents = printRef.current.innerHTML;
+    const w = window.open("", "_blank");
+    if (!w) return;
+
+    const today = new Date().toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    const monthName = activeMonthly?.month || month;
+    const examTitle =
+      activeTab === "monthly"
+        ? `Monthly Assessment — ${monthName} ${year}`
+        : `Weekly Marks Report`;
+
+    w.document.write(`
+      <html>
+      <head>
+        <title>Bright Academy — Result</title>
+        <style>
+          @page { size: A4; margin: 10mm; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #111827;
+            margin: 0;
+            font-size: 12.5px;
+          }
+
+          /* ── Top banner ───────────────────────────── */
+          .banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #d1d5db;
+            padding: 8px 4px 12px;
+          }
+          .banner .shield {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            border: 2px solid #1f2937;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 8px; font-weight: 700; color: #1f2937;
+            text-align: center; flex-shrink: 0;
+          }
+          .banner .title-ribbon { flex: 1; text-align: center; }
+          .banner .title-ribbon h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: 1px; }
+          .banner .title-ribbon p { margin: 1px 0 0; font-size: 11px; color: #374151; }
+          .banner .contact-box {
+            font-size: 9.5px; color: #1f2937; line-height: 1.55;
+            border: 1px solid #d1d5db; border-radius: 6px;
+            padding: 5px 10px; max-width: 165px; flex-shrink: 0;
+          }
+          .banner .contact-box .head { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
+
+          /* ── Exam title bar ───────────────────────── */
+          .exam-title {
+            text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
+            padding: 10px 8px 8px; border-bottom: 1px solid #d1d5db;
+          }
+
+          /* ── Info grid ────────────────────────────── */
+          table.info-grid { width: 100%; border-collapse: collapse; }
+          table.info-grid td { border: 1px solid #000; padding: 6px 12px; }
+          table.info-grid td.label { font-size: 11px; color: #1f2937; width: 14%; }
+          table.info-grid td.value { font-weight: 600; font-size: 12.5px; }
+
+          div { overflow: visible !important; }
+
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-bottom: 16px;
+          }
+          th, td {
+            padding: 7px 10px !important;
+            font-size: 12px !important;
+            text-align: center !important;
+          }
+          th {
+            background: #e5e7eb !important;
+            color: #111827 !important;
+            font-weight: 700 !important;
+          }
+          th *, td * { color: inherit !important; }
+          td:first-child, th:first-child { text-align: left !important; }
+          tr { background: transparent !important; }
+
+          span[class*="rounded-full"][class*="inline-flex"] {
+            border: none !important; background: transparent !important;
+            padding: 0 !important; border-radius: 0 !important;
+            font-weight: 700 !important; display: inline !important;
+          }
+          span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
+
+          h3 {
+            text-align: center; font-weight: 700; font-size: 13px;
+            padding: 6px; margin: 0 0 10px;
+            border-bottom: 1px solid #000;
+            background: transparent;
+          }
+
+          .signatures { display: flex; justify-content: space-between; padding: 50px 4px 20px; }
+          .signature { text-align: left; width: 42%; }
+          .signature .line { border-top: 1px solid #000; margin-bottom: 5px; }
+          .signature .role { font-size: 12px; font-weight: 600; }
+          .signature .date { margin-top: 12px; font-size: 11px; color: #374151; }
+
+          @media print { .no-print { display: none !important; } }
+        </style>
+      </head>
+      <body>
+
+        <div class="sheet">
+
+          <div class="banner">
+            <div class="shield">BRIGHT<br/>ACADEMY</div>
+            <div class="title-ribbon">
+              <h1>ব্রাইট একাডেমি</h1>
+              <p>পরিচালকঃ সুমন স্যার</p>
+            </div>
+            <div class="contact-box">
+              <div class="head">যোগাযোগঃ</div>
+              বরিশাল, বাংলাদেশ<br/>
+              ☎ 01911-80 95 71<br/>
+              ☎ 01779-60 77 12<br/>
+              ✉ brightsu89@gmail.com
+            </div>
+          </div>
+
+          <div class="exam-title">${examTitle}</div>
+
+          <table class="info-grid">
+            <tr>
+              <td class="label">Roll / ID</td>
+              <td class="value">${studentInfo?.stdRegNo || "-"}</td>
+              <td class="label">Date of Publication</td>
+              <td class="value">${today}</td>
+              <td class="label">Month</td>
+              <td class="value">${monthName}</td>
+            </tr>
+            <tr>
+              <td class="label">Name</td>
+              <td class="value" colspan="3">${studentInfo?.name || "-"}</td>
+              <td class="label">Year</td>
+              <td class="value">${year}</td>
+            </tr>
+          </table>
+
+          ${printContents}
+
+          <div class="signatures">
+            <div class="signature">
+              <div class="line">&nbsp;</div>
+              <div class="role">Guardian's Signature</div>
+              <div class="date">Date: ....................................</div>
+            </div>
+            <div class="signature">
+              <div class="line">&nbsp;</div>
+              <div class="role">Director's Signature</div>
+              <div class="date">Date: ....................................</div>
+            </div>
+          </div>
+
+        </div>
+
+        <script>
+          // Force borders via inline style — wins over any Tailwind
+          // class remnants copied in from the live page, since inline
+          // style has the highest specificity available.
+          (function () {
+            document.querySelectorAll('table').forEach(function (t) {
+              t.style.setProperty('border-collapse', 'collapse', 'important');
+              t.style.setProperty('border', '1.5px solid #000', 'important');
+            });
+            document.querySelectorAll('table th, table td').forEach(function (cell) {
+              cell.style.setProperty('border', '1px solid #000', 'important');
+            });
+            document.querySelectorAll('table th').forEach(function (th) {
+              th.style.setProperty('background', '#e5e7eb', 'important');
+              th.style.setProperty('font-weight', '700', 'important');
+            });
+          })();
+        </script>
+
+      </body>
+      </html>
+    `);
+    w.document.close();
+    w.print();
+  };
 
   // ── Loading / Error ───────────────────────────────────────────────────────
 

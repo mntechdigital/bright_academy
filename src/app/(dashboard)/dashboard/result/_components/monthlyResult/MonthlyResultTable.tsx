@@ -99,6 +99,7 @@ interface MonthlyResultTableProps {
   studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
   month: string;
+  monthlyExamName?: string;
   subjectHighestMarks?: Record<string, string>;
 }
 
@@ -107,6 +108,7 @@ export default function MonthlyResultTable({
   studentName,
   subjects,
   month,
+  monthlyExamName,
   subjectHighestMarks = {}
 }: MonthlyResultTableProps) {
   const subjectNames =
@@ -214,6 +216,7 @@ export default function MonthlyResultTable({
   const handleSubmit = async () => {
     const payload = {
       studentId: studentId,
+      monthlyExamName: monthlyExamName,
       totalMarks: Number(summary.totalMarks),
       gpa: Number(summary.gpa),
       grade: summary.grade,
