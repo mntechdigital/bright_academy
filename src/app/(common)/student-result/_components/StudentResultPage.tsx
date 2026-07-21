@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { getMyResults } from "@/src/services/students";
 import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
+import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
+import brightpdf2 from "../../../../../public/brightpdf-2.jpeg";
+import brightpdf3 from "../../../../../public/brightpdf-3.jpeg";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -277,6 +280,19 @@ export default function StudentResultsDashboard() {
         ? `${activeMonthly?.monthlyExamName || "Monthly Assessment"} — ${monthName} ${year}`
         : `Weekly Marks Report`;
 
+    const baseUrl = window.location.origin;
+
+    // Resolve image URL - public folder imports return the path
+    const getImgUrl = (img: any) => {
+      if (typeof img === "string") return img.startsWith("http") ? img : `${baseUrl}${img}`;
+      if (img?.src) return img.src.startsWith("http") ? img.src : `${baseUrl}${img.src}`;
+      return "";
+    };
+
+    const bannerImg1 = getImgUrl(brightpdf1);
+    const bannerImg2 = getImgUrl(brightpdf2);
+    const bannerImg3 = getImgUrl(brightpdf3);
+
     w.document.write(`
       <html>
       <head>
@@ -291,31 +307,22 @@ export default function StudentResultsDashboard() {
             font-size: 12.5px;
           }
 
-          /* ── Top banner ───────────────────────────── */
+          /* ── Top banner with images ──────────────── */
           .banner {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
             border-bottom: 1px solid #d1d5db;
             padding: 8px 4px 12px;
           }
-          .banner .shield {
-            width: 46px; height: 46px;
-            border-radius: 50%;
-            border: 2px solid #1f2937;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 8px; font-weight: 700; color: #1f2937;
-            text-align: center; flex-shrink: 0;
+          .banner img {
+            max-height: 90px;
+            width: auto;
+            object-fit: contain;
           }
-          .banner .title-ribbon { flex: 1; text-align: center; }
-          .banner .title-ribbon h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: 1px; }
-          .banner .title-ribbon p { margin: 1px 0 0; font-size: 11px; color: #374151; }
-          .banner .contact-box {
-            font-size: 9.5px; color: #1f2937; line-height: 1.55;
-            border: 1px solid #d1d5db; border-radius: 6px;
-            padding: 5px 10px; max-width: 165px; flex-shrink: 0;
-          }
-          .banner .contact-box .head { font-weight: 700; font-size: 10px; margin-bottom: 2px; }
+          .banner .banner-left { width: 30%; text-align: left; }
+          .banner .banner-middle { width: 30%; text-align: center; }
+          .banner .banner-right { width: 30%; text-align: right; }
 
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
@@ -380,17 +387,14 @@ export default function StudentResultsDashboard() {
         <div class="sheet">
 
           <div class="banner">
-            <div class="shield">BRIGHT<br/>ACADEMY</div>
-            <div class="title-ribbon">
-              <h1>ব্রাইট একাডেমি</h1>
-              <p>পরিচালকঃ সুমন স্যার</p>
+            <div class="banner-left">
+              <img src="${bannerImg2}" alt="Bright Academy" />
             </div>
-            <div class="contact-box">
-              <div class="head">যোগাযোগঃ</div>
-              বরিশাল, বাংলাদেশ<br/>
-              ☎ 01911-80 95 71<br/>
-              ☎ 01779-60 77 12<br/>
-              ✉ brightsu89@gmail.com
+            <div class="banner-middle">
+              <img src="${bannerImg1}" alt="Bright Academy" />
+            </div>
+            <div class="banner-right">
+              <img src="${bannerImg3}" alt="Bright Academy" />
             </div>
           </div>
 
