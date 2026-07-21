@@ -29,6 +29,7 @@ export interface MonthlyResult {
   student: Student;
   className?: string;
   batchName?: string;
+  monthlyExamName?: string;
   results: ResultSubject[];
   totalMarks: number;
   gpa: number;
@@ -152,7 +153,9 @@ export default function ViewMonthlyResultForm({ result }: Props) {
       <div className="space-y-6 bg-gray-50 p-4 rounded-xl">
         {/* Header for PDF */}
         <div className="text-center pb-2 border-b border-gray-200">
-          <h1 className="text-lg font-bold text-gray-800">Monthly Result Report</h1>
+          <h1 className="text-lg font-bold text-gray-800">
+            {result.monthlyExamName || "Monthly Result Report"}
+          </h1>
           <p className="text-xs text-gray-400 mt-0.5">
             Generated on{" "}
             {new Date().toLocaleDateString("en-US", {
@@ -178,6 +181,11 @@ export default function ViewMonthlyResultForm({ result }: Props) {
                 {(result.student?.batch?.name || result.batchName) && (
                   <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
                     Batch {result.student?.batch?.name || result.batchName}
+                  </span>
+                )}
+                {result.monthlyExamName && (
+                  <span className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
+                    {result.monthlyExamName}
                   </span>
                 )}
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
