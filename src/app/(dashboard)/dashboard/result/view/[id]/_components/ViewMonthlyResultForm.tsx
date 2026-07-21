@@ -79,7 +79,7 @@ export default function ViewMonthlyResultForm({ result }: Props) {
       });
 
       pdf.setFontSize(16);
-      pdf.text("Monthly Result Report", 14, 16);
+      pdf.text(result.monthlyExamName || "Monthly Result Report", 14, 16);
 
       pdf.setFontSize(10);
       pdf.text(`Generated on: ${generatedOn}`, 14, 22);

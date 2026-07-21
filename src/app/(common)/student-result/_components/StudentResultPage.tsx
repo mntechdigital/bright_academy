@@ -19,6 +19,7 @@ interface SubjectResult {
 interface MonthlyResult {
   id: string;
   month: string;
+  monthlyExamName?: string;
   gpa: number;
   grade: string;
   totalMarks: number;
@@ -273,7 +274,7 @@ export default function StudentResultsDashboard() {
     const monthName = activeMonthly?.month || month;
     const examTitle =
       activeTab === "monthly"
-        ? `Monthly Assessment — ${monthName} ${year}`
+        ? `${activeMonthly?.monthlyExamName || "Monthly Assessment"} — ${monthName} ${year}`
         : `Weekly Marks Report`;
 
     w.document.write(`
@@ -318,32 +319,34 @@ export default function StudentResultsDashboard() {
 
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
-            text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
-            padding: 10px 8px 8px; border-bottom: 1px solid #d1d5db;
+            text-align: center; font-size: 28px; font-weight: 800; font-style: italic;
+            padding: 16px 12px 14px; border-bottom: 2px solid #d1d5db;
+            letter-spacing: 0.5px;
           }
 
           /* ── Info grid ────────────────────────────── */
           table.info-grid { width: 100%; border-collapse: collapse; }
-          table.info-grid td { border: 1px solid #000; padding: 6px 12px; }
-          table.info-grid td.label { font-size: 11px; color: #1f2937; width: 14%; }
-          table.info-grid td.value { font-weight: 600; font-size: 12.5px; }
+          table.info-grid td { border: 1px solid #000; padding: 10px 16px; }
+          table.info-grid td.label { font-size: 14px; color: #1f2937; width: 14%; }
+          table.info-grid td.value { font-weight: 600; font-size: 15px; }
 
           div { overflow: visible !important; }
 
           table {
             width: 100% !important;
             border-collapse: collapse !important;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
           }
           th, td {
-            padding: 7px 10px !important;
-            font-size: 12px !important;
+            padding: 12px 14px !important;
+            font-size: 14px !important;
             text-align: center !important;
           }
           th {
             background: #e5e7eb !important;
             color: #111827 !important;
             font-weight: 700 !important;
+            font-size: 14px !important;
           }
           th *, td * { color: inherit !important; }
           td:first-child, th:first-child { text-align: left !important; }
@@ -357,17 +360,17 @@ export default function StudentResultsDashboard() {
           span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
 
           h3 {
-            text-align: center; font-weight: 700; font-size: 13px;
-            padding: 6px; margin: 0 0 10px;
-            border-bottom: 1px solid #000;
+            text-align: center; font-weight: 700; font-size: 16px;
+            padding: 10px; margin: 0 0 14px;
+            border-bottom: 2px solid #000;
             background: transparent;
           }
 
-          .signatures { display: flex; justify-content: space-between; padding: 50px 4px 20px; }
+          .signatures { display: flex; justify-content: space-between; padding: 60px 4px 20px; }
           .signature { text-align: left; width: 42%; }
-          .signature .line { border-top: 1px solid #000; margin-bottom: 5px; }
-          .signature .role { font-size: 12px; font-weight: 600; }
-          .signature .date { margin-top: 12px; font-size: 11px; color: #374151; }
+          .signature .line { border-top: 2px solid #000; margin-bottom: 6px; }
+          .signature .role { font-size: 14px; font-weight: 600; }
+          .signature .date { margin-top: 14px; font-size: 13px; color: #374151; }
 
           @media print { .no-print { display: none !important; } }
         </style>
