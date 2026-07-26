@@ -70,7 +70,7 @@ function getStudentFromCookie(): {
     return {
       name: info?.name || "",
       stdRegNo: info?.stdRegNo || info?.username || "",
-      className: info?.className || info?.class || "",
+      className: info?.className || info?.class || info?.stdClass?.className || "",
     };
   } catch {
     return null;
