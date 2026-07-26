@@ -99,6 +99,7 @@ interface MonthlyResultTableProps {
   studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
   month: string;
+  monthlyExamName?: string;
   subjectHighestMarks?: Record<string, string>;
 }
 
@@ -107,6 +108,7 @@ export default function MonthlyResultTable({
   studentName,
   subjects,
   month,
+  monthlyExamName,
   subjectHighestMarks = {}
 }: MonthlyResultTableProps) {
   const subjectNames =
@@ -211,37 +213,44 @@ export default function MonthlyResultTable({
     }));
   }, [rows]);
 
-  const handleSubmit = async () => {
-    const payload = {
-      studentId: studentId,
-      totalMarks: Number(summary.totalMarks),
-      gpa: Number(summary.gpa),
-      grade: summary.grade,
-      position: summary.position,
-      present: Number(summary.present),
-      absent: Number(summary.absent),
-      month: month,
-      results: {
-        create: rows.map((r) => ({
-          subjectName: r.name,
-          marks: Number(r.marksObtained),
-          fullMarks: Number(r.fullMarks),
-          highestMark: Number(r.highestMark),
-          point: Number(r.point),
-          grade: r.grade,
-        })),
-      },
-    };
+const handleSubmit = async () => {
+  const payload = {
+    studentId,
 
-    const res = await createMonthlyResult(payload);
-    if (res.statusCode === 201) {
-      showSuccessToast(res.message || "Monthly result created successfully.");
-    } else {
-      showErrorToast(
-        res.message || "Failed to create monthly result. Please try again.",
-      );
-    }
+    monthlyExamName,
+
+    totalMarks: Number(summary.totalMarks),
+    gpa: Number(summary.gpa),
+    grade: summary.grade,
+    position: summary.position || "",
+
+    present: Number(summary.present),
+    absent: Number(summary.absent),
+
+    month,
+
+    results: rows.map((r) => ({
+      subjectName: r.name,
+      marks: Number(r.marksObtained),
+      fullMarks: Number(r.fullMarks),
+      highestMark: Number(r.highestMark),
+      point: Number(r.point),
+      grade: r.grade,
+    })),
   };
+
+  const res = await createMonthlyResult(payload);
+
+  if (res.statusCode === 201) {
+    showSuccessToast(
+      res.message || "Monthly result created successfully."
+    );
+  } else {
+    showErrorToast(
+      res.message || "Failed to create monthly result."
+    );
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -249,10 +258,15 @@ export default function MonthlyResultTable({
         {/* ── Main Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
-          <div className="px-6 py-4 border-b border-gray-100">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-[15px] font-bold text-gray-900">
               {studentName}
             </h2>
+            {monthlyExamName && (
+              <span className="text-xs font-medium text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
+                {monthlyExamName}
+              </span>
+            )}
           </div>
 
           {/* Subject Table */}

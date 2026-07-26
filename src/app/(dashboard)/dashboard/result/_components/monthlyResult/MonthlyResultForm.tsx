@@ -24,6 +24,7 @@ interface ClassData {
 }
 
 interface FormValues {
+  monthlyExamName: string;
   month: string;
   year: string;
   publishedDate: Date;
@@ -104,6 +105,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
 
   const { control, watch, setValue, handleSubmit, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
+      monthlyExamName: "",
       month: MONTHS[new Date().getMonth()],
       year: currentYear.toString(),
       publishedDate: new Date(),
@@ -151,7 +153,23 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
-        {/* Row 1 — Month & Published Date */}
+        {/* Row 1 — Exam Name */}
+        <div className="grid grid-cols-1 gap-6">
+          <Field label="Exam Name" error={errors.monthlyExamName?.message}>
+            <Controller name="monthlyExamName" control={control} rules={{ required: "Exam name is required" }}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="e.g. Monthly Exam - January 2026"
+                  className={inputBase}
+                />
+              )}
+            />
+          </Field>
+        </div>
+
+        {/* Row 2 — Month & Published Date */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label="Month" error={errors.month?.message}>
             <Controller name="month" control={control} rules={{ required: "Month is required" }}
@@ -187,7 +205,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </Field>
         </div>
 
-        {/* Row 2 — Year & Class */}
+        {/* Row 3 — Year & Class */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label="Year" error={errors.year?.message}>
             <Controller name="year" control={control} rules={{ required: "Year is required" }}
@@ -254,7 +272,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </div>
         )}
 
-        {/* Row 3 — Batch & Student */}
+        {/* Row 4 — Batch & Student */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label="Batch" error={errors.batchId?.message}>
             <Controller name="batchId" control={control} rules={{ required: "Batch is required" }}
@@ -290,6 +308,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
             subjects={tableData.subjects}
             studentId={tableData.studentId}
             month={watch("month")}
+            monthlyExamName={watch("monthlyExamName")}
             subjectHighestMarks={tableData.subjectHighestMarks}
           />
         </div>

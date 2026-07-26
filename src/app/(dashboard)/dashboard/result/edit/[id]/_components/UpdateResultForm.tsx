@@ -33,6 +33,9 @@ export interface MonthlyResult {
   id: string;
   studentId: string;
   student: Student;
+  className?: string;
+  batchName?: string;
+  monthlyExamName?: string;
   results: ResultSubject[];
   totalMarks: number;
   gpa: number;
@@ -46,6 +49,7 @@ export interface MonthlyResult {
 }
 
 interface FormValues {
+  monthlyExamName: string;
   gpa: number;
   grade: string;
   position: string;
@@ -73,6 +77,7 @@ export default function UpdateResultForm({ result }: Props) {
 
   const { control, handleSubmit, watch, setValue } = useForm<FormValues>({
     defaultValues: {
+      monthlyExamName: result.monthlyExamName ?? "",
       gpa: result.gpa,
       grade: result.grade,
       position: result.position,
@@ -158,6 +163,7 @@ export default function UpdateResultForm({ result }: Props) {
     const payload = {
       id: result.id,
       studentId: result.studentId,
+      monthlyExamName: data.monthlyExamName,
       gpa: data.gpa,
       grade: data.grade,
       position: data.position,
@@ -225,19 +231,43 @@ export default function UpdateResultForm({ result }: Props) {
                     Batch {result.student.batch.name}
                   </span>
                 )}
+                {result.monthlyExamName && (
+                  <span className="text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
+                    {result.monthlyExamName}
+                  </span>
+                )}
                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
                   {result.student?.parentPhone}
                 </span>
               </div>
             </div>
-            <div className="ml-auto text-right">
-              <p className="text-xs text-gray-400">Total Marks</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {totalAchieved}
-                <span className="text-sm font-normal text-gray-400">
-                  /{result.totalMarks}
-                </span>
-              </p>
+            <div className="ml-auto text-right space-y-2">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">
+                  Exam Name
+                </label>
+                <Controller
+                  control={control}
+                  name="monthlyExamName"
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="text"
+                      placeholder="Enter exam name"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition"
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Total Marks</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {totalAchieved}
+                  <span className="text-sm font-normal text-gray-400">
+                    /{result.totalMarks}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
