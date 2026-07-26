@@ -278,7 +278,7 @@ export default function StudentResultsDashboard() {
     const examTitle =
       activeTab === "monthly"
         ? `${activeMonthly?.monthlyExamName || "Monthly Assessment"} — ${monthName} ${year}`
-        : `Weekly Marks Report`;
+        : `LBE Result Sheet - ${year}`;
 
     const baseUrl = window.location.origin;
 
