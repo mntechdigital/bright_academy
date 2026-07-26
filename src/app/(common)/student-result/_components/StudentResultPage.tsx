@@ -54,7 +54,11 @@ interface ApiResponse {
 
 // ─── Utility: Read studentInfo cookie ─────────────────────────────────────────
 
-function getStudentFromCookie(): { name: string; stdRegNo?: string } | null {
+function getStudentFromCookie(): {
+  name: string;
+  stdRegNo?: string;
+  className?: string;
+} | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie
     .split("; ")
@@ -66,6 +70,7 @@ function getStudentFromCookie(): { name: string; stdRegNo?: string } | null {
     return {
       name: info?.name || "",
       stdRegNo: info?.stdRegNo || info?.username || "",
+      className: info?.className || info?.class || "",
     };
   } catch {
     return null;
@@ -284,8 +289,10 @@ export default function StudentResultsDashboard() {
 
     // Resolve image URL - public folder imports return the path
     const getImgUrl = (img: any) => {
-      if (typeof img === "string") return img.startsWith("http") ? img : `${baseUrl}${img}`;
-      if (img?.src) return img.src.startsWith("http") ? img.src : `${baseUrl}${img.src}`;
+      if (typeof img === "string")
+        return img.startsWith("http") ? img : `${baseUrl}${img}`;
+      if (img?.src)
+        return img.src.startsWith("http") ? img.src : `${baseUrl}${img.src}`;
       return "";
     };
 
@@ -327,7 +334,7 @@ export default function StudentResultsDashboard() {
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
             text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
-            padding: 16px 12px 14px; border-bottom: 2px solid #d1d5db;
+            padding: 16px 12px 14px;
             letter-spacing: 0.5px;
           }
 
@@ -399,20 +406,22 @@ export default function StudentResultsDashboard() {
           </div>
 
           <div class="exam-title">${examTitle}</div>
-
+          <div style="text-align: center; font-size: 13px; color: #374151; margin-bottom: 10px;">
+            Date of Publication: ${today}
+          </div>
           <table class="info-grid">
             <tr>
-              <td class="label">Roll / ID</td>
-              <td class="value">${studentInfo?.stdRegNo || "-"}</td>
-              <td class="label">Date of Publication</td>
-              <td class="value">${today}</td>
-              <td class="label">Month</td>
-              <td class="value">${monthName}</td>
+              <th class="label">Class</th>
+              <th class="label">Roll</th>
+              <th class="label">Name</th>
+              <th class="label">Month</th>
+              <th class="label">Year</th>
             </tr>
             <tr>
-              <td class="label">Name</td>
-              <td class="value" colspan="3">${studentInfo?.name || "-"}</td>
-              <td class="label">Year</td>
+              <td class="value">${studentInfo?.className || "-"}</td>
+              <td class="value">${studentInfo?.stdRegNo || "-"}</td>
+              <td class="value">${studentInfo?.name || "-"}</td>
+              <td class="value">${monthName}</td>
               <td class="value">${year}</td>
             </tr>
           </table>
@@ -586,13 +595,6 @@ export default function StudentResultsDashboard() {
                   </div>
                 ) : (
                   <>
-                    {/* Month badge */}
-                    <div className="px-6 pt-5 pb-3 border-b border-gray-100 flex items-center gap-3">
-                      <span className="text-sm font-semibold text-gray-700">
-                        {activeMonthly?.month} — Monthly Result
-                      </span>
-                    </div>
-
                     {/* Subject table */}
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
