@@ -67,10 +67,14 @@ function getStudentFromCookie(): {
   try {
     const decoded = decodeURIComponent(match.split("=")[1]);
     const info = JSON.parse(decoded);
+    const rawClass =
+      info?.className || info?.class || info?.stdClass?.className || "";
+    // Extract only the number from values like "class-6" → "6"
+    const classNumber = rawClass.match(/\d+/)?.[0] || rawClass;
     return {
       name: info?.name || "",
       stdRegNo: info?.stdRegNo || info?.username || "",
-      className: info?.className || info?.class || info?.stdClass?.className || "",
+      className: classNumber,
     };
   } catch {
     return null;
