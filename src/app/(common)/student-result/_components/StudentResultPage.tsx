@@ -317,16 +317,16 @@ export default function StudentResultsDashboard() {
           }
           .banner img {
             max-height: 90px;
-            width: auto;
+            width: 100%;
             object-fit: contain;
           }
-          .banner .banner-left { width: 30%; text-align: left; }
-          .banner .banner-middle { width: 30%; text-align: center; }
+          .banner .banner-left { width: 15%; text-align: left; }
+          .banner .banner-middle { width: 55%; text-align: center; }
           .banner .banner-right { width: 30%; text-align: right; }
 
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
-            text-align: center; font-size: 28px; font-weight: 800; font-style: italic;
+            text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
             padding: 16px 12px 14px; border-bottom: 2px solid #d1d5db;
             letter-spacing: 0.5px;
           }
