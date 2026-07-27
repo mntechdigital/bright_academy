@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { getMyResults } from "@/src/services/students";
 import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
+import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
 import brightpdf2 from "../../../../../public/brightpdf-2.jpeg";
 import brightpdf3 from "../../../../../public/brightpdf-3.jpeg";
@@ -732,49 +733,117 @@ export default function StudentResultsDashboard() {
                             Subject
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Total Marks{" "}
-                            <Tooltip text="Maximum marks for this test" />
+                            Week-1
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Obtained Marks <Tooltip text="Your score" />
+                            Week-2
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">
-                            Week
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Week-3
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">
-                            Month
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Week-4
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">
-                            Year
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Average Point
+                          </th>
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Grade
                           </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {weeklyRows.map((row, i) => (
-                          <tr
-                            key={row.id ?? i}
-                            className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
-                          >
-                            <td className="py-4 px-6 font-medium text-gray-800">
-                              {row.subject?.subjectName ?? "-"}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-600">
-                              {row.totalMarks}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-600">
-                              {row.obtainedMarks}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {row.week}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {row.month}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {row.year}
-                            </td>
-                          </tr>
-                        ))}
+                        {(() => {
+                          // Group weekly marks by subject
+                          const subjectMap = new Map<string, {
+                            subjectName: string;
+                            weeks: Map<string, { obtained: number; total: number }>;
+                          }>();
+
+                          weeklyRows.forEach((row) => {
+                            const subjectName = row.subject?.subjectName || "Unknown";
+                            const weekNum = row.week?.replace("Week ", "") || "0";
+                            
+                            if (!subjectMap.has(subjectName)) {
+                              subjectMap.set(subjectName, {
+                                subjectName,
+                                weeks: new Map(),
+                              });
+                            }
+
+                            const subjectData = subjectMap.get(subjectName)!;
+                            subjectData.weeks.set(weekNum, {
+                              obtained: row.obtainedMarks,
+                              total: row.totalMarks,
+                            });
+                          });
+
+                          const subjectArray = Array.from(subjectMap.values());
+
+                          return subjectArray.map((subjectData, i) => {
+                            // Calculate average point and overall grade for this subject
+                            const points: number[] = [];
+                            [1, 2, 3, 4].forEach((weekNum) => {
+                              const weekData = subjectData.weeks.get(String(weekNum));
+                              if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
+                                const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
+                                points.push(gradeResult.gradePoint);
+                              }
+                            });
+
+                            const averagePoint = points.length > 0 
+                              ? points.reduce((sum, p) => sum + p, 0) / points.length 
+                              : 0;
+
+                            const overallGrade = averagePoint > 0 
+                              ? getGradeFromMarks(averagePoint * 20, 100).letterGrade 
+                              : "F";
+
+                            return (
+                              <tr
+                                key={i}
+                                className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
+                              >
+                                <td className="py-4 px-6 font-medium text-gray-800">
+                                  {subjectData.subjectName}
+                                </td>
+                                {[1, 2, 3, 4].map((weekNum) => {
+                                  const weekData = subjectData.weeks.get(String(weekNum));
+                                  
+                                  return (
+                                    <td
+                                      key={weekNum}
+                                      className="py-4 px-4 text-center"
+                                    >
+                                      {weekData ? (
+                                        <div className="flex flex-col items-center">
+                                          <span className="font-semibold text-gray-800">
+                                            {weekData.obtained}
+                                          </span>
+                                          <span className="text-xs text-gray-400">
+                                            / {weekData.total}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-300">-</span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                                <td className="py-4 px-4 text-center font-bold text-gray-800">
+                                  {averagePoint > 0 ? averagePoint.toFixed(1) : "-"}
+                                </td>
+                                <td className="py-4 px-4 text-center">
+                                  {overallGrade !== "F" ? (
+                                    <GradeBadge grade={overallGrade} />
+                                  ) : (
+                                    <span className="text-gray-300">-</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
                       </tbody>
                     </table>
                   </div>
