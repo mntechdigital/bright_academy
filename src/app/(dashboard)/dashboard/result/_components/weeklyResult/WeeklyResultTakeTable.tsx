@@ -8,6 +8,7 @@ import {
   updateWeeklyResultForSingleStd,
 } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
+import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 
 type WeeklyResult = {
   id: string;
@@ -46,6 +47,10 @@ const StudentRow = ({
     marksMap[student.id] !== undefined
       ? marksMap[student.id]
       : existingResult?.obtainedMarks ?? "";
+
+  // Calculate grade and point based on obtained marks and total marks
+  const obtainedMarks = inputValue !== "" ? Number(inputValue) : (existingResult?.obtainedMarks ?? 0);
+  const { gradePoint, letterGrade } = getGradeFromMarks(obtainedMarks, totalMark);
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -88,6 +93,24 @@ const StudentRow = ({
             onChange={(e) => onMarksChange(student.id, e.target.value)}
           />
         </div>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <span className="inline-flex items-center justify-center bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full min-w-[3rem]">
+          {obtainedMarks > 0 ? gradePoint.toFixed(1) : "-"}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <span className={`inline-flex items-center justify-center text-xs font-bold px-3 py-1.5 rounded-full min-w-[3rem] ${
+          letterGrade === "A+" ? "bg-green-100 text-green-700" :
+          letterGrade === "A" ? "bg-green-50 text-green-600" :
+          letterGrade === "A-" ? "bg-blue-100 text-blue-700" :
+          letterGrade === "B" ? "bg-blue-50 text-blue-600" :
+          letterGrade === "C" ? "bg-yellow-100 text-yellow-700" :
+          letterGrade === "D" ? "bg-orange-100 text-orange-700" :
+          "bg-red-100 text-red-700"
+        }`}>
+          {obtainedMarks > 0 ? letterGrade : "-"}
+        </span>
       </td>
       <td className="px-4 py-3">
         {isEditing && (
@@ -311,20 +334,42 @@ const WeeklyResultTakeTable = ({
                   </span>
                 </span>
               </th>
-              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
-                <span className="flex items-center gap-1">
-                  Obtain Marks
-                  <span
-                    className="cursor-pointer text-gray-400 hover:text-gray-600"
-                    title="Obtain marks"
-                  >
-                    &#9432;
-                  </span>
-                </span>
-              </th>
-              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
-                Action
-              </th>
+          <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+            <span className="flex items-center gap-1">
+              Obtain Marks
+              <span
+                className="cursor-pointer text-gray-400 hover:text-gray-600"
+                title="Obtain marks"
+              >
+                &#9432;
+              </span>
+            </span>
+          </th>
+          <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
+            <span className="flex items-center gap-1">
+              Point
+              <span
+                className="cursor-pointer text-gray-400 hover:text-gray-600"
+                title="Grade point"
+              >
+                &#9432;
+              </span>
+            </span>
+          </th>
+          <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
+            <span className="flex items-center gap-1">
+              Grade
+              <span
+                className="cursor-pointer text-gray-400 hover:text-gray-600"
+                title="Letter grade"
+              >
+                &#9432;
+              </span>
+            </span>
+          </th>
+          <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+            Action
+          </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -348,12 +393,12 @@ const WeeklyResultTakeTable = ({
               })
             ) : (
               <tr>
-                <td
-                  colSpan={8}
-                  className="px-4 py-8 text-center text-gray-400 text-sm"
-                >
-                  No students found.
-                </td>
+              <td
+                colSpan={9}
+                className="px-4 py-8 text-center text-gray-400 text-sm"
+              >
+                No students found.
+              </td>
               </tr>
             )}
           </tbody>
