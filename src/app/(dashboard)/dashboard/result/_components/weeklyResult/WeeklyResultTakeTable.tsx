@@ -1,5 +1,5 @@
 "use client";
-import React, { useTransition, useState, useCallback } from "react";
+import React, { useTransition, useState, useCallback, useMemo } from "react";
 import { Student } from "../studentTableTypes";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -8,7 +8,7 @@ import {
   updateWeeklyResultForSingleStd,
 } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { getGradeFromMarks } from "@/src/utils/gradeUtils";
+import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
 
 type WeeklyResult = {
   id: string;
@@ -95,12 +95,12 @@ const StudentRow = ({
         </div>
       </td>
       <td className="px-4 py-3 text-center">
-        <span className="inline-flex items-center justify-center bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full min-w-[3rem]">
+        <span className="inline-flex items-center justify-center bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full min-w-12">
           {obtainedMarks > 0 ? gradePoint.toFixed(1) : "-"}
         </span>
       </td>
       <td className="px-4 py-3 text-center">
-        <span className={`inline-flex items-center justify-center text-xs font-bold px-3 py-1.5 rounded-full min-w-[3rem] ${
+        <span className={`inline-flex items-center justify-center text-xs font-bold px-3 py-1.5 rounded-full min-w-12 ${
           letterGrade === "A+" ? "bg-green-100 text-green-700" :
           letterGrade === "A" ? "bg-green-50 text-green-600" :
           letterGrade === "A-" ? "bg-blue-100 text-blue-700" :
@@ -297,6 +297,42 @@ const WeeklyResultTakeTable = ({
     (s) => !localWeeklyResults.find((r) => r.studentId === s.id),
   );
 
+  // Calculate weekly result summary
+  const weeklySummary = useMemo(() => {
+    let totalObtained = 0;
+    const allPoints: number[] = [];
+
+    filteredStudents.forEach((student) => {
+      const existingResult = localWeeklyResults.find(
+        (r: WeeklyResult) => r.studentId === student.id,
+      );
+      const marksMapValue = marksMap[student.id];
+      const obtainedMarks = marksMapValue !== undefined
+        ? Number(marksMapValue)
+        : existingResult?.obtainedMarks ?? 0;
+
+      if (obtainedMarks > 0) {
+        totalObtained += obtainedMarks;
+        const { gradePoint } = getGradeFromMarks(obtainedMarks, totalMarks);
+        allPoints.push(gradePoint);
+      }
+    });
+
+    const averagePoint = allPoints.length > 0
+      ? allPoints.reduce((sum, p) => sum + p, 0) / allPoints.length
+      : 0;
+
+    // Get overall grade based on average point using the 100-mark system
+    const overallGrade = averagePoint > 0 ? getGradeFromGPA(averagePoint) : "F";
+
+    return {
+      totalObtained,
+      totalFullMarks: totalMarks * filteredStudents.length,
+      averagePoint,
+      overallGrade,
+    };
+  }, [filteredStudents, localWeeklyResults, marksMap, totalMarks]);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
       <div className="flex items-center justify-between mb-4">
@@ -423,6 +459,65 @@ const WeeklyResultTakeTable = ({
               "Submit All Results"
             )}
           </Button>
+        </div>
+      )}
+
+      {/* Weekly Result Summary */}
+      {filteredStudents.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
+            Weekly Result Summary
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                    Total Marks Obtained
+                  </th>
+                  <th className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                    Total Full Marks
+                  </th>
+                  <th className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                    Average Point
+                  </th>
+                  <th className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                    Overall Grade
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                    {weeklySummary.totalObtained}
+                  </td>
+                  <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                    {weeklySummary.totalFullMarks}
+                  </td>
+                  <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                    {weeklySummary.averagePoint > 0 ? weeklySummary.averagePoint.toFixed(2) : "-"}
+                  </td>
+                  <td className="py-4 px-4 text-center">
+                    {weeklySummary.overallGrade !== "F" ? (
+                      <span className={`inline-flex items-center justify-center text-sm font-bold px-4 py-1.5 rounded-full ${
+                        weeklySummary.overallGrade === "A+" ? "bg-green-100 text-green-700" :
+                        weeklySummary.overallGrade === "A" ? "bg-green-50 text-green-600" :
+                        weeklySummary.overallGrade === "A-" ? "bg-blue-100 text-blue-700" :
+                        weeklySummary.overallGrade === "B" ? "bg-blue-50 text-blue-600" :
+                        weeklySummary.overallGrade === "C" ? "bg-yellow-100 text-yellow-700" :
+                        weeklySummary.overallGrade === "D" ? "bg-orange-100 text-orange-700" :
+                        "bg-red-100 text-red-700"
+                      }`}>
+                        {weeklySummary.overallGrade}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">-</span>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

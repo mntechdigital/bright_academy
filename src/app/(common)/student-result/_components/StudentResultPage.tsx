@@ -325,8 +325,9 @@ export default function StudentResultsDashboard() {
         if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
           totalObtainedMarks += weekData.obtained;
           totalFullMarks += weekData.total;
-          const pct = weekData.total > 0 ? (weekData.obtained / weekData.total) * 100 : 0;
-          subjPoints.push(getGradeFromMarks(pct, 100).gradePoint);
+          // Use actual marks and total marks to determine grade point (auto-detects 400-mark system)
+          const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
+          subjPoints.push(gradeResult.gradePoint);
         }
       });
       if (subjPoints.length > 0) {
@@ -339,7 +340,10 @@ export default function StudentResultsDashboard() {
       ? allSubjectPoints.reduce((s, p) => s + p, 0) / allSubjectPoints.length
       : 0;
 
-    const overallGrade = overallGPA > 0 ? getGradeFromGPA(overallGPA) : "F";
+    // Calculate overall grade based on total obtained marks vs total full marks
+    const overallGrade = totalObtainedMarks > 0 
+      ? getGradeFromMarks(totalObtainedMarks, totalFullMarks).letterGrade 
+      : "F";
 
     // Calculate present/absent: for each subject, for each of 4 weeks,
     // if marks exist → present, otherwise → absent
@@ -852,21 +856,18 @@ export default function StudentResultsDashboard() {
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {weeklySummary.subjectArray.map((subjectData, i) => {
-                          // Calculate average point and overall grade for this subject
-                          const points: number[] = [];
-                          [1, 2, 3, 4].forEach((weekNum) => {
-                            const weekData = subjectData.weeks.get(String(weekNum));
-                            if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-                              // Normalize to percentage before grading (weekly marks have varying totals like 20, 25, 30)
-                              const percentage = weekData.total > 0 
-                                ? (weekData.obtained / weekData.total) * 100 
-                                : 0;
-                              const gradeResult = getGradeFromMarks(percentage, 100);
-                              points.push(gradeResult.gradePoint);
-                            }
-                          });
+                       <tbody>
+                         {weeklySummary.subjectArray.map((subjectData, i) => {
+                           // Calculate average point and overall grade for this subject
+                           const points: number[] = [];
+                           [1, 2, 3, 4].forEach((weekNum) => {
+                             const weekData = subjectData.weeks.get(String(weekNum));
+                             if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
+                               // Use the actual total marks to determine grading system
+                               const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
+                               points.push(gradeResult.gradePoint);
+                             }
+                           });
 
                           // Calculate total marks obtained for this subject across all weeks
                           let subjectTotalObtained = 0;

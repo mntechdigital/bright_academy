@@ -42,27 +42,49 @@ export const GRADE_SYSTEM_75 = [
   { minMark: 0, maxMark: 24, grade: "F", gradePoint: 0 },
 ];
 
+// Grading System (Marks out of 400)
+export const GRADE_SYSTEM_400 = [
+  { minMark: 317, maxMark: 400, grade: "A+", gradePoint: 5 },
+  { minMark: 277, maxMark: 316, grade: "A", gradePoint: 4 },
+  { minMark: 237, maxMark: 276, grade: "A-", gradePoint: 3.5 },
+  { minMark: 197, maxMark: 236, grade: "B", gradePoint: 3 },
+  { minMark: 157, maxMark: 196, grade: "C", gradePoint: 2 },
+  { minMark: 129, maxMark: 136, grade: "D", gradePoint: 1 },
+  { minMark: 0, maxMark: 128, grade: "F", gradePoint: 0 },
+];
+
 /**
  * Get grade based on marks and full marks.
  * @param marks - Marks obtained
  * @param fullMarks - Full marks (default 100)
- * @param gradingSystem - Optional: "100", "50", "25", or "75" to force a specific grading system
+ * @param gradingSystem - Optional: "100", "50", "25", "75", or "400" to force a specific grading system
  */
-export function getGradeFromMarks(marks: number, fullMarks: number = 100, gradingSystem?: "100" | "50" | "25" | "75"): {
+export function getGradeFromMarks(marks: number, fullMarks: number = 100, gradingSystem?: "100" | "50" | "25" | "75" | "400"): {
   gradePoint: number;
   letterGrade: string;
 } {
   if (fullMarks <= 0) return { gradePoint: 0, letterGrade: "F" };
 
   // Determine which grading system to use:
+  // - If fullMarks === 400, always use GRADE_SYSTEM_400 (individual subject fullMarks takes priority)
   // - If fullMarks === 75, always use GRADE_SYSTEM_75 (individual subject fullMarks takes priority)
   // - If fullMarks === 50, always use GRADE_SYSTEM_50 (individual subject fullMarks takes priority)
   // - If fullMarks === 25, always use GRADE_SYSTEM_25 (individual subject fullMarks takes priority)
   // - If gradingSystem is explicitly set, use that system
   // - Otherwise, use GRADE_SYSTEM_100
+  const useSystem400 = fullMarks === 400 || gradingSystem === "400";
   const useSystem75 = fullMarks === 75 || gradingSystem === "75";
   const useSystem50 = fullMarks === 50 || gradingSystem === "50";
   const useSystem25 = fullMarks === 25 || gradingSystem === "25";
+
+  if (useSystem400) {
+    for (const grade of GRADE_SYSTEM_400) {
+      if (marks >= grade.minMark && marks <= grade.maxMark) {
+        return { gradePoint: grade.gradePoint, letterGrade: grade.grade };
+      }
+    }
+    return { gradePoint: 0, letterGrade: "F" };
+  }
 
   if (useSystem75) {
     for (const grade of GRADE_SYSTEM_75) {
@@ -107,8 +129,8 @@ export function calculateGPAFromPoints(points: number[]): number {
 }
 
 export function getGradeFromGPA(gpa: number): string {
-  // Use 100-mark system for GPA to grade conversion
-  const sorted = [...GRADE_SYSTEM_100].sort((a, b) => b.gradePoint - a.gradePoint);
+  // Use 400-mark system for GPA to grade conversion (matches the 400-mark grading scale)
+  const sorted = [...GRADE_SYSTEM_400].sort((a, b) => b.gradePoint - a.gradePoint);
   for (const grade of sorted) {
     if (gpa >= grade.gradePoint) {
       return grade.grade;
