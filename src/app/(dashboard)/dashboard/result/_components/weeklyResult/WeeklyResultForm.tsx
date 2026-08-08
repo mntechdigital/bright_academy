@@ -54,7 +54,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
       classId: "",
       batchId: "",
       subjectId: "",
-      totalMarks: 0,
+      totalMarks: "25",
     },
     mode: "onSubmit",
   });
@@ -321,30 +321,35 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
         <label className="block text-sm font-medium text-foreground mb-2">
           Total Marks
         </label>
-        <Controller
-          name="totalMarks"
-          control={control}
-          rules={{
-            required: "Total marks is required",
-            min: { value: 0, message: "Total marks must be at least 0" },
-            validate: (value) => Number.isInteger(value) || "Total marks must be an integer",
-          }}
-          render={({ field }) => (
-            <input
-              {...field}
-              type="number"
-              placeholder="Enter total marks"
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-              min={0}
-              step={1}
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
-            />
-          )}
-        />
-        {errors.totalMarks && (
-          <span className="text-red-500 text-xs">{errors.totalMarks.message}</span>
-        )}
+        <div className="relative">
+          <Controller
+            name="totalMarks"
+            control={control}
+            rules={{ 
+              required: "Total marks is required",
+              validate: (value) => {
+                const num = Number(value);
+                return (!isNaN(num) && Number.isInteger(num)) || "Total marks must be an integer";
+              }
+            }}
+            render={({ field }) => (
+              <>
+                <select
+                  {...field}
+                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                >
+                  <option value="">Select Total Marks</option>
+                  <option value="25">25</option>
+                  <option value="75">75</option>
+                </select>
+                {errors.totalMarks && (
+                  <span className="text-red-500 text-xs">{errors.totalMarks.message}</span>
+                )}
+              </>
+            )}
+          />
+          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        </div>
       </div>
       <div>
         <button

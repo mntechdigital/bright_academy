@@ -46,11 +46,17 @@ const StudentRow = ({
   const inputValue =
     marksMap[student.id] !== undefined
       ? marksMap[student.id]
-      : existingResult?.obtainedMarks ?? "";
+      : (existingResult?.obtainedMarks ?? "");
 
   // Calculate grade and point based on obtained marks and total marks
-  const obtainedMarks = inputValue !== "" ? Number(inputValue) : (existingResult?.obtainedMarks ?? 0);
-  const { gradePoint, letterGrade } = getGradeFromMarks(obtainedMarks, totalMark);
+  const obtainedMarks =
+    inputValue !== ""
+      ? Number(inputValue)
+      : (existingResult?.obtainedMarks ?? 0);
+  const { gradePoint, letterGrade } = getGradeFromMarks(
+    obtainedMarks,
+    totalMark,
+  );
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -75,9 +81,7 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
           <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-          {existingResult?.batch?.name ||
-            student.batch?.name ||
-            "No Batch"}
+          {existingResult?.batch?.name || student.batch?.name || "No Batch"}
         </span>
       </td>
       <td className="px-4 py-3 text-gray-900 text-sm font-medium">
@@ -100,15 +104,23 @@ const StudentRow = ({
         </span>
       </td>
       <td className="px-4 py-3 text-center">
-        <span className={`inline-flex items-center justify-center text-xs font-bold px-3 py-1.5 rounded-full min-w-12 ${
-          letterGrade === "A+" ? "bg-green-100 text-green-700" :
-          letterGrade === "A" ? "bg-green-50 text-green-600" :
-          letterGrade === "A-" ? "bg-blue-100 text-blue-700" :
-          letterGrade === "B" ? "bg-blue-50 text-blue-600" :
-          letterGrade === "C" ? "bg-yellow-100 text-yellow-700" :
-          letterGrade === "D" ? "bg-orange-100 text-orange-700" :
-          "bg-red-100 text-red-700"
-        }`}>
+        <span
+          className={`inline-flex items-center justify-center text-xs font-bold px-3 py-1.5 rounded-full min-w-12 ${
+            letterGrade === "A+"
+              ? "bg-green-100 text-green-700"
+              : letterGrade === "A"
+                ? "bg-green-50 text-green-600"
+                : letterGrade === "A-"
+                  ? "bg-blue-100 text-blue-700"
+                  : letterGrade === "B"
+                    ? "bg-blue-50 text-blue-600"
+                    : letterGrade === "C"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : letterGrade === "D"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-red-100 text-red-700"
+          }`}
+        >
           {obtainedMarks > 0 ? letterGrade : "-"}
         </span>
       </td>
@@ -118,11 +130,7 @@ const StudentRow = ({
             type="button"
             disabled={isUpdating}
             onClick={() =>
-              onUpdate(
-                student.id,
-                existingResult.id,
-                Number(inputValue || 0),
-              )
+              onUpdate(student.id, existingResult.id, Number(inputValue || 0))
             }
             className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-all hover:bg-blue-700 h-10 cursor-pointer whitespace-nowrap"
           >
@@ -153,7 +161,8 @@ const WeeklyResultTakeTable = ({
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [marksMap, setMarksMap] = useState<Record<string, string>>({});
-  const [localWeeklyResults, setLocalWeeklyResults] = useState<WeeklyResult[]>(initialWeeklyResults);
+  const [localWeeklyResults, setLocalWeeklyResults] =
+    useState<WeeklyResult[]>(initialWeeklyResults);
 
   const {
     totalMarks,
@@ -199,7 +208,16 @@ const WeeklyResultTakeTable = ({
         setUpdatingId(null);
       });
     },
-    [stdClassId, batchId, subject?.id, totalMarks, week, year, month, publishedDate],
+    [
+      stdClassId,
+      batchId,
+      subject?.id,
+      totalMarks,
+      week,
+      year,
+      month,
+      publishedDate,
+    ],
   );
 
   const handleSubmitAll = useCallback(() => {
@@ -268,12 +286,18 @@ const WeeklyResultTakeTable = ({
         });
       }
 
-      if (successCount > 0) {
+      if (successCount > 0 && errorCount > 0) {
         showSuccessToast(
-          `Successfully submitted ${successCount} student(s) result!`,
+          <>
+            Partially completed: {successCount} succeeded,{" "}
+            <span className="text-red-300 font-bold">{errorCount} failed.</span>
+          </>,
         );
-      }
-      if (errorCount > 0) {
+      } else if (successCount > 0) {
+        showSuccessToast(
+          `Successfully submitted student(s) result!`,
+        );
+      } else if (errorCount > 0) {
         showErrorToast(`Failed to submit ${errorCount} student(s) result.`);
       }
     });
@@ -334,42 +358,42 @@ const WeeklyResultTakeTable = ({
                   </span>
                 </span>
               </th>
-          <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
-            <span className="flex items-center gap-1">
-              Obtain Marks
-              <span
-                className="cursor-pointer text-gray-400 hover:text-gray-600"
-                title="Obtain marks"
-              >
-                &#9432;
-              </span>
-            </span>
-          </th>
-          <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
-            <span className="flex items-center gap-1">
-              Point
-              <span
-                className="cursor-pointer text-gray-400 hover:text-gray-600"
-                title="Grade point"
-              >
-                &#9432;
-              </span>
-            </span>
-          </th>
-          <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
-            <span className="flex items-center gap-1">
-              Grade
-              <span
-                className="cursor-pointer text-gray-400 hover:text-gray-600"
-                title="Letter grade"
-              >
-                &#9432;
-              </span>
-            </span>
-          </th>
-          <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
-            Action
-          </th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Obtain Marks
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Obtain marks"
+                  >
+                    &#9432;
+                  </span>
+                </span>
+              </th>
+              <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Point
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Grade point"
+                  >
+                    &#9432;
+                  </span>
+                </span>
+              </th>
+              <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Grade
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Letter grade"
+                  >
+                    &#9432;
+                  </span>
+                </span>
+              </th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -393,12 +417,12 @@ const WeeklyResultTakeTable = ({
               })
             ) : (
               <tr>
-              <td
-                colSpan={9}
-                className="px-4 py-8 text-center text-gray-400 text-sm"
-              >
-                No students found.
-              </td>
+                <td
+                  colSpan={9}
+                  className="px-4 py-8 text-center text-gray-400 text-sm"
+                >
+                  No students found.
+                </td>
               </tr>
             )}
           </tbody>
