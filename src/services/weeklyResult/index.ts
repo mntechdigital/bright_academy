@@ -1,16 +1,32 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
+
 import { apiRequest } from "@/src/lib/apiRequest";
 import { TQuery } from "@/src/types/query.types";
 import { revalidatePath } from "next/cache";
 
 export const createWeeklyResult = async (payload: Record<string, any>) => {
+  
+  if (!payload || typeof payload !== 'object') {
+    console.error('ERROR: Payload is invalid!');
+    return {
+      statusCode: 400,
+      message: 'Invalid payload received',
+    };
+  }
+  
+  
   const response = await apiRequest("weekly-marks-sheets", {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json',
+    },
     authRequired: true,
   });
+
+  console.log('API Service - Response:', response);
 
   ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
     revalidatePath(path);

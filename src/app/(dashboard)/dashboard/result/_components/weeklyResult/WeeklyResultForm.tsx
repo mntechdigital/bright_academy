@@ -65,13 +65,22 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
   const subjects = selectedClass?.subjects || [];
 
   const onSubmit = async (data: any) => {
-    const res = await createWeeklyResult({
-      ...data,
-      totalMarks: parseInt(data.totalMarks, 10),
+    
+    const payload = {
+      month: data.month,
+      week: data.week,
       publishedDate: data.publishedDate
         ? data.publishedDate.toISOString()
         : undefined,
-    });
+      year: data.year,
+      stdClassId: data.classId, // Map classId to stdClassId
+      batchId: data.batchId,
+      subjectId: data.subjectId,
+      totalMarks: parseInt(data.totalMarks, 10),
+    };
+    
+    
+    const res = await createWeeklyResult(payload);
     if (res.statusCode === 201) {
       showSuccessToast("Weekly result created successfully!");
       reset();

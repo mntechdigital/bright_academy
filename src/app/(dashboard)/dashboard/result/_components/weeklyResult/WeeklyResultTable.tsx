@@ -28,14 +28,16 @@ const WeeklyResultTable = ({
     setEmbla(api || null);
   };
 
+  // Deduplicate results based on week, month, year, subject, and class
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}-${result.batch?.id}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}`,
         result,
       ])
     ).values()
   );
+
 
   const showDropdown = uniqueResults.length > 1;
 
@@ -138,10 +140,7 @@ const WeeklyResultTable = ({
         </div>
       )}
       
-      {/* Debug Info */}
-      <div className="text-xs text-gray-500">
-        Showing {uniqueResults.length} unique result(s)
-      </div>
+      
       
       <Carousel
         opts={{

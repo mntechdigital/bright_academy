@@ -326,7 +326,7 @@ const WeeklyResultTakeTable = ({
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
       {/* Selected Result Info Banner */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg">
+      <div className="mb-6 p-4 bg-linear-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Currently Selected Result:</h3>
@@ -345,7 +345,7 @@ const WeeklyResultTakeTable = ({
               <div>
                 <p className="text-xs text-gray-500">Week & Period</p>
                 <p className="text-sm font-medium text-gray-900">
-                  Week {week} · {month} {year}
+                  {week} · {month} {year}
                 </p>
               </div>
               <div>
