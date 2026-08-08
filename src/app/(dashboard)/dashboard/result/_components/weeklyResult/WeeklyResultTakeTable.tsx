@@ -325,6 +325,43 @@ const WeeklyResultTakeTable = ({
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
+      {/* Selected Result Info Banner */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Currently Selected Result:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <p className="text-xs text-gray-500">Subject</p>
+                <p className="text-sm font-medium text-gray-900">{subject?.subjectName || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Class & Batch</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {stdClass?.className || "—"}
+                  {batch?.name ? ` · ${batch.name}` : ""}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Week & Period</p>
+                <p className="text-sm font-medium text-gray-900">
+                  Week {week} · {month} {year}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Total Marks</p>
+                <p className="text-sm font-bold text-orange-600">{totalMarks}</p>
+              </div>
+            </div>
+          </div>
+          <div className="ml-4 shrink-0">
+            <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 text-xs font-semibold px-3 py-1.5">
+              ✓ Active
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <h2 className="text-xl font-semibold text-gray-900 mr-3">Students</h2>
