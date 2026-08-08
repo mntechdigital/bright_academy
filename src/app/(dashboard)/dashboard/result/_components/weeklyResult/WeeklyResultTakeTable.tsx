@@ -90,7 +90,9 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <div className="flex flex-col">
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="Enter obtain mark"
             className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
             value={inputValue}
