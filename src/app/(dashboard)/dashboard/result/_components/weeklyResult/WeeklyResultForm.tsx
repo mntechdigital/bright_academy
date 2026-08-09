@@ -75,6 +75,18 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
        return;
      }
      
+     // Get class name
+     const selectedClass = classesData.find((cls) => cls.id === data.classId);
+     const className = selectedClass?.className || '';
+     
+     // Get batch name
+     const selectedBatch = selectedClass?.batches?.find((batch) => batch.id === data.batchId);
+     const batchName = selectedBatch?.name || '';
+     
+     // Get subject name
+     const selectedSubject = selectedClass?.subjects?.find((subject) => subject.id === data.subjectId);
+     const subjectName = selectedSubject?.subjectName || '';
+     
      // Store form data in localStorage for use by the table
      const formData = {
        month: data.month,
@@ -82,8 +94,11 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
        publishedDate: data.publishedDate ? data.publishedDate.toISOString() : undefined,
        year: data.year,
        stdClassId: data.classId,
+       className: className,
        batchId: data.batchId,
+       batchName: batchName,
        subjectId: data.subjectId,
+       subjectName: subjectName,
        totalMarks: parseInt(data.totalMarks, 10),
      };
      

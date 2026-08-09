@@ -79,9 +79,9 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
         year: formDataFromStorage.year,
         publishedDate: formDataFromStorage.publishedDate,
         totalMarks: formDataFromStorage.totalMarks,
-        stdClass: { id: formDataFromStorage.stdClassId, className: '' },
-        batch: { id: formDataFromStorage.batchId, name: '' },
-        subject: { id: formDataFromStorage.subjectId, subjectName: '' },
+        stdClass: { id: formDataFromStorage.stdClassId, className: formDataFromStorage.className || '' },
+        batch: { id: formDataFromStorage.batchId, name: formDataFromStorage.batchName || '' },
+        subject: { id: formDataFromStorage.subjectId, subjectName: formDataFromStorage.subjectName || '' },
       };
     }
     // Otherwise use selected card or first available result
