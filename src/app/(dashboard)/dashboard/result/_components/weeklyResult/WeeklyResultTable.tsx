@@ -28,11 +28,11 @@ const WeeklyResultTable = ({
     setEmbla(api || null);
   };
 
-  // Deduplicate results based on week, month, year, subject, and class
+  // Deduplicate results based on week, month, year, subject, class, and batch
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}-${result.batch?.id || result.batchId || 'no-batch'}`,
         result,
       ])
     ).values()

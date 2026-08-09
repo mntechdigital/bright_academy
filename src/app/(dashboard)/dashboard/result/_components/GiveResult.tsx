@@ -70,6 +70,14 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  // Force WeeklyResult to re-read localStorage when form is submitted
+  const [forceUpdateKey, setForceUpdateKey] = useState(0);
+  
+  const handleWeeklyResultCreatedWithForceUpdate = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setForceUpdateKey(prev => prev + 1);
+  };
+
   return (
     <div className="p-6">
       {/* Breadcrumb */}
@@ -127,8 +135,8 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
       {/* Render the correct form */}
       {examType === "weekly" ? (
         <>
-          <WeeklyResultForm classesData={classesData} onResultCreated={handleWeeklyResultCreated} />
-          <WeeklyResult searchParams={{ search: "", page: "1" }} refreshTrigger={refreshTrigger} />
+          <WeeklyResultForm classesData={classesData} onResultCreated={handleWeeklyResultCreatedWithForceUpdate} />
+          <WeeklyResult key={forceUpdateKey} searchParams={{ search: "", page: "1" }} refreshTrigger={refreshTrigger} />
         </>
       ) : (
         <>

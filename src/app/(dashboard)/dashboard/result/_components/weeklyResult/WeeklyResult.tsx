@@ -12,20 +12,41 @@ import WeeklyResultTakeTable from "./WeeklyResultTakeTable";
 interface WeeklyResultProps {
   searchParams: { search: string; page: string };
   refreshTrigger?: number;
+  forceUpdateKey?: number;
 }
 
-const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigger = 0 }) => {
+const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigger = 0, forceUpdateKey = 0 }) => {
   const [weeklyResultsData, setWeeklyResultsData] = useState<any[]>([]);
   const [studentData, setStudentData] = useState<any[]>([]);
   const [studentMeta, setStudentMeta] = useState<{ totalPages: number; totalItems: number }>({ totalPages: 1, totalItems: 0 });
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [formDataFromStorage, setFormDataFromStorage] = useState<any>(null);
 
   const search = searchParams.search || "";
+
+  // Check localStorage for form data
+  useEffect(() => {
+    console.log("Checking localStorage for form data...");
+    const stored = localStorage.getItem('weeklyResultFormData');
+    console.log("Stored data:", stored);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        console.log("Parsed form data:", parsed);
+        setFormDataFromStorage(parsed);
+      } catch (e) {
+        console.error('Error parsing stored form data:', e);
+      }
+    } else {
+      setFormDataFromStorage(null);
+    }
+  }, [refreshTrigger, forceUpdateKey]);
 
   // Fetch weekly results when mount or refreshTrigger changes
   useEffect(() => {
     const fetchWeeklyResults = async () => {
       const res = await getWeeklyResults([]);
+      console.log('Fetched Weekly Results:', res);
       const data = res?.data?.data || [];
       setWeeklyResultsData(data);
 
@@ -44,10 +65,37 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
     return weeklyResultsData.find((r) => r.id === selectedCardId) || null;
   }, [selectedCardId, weeklyResultsData]);
 
-  // Calculate weekly result meta
+  // Calculate weekly result meta - prioritize form data from localStorage
   const weeklyResultMeta = useMemo(() => {
-    return selectedCard || weeklyResultsData[0] || null;
-  }, [selectedCard, weeklyResultsData]);
+    console.log("Calculating weeklyResultMeta:", { formDataFromStorage, selectedCard, weeklyResultsDataLength: weeklyResultsData.length });
+    
+    // If we have form data from localStorage, use it (this is the newly created result)
+    if (formDataFromStorage) {
+      console.log("Using form data from localStorage");
+      return {
+        id: 'new-result',
+        week: formDataFromStorage.week,
+        month: formDataFromStorage.month,
+        year: formDataFromStorage.year,
+        publishedDate: formDataFromStorage.publishedDate,
+        totalMarks: formDataFromStorage.totalMarks,
+        stdClass: { id: formDataFromStorage.stdClassId, className: '' },
+        batch: { id: formDataFromStorage.batchId, name: '' },
+        subject: { id: formDataFromStorage.subjectId, subjectName: '' },
+      };
+    }
+    // Otherwise use selected card or first available result
+    if (selectedCard) {
+      console.log("Using selected card");
+      return selectedCard;
+    }
+    if (weeklyResultsData.length > 0) {
+      console.log("Using first weekly result");
+      return weeklyResultsData[0];
+    }
+    console.log("No meta available");
+    return null;
+  }, [formDataFromStorage, selectedCard, weeklyResultsData]);
 
   // Calculate active weekly results based on selected card
   const activeWeeklyResults = useMemo(() => {
@@ -60,14 +108,21 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
         String(result.subject?.id) === String(weeklyResultMeta.subject?.id) &&
         String(result.week) === String(weeklyResultMeta.week) &&
         String(result.month) === String(weeklyResultMeta.month) &&
-        String(result.year) === String(weeklyResultMeta.year)
+        String(result.year) === String(weeklyResultMeta.year) &&
+        String(result.batch?.id || result.batchId || "") === String(weeklyResultMeta.batch?.id || weeklyResultMeta.batchId || "")
       );
     });
   }, [weeklyResultMeta, weeklyResultsData]);
 
-  // Fetch students when selectedCard changes
+  // Fetch students when selectedCard or formDataFromStorage changes
   useEffect(() => {
-    if (!selectedCard || !selectedCard?.stdClass?.id) return;
+    console.log("Fetching students...", { selectedCard, formDataFromStorage });
+    const classId = selectedCard?.stdClass?.id || formDataFromStorage?.stdClassId;
+    console.log("Class ID:", classId);
+    if (!classId) {
+      console.log("No classId, returning early");
+      return;
+    }
 
     const fetchStudents = async () => {
       const query: TQuery[] = [
@@ -75,27 +130,29 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
         { key: "searchTerm", value: search },
         { key: "page", value: "1" },
         { key: "limit", value: "1000" },
-        { key: "filter", value: JSON.stringify({ classId: selectedCard.stdClass.id }) },
+        { key: "filter", value: JSON.stringify({ classId }) },
       ];
 
       const studentRes = await getStudents(query);
       const allStudents: any[] = studentRes?.data?.data || [];
+      console.log("Fetched students:", allStudents.length);
 
-      // Compute active results for this card
+      // Compute active results
       const activeResults = weeklyResultsData.filter((r: any) => {
+        const card = selectedCard || formDataFromStorage;
+        if (!card) return false;
         return (
-          String(r.stdClass?.id) === String(selectedCard.stdClass?.id) &&
-          String(r.subject?.id) === String(selectedCard.subject?.id) &&
-          String(r.week) === String(selectedCard.week) &&
-          String(r.month) === String(selectedCard.month) &&
-          String(r.year) === String(selectedCard.year)
+          String(r.stdClass?.id) === String(card.stdClassId || classId) &&
+          String(r.subject?.id) === String(card.subjectId) &&
+          String(r.week) === String(card.week) &&
+          String(r.month) === String(card.month) &&
+          String(r.year) === String(card.year) &&
+          String(r.batch?.id || r.batchId || "") === String(card.batchId || "")
         );
       });
 
-      // Get batch ID from the selected card or from the first active result's student
-      const batchId =
-        selectedCard?.batch?.id ||
-        selectedCard?.batchId ||
+      // Get batch ID
+      const batchId = selectedCard?.batch?.id || selectedCard?.batchId || formDataFromStorage?.batchId ||
         (activeResults.length > 0 ? activeResults[0]?.student?.batchId : null);
 
       const filteredByBatch = batchId
@@ -105,6 +162,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
           })
         : allStudents;
 
+      console.log("Filtered students by batch:", filteredByBatch.length);
       setStudentData(filteredByBatch);
       setStudentMeta({
         totalPages: 1,
@@ -113,7 +171,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
     };
     fetchStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCard]);
+  }, [selectedCard, formDataFromStorage]);
 
   const handleCardClick = useCallback((card: any) => {
     setSelectedCardId(card.id);
@@ -144,7 +202,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({ searchParams, refreshTrigge
         onCardClick={handleCardClick}
         onDeleteSuccess={handleCardDelete}
       />
-      {weeklyResultMeta && activeWeeklyResults.length > 0 && (
+      {console.log("Rendering check:", { weeklyResultMeta: !!weeklyResultMeta, studentDataLength: studentData.length })}
+      {weeklyResultMeta && (
         <WeeklyResultTakeTable
           studentsData={studentData}
           weeklyResults={activeWeeklyResults}

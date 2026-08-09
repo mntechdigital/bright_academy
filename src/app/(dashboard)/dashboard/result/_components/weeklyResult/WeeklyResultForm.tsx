@@ -64,31 +64,39 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
   const batches = selectedClass?.batches || [];
   const subjects = selectedClass?.subjects || [];
 
-  const onSubmit = async (data: any) => {
-    
-    const payload = {
-      month: data.month,
-      week: data.week,
-      publishedDate: data.publishedDate
-        ? data.publishedDate.toISOString()
-        : undefined,
-      year: data.year,
-      stdClassId: data.classId, // Map classId to stdClassId
-      batchId: data.batchId,
-      subjectId: data.subjectId,
-      totalMarks: parseInt(data.totalMarks, 10),
-    };
-    
-    
-    const res = await createWeeklyResult(payload);
-    if (res.statusCode === 201) {
-      showSuccessToast("Weekly result created successfully!");
-      reset();
-      onResultCreated?.();
-    } else {
-      showErrorToast(res.message || "Failed to create weekly result");
-    }
-  };
+  const onSubmit = (data: any) => {
+     console.log("=== FORM SUBMISSION STARTED ===");
+     console.log("Form submitted with data:", data);
+     
+     // Validate required fields
+     if (!data.month || !data.week || !data.publishedDate || !data.year || !data.classId || !data.batchId || !data.subjectId || !data.totalMarks) {
+       console.error("Validation failed - missing required fields");
+       showErrorToast("Please fill in all required fields");
+       return;
+     }
+     
+     // Store form data in localStorage for use by the table
+     const formData = {
+       month: data.month,
+       week: data.week,
+       publishedDate: data.publishedDate ? data.publishedDate.toISOString() : undefined,
+       year: data.year,
+       stdClassId: data.classId,
+       batchId: data.batchId,
+       subjectId: data.subjectId,
+       totalMarks: parseInt(data.totalMarks, 10),
+     };
+     
+     localStorage.setItem('weeklyResultFormData', JSON.stringify(formData));
+     console.log("Form data saved to localStorage - NO API CALL:", formData);
+     
+     // Trigger refresh to show the table (no API call here)
+     onResultCreated?.();
+     
+     showSuccessToast("Form submitted! Now enter marks for students and click 'Submit All Results'");
+     
+     console.log("=== FORM SUBMISSION COMPLETED - Table will be shown ===");
+   };
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>

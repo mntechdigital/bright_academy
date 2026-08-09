@@ -141,3 +141,20 @@ export const updateWeeklyResultForSingleStd = async (
 
   return response;
 };
+
+export const bulkUpsertStudentMarks = async (payload: { marks: Record<string, any>[] }) => {
+  const response = await apiRequest("weekly-marks-sheets/bulk-obtained-marks", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    authRequired: true,
+  });
+
+  ["/", "/dashboard", "/dashboard/result", "/dashboard/result/give-result"].forEach((path) => {
+    revalidatePath(path);
+  });
+
+  return response;
+};

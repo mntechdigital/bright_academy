@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import {
   createWeeklyResultForSingleStd,
   updateWeeklyResultForSingleStd,
+  bulkUpsertStudentMarks,
 } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
@@ -158,7 +159,7 @@ const WeeklyResultTakeTable = ({
 }: {
   studentsData: Student[];
   weeklyResults: WeeklyResult[];
-  weeklyResultMeta: WeeklyResult;
+  weeklyResultMeta: WeeklyResult | any; // Allow any type for localStorage data
 }) => {
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -233,32 +234,47 @@ const WeeklyResultTakeTable = ({
       let errorCount = 0;
       const newlyCreatedResults: WeeklyResult[] = [];
 
-      for (const student of newStudents) {
-        const obtainedMarks = marksMap[student.id];
-        if (!obtainedMarks || obtainedMarks === "") {
-          errorCount++;
-          continue;
-        }
+      // Prepare bulk payload
+      const bulkPayload = {
+        marks: newStudents
+          .map((student) => {
+            const obtainedMarks = marksMap[student.id];
+            if (!obtainedMarks || obtainedMarks === "") {
+              return null;
+            }
 
-        const payload = {
-          studentId: student.id,
-          stdClassId,
-          batchId,
-          subjectId: subject?.id,
-          obtainedMarks: parseInt(obtainedMarks, 10),
-          totalMarks,
-          week,
-          year,
-          month,
-          publishedDate,
-        };
+            return {
+              studentId: student.id,
+              stdClassId,
+              batchId,
+              subjectId: subject?.id,
+              obtainedMarks: parseInt(obtainedMarks, 10),
+              totalMarks,
+              week,
+              year,
+              month,
+              publishedDate,
+            };
+          })
+          .filter((item) => item !== null) as Record<string, any>[],
+      };
 
-        const res = await createWeeklyResultForSingleStd(payload);
-        if (res.statusCode === 201) {
-          successCount++;
-          // Construct a local result object so the Update button appears immediately
-          newlyCreatedResults.push({
-            id: res?.data?.id || res?.data?._id || `temp-${student.id}`,
+      // If no valid marks to submit, show error
+      if (bulkPayload.marks.length === 0) {
+        showErrorToast("No valid marks to submit. Please enter marks for at least one student.");
+        return;
+      }
+
+      // Send bulk request
+      const res = await bulkUpsertStudentMarks(bulkPayload);
+
+      if (res.statusCode === 200 || res.statusCode === 201) {
+        successCount = res?.data?.totalProcessed || bulkPayload.marks.length;
+        
+        // Construct local result objects so the Update button appears immediately
+        newlyCreatedResults.push(
+          ...bulkPayload.marks.map((mark, index) => ({
+            id: res?.data?.results?.[index]?.id || res?.data?.results?.[index]?._id || `temp-${mark.studentId}`,
             totalMarks,
             subject: subject || { id: "", subjectName: "" },
             week,
@@ -267,13 +283,18 @@ const WeeklyResultTakeTable = ({
             publishedDate,
             batch: batch || { id: "", name: "" },
             stdClass: stdClass || { id: "", name: "" },
-            studentId: student.id,
+            studentId: mark.studentId,
             stdRegNo: null,
-            obtainedMarks: parseInt(obtainedMarks, 10),
-          });
-        } else {
-          errorCount++;
-        }
+            obtainedMarks: mark.obtainedMarks,
+          }))
+        );
+
+        showSuccessToast(
+          `Successfully submitted ${successCount} student(s) result!`,
+        );
+      } else {
+        errorCount = bulkPayload.marks.length;
+        showErrorToast(res.message || `Failed to submit student(s) result.`);
       }
 
       if (newlyCreatedResults.length > 0) {
@@ -286,21 +307,6 @@ const WeeklyResultTakeTable = ({
           });
           return updated;
         });
-      }
-
-      if (successCount > 0 && errorCount > 0) {
-        showSuccessToast(
-          <>
-            Partially completed: {successCount} succeeded,{" "}
-            <span className="text-red-300 font-bold">{errorCount} failed.</span>
-          </>,
-        );
-      } else if (successCount > 0) {
-        showSuccessToast(
-          `Successfully submitted student(s) result!`,
-        );
-      } else if (errorCount > 0) {
-        showErrorToast(`Failed to submit ${errorCount} student(s) result.`);
       }
     });
   }, [
