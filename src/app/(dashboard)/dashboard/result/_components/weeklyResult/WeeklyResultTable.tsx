@@ -25,6 +25,40 @@ const WeeklyResultTable = ({
     ).values()
   );
 
+  const handleDeleteWeek = async (e: React.MouseEvent, result: any) => {
+    e.stopPropagation();
+    
+    if (!result) return;
+    
+    const confirmMessage = `Are you sure you want to delete all data for ${result.week} - ${result.month} ${result.year}?\n\nThis will delete:\n- Subject: ${result.subject?.subjectName}\n- Class: ${result.stdClass?.className}${result.batch?.name ? `\n- Batch: ${result.batch?.name}` : ''}\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        // Import delete function dynamically to avoid circular dependencies
+        const { deleteWeeklyResultByClassAndSection } = await import('@/src/services/weeklyResult');
+        
+        const payload = {
+          stdClassId: String(result.stdClass?.id || result.stdClassId),
+          subjectId: String(result.subject?.id || result.subjectId),
+          week: result.week,
+          month: result.month,
+          year: result.year,
+          batchId: result.batch?.id || result.batchId,
+        };
+        
+        await deleteWeeklyResultByClassAndSection(payload);
+        
+        // Call the success callback to refresh data
+        if (onDeleteSuccess) {
+          await onDeleteSuccess();
+        }
+      } catch (error) {
+        console.error('Error deleting weekly result:', error);
+        alert('Failed to delete result. Please try again.');
+      }
+    }
+  };
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,16 +140,27 @@ const WeeklyResultTable = ({
                   selectedCard?.id === result.id ? 'bg-green-50' : ''
                 }`}
               >
-                <p className="text-sm font-medium text-gray-900">
-                  {result.subject?.subjectName}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {result.stdClass?.className}
-                  {result.batch?.name ? ` · ${result.batch.name}` : ''}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {result.week} · {result.month} {result.year}
-                </p>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {result.subject?.subjectName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {result.stdClass?.className}
+                      {result.batch?.name ? ` · ${result.batch?.name}` : ''}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {result.week} · {result.month} {result.year}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => handleDeleteWeek(e, result)}
+                    className="ml-2 p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Delete this week's data"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
