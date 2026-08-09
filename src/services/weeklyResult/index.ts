@@ -52,6 +52,58 @@ export const getWeeklyResults = async (query: TQuery[] = []) => {
   return response;
 };
 
+export const getWeeklyResultsByClassBatchSubject = async (params: {
+  stdClassId: string;
+  batchId?: string;
+  subjectId: string;
+  year?: string;
+}) => {
+  const searchParams = new URLSearchParams();
+  searchParams.append("stdClassId", params.stdClassId);
+  if (params.batchId) {
+    searchParams.append("batchId", params.batchId);
+  }
+  searchParams.append("subjectId", params.subjectId);
+  if (params.year) {
+    searchParams.append("year", params.year);
+  }
+
+  const response = await apiRequest(
+    `weekly-marks-sheets/class-batch-subject?${searchParams.toString()}`,
+    {
+      method: "GET",
+      authRequired: true,
+    }
+  );
+  return response;
+};
+
+export const getWeeklyResultsByFilters = async (filters: {
+  stdClassId: string;
+  subjectId: string;
+  batchId?: string;
+  week?: string;
+  month?: string;
+  year?: string;
+}) => {
+  const searchParams = new URLSearchParams();
+  searchParams.append("stdClassId", filters.stdClassId);
+  searchParams.append("subjectId", filters.subjectId);
+  if (filters.batchId) searchParams.append("batchId", filters.batchId);
+  if (filters.week) searchParams.append("week", filters.week);
+  if (filters.month) searchParams.append("month", filters.month);
+  if (filters.year) searchParams.append("year", filters.year);
+
+  const response = await apiRequest(
+    `weekly-marks-sheets/filter?${searchParams.toString()}`,
+    {
+      method: "GET",
+      authRequired: true,
+    }
+  );
+  return response;
+};
+
 export const getWeeklyResultById = async (id: string) => {
   const response = await apiRequest(`weekly-marks-sheets/${id}`, {
     method: "GET",
