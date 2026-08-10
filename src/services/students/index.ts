@@ -152,3 +152,37 @@ export const logoutStudent = async () => {
   cookieStore.delete("studentInfo");
   return { success: true };
 };
+
+// ✅ Get merit position
+export const getMeritPosition = async (params: {
+  studentId: string;
+  classId: string;
+  week: string;
+  month: string;
+  year: string;
+}) => {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("studentToken")?.value;
+
+  if (!token) {
+    return { success: false, message: "Token নেই, আবার login করুন" };
+  }
+
+  // Build query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.append("studentId", params.studentId);
+  queryParams.append("classId", params.classId);
+  queryParams.append("week", params.week);
+  queryParams.append("month", params.month);
+  queryParams.append("year", params.year);
+
+  const response = await apiRequest(`students/merit-position?${queryParams.toString()}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    authRequired: false,
+  });
+
+  return response;
+};

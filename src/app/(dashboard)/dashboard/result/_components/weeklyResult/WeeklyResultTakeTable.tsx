@@ -183,8 +183,16 @@ const WeeklyResultTakeTable = ({
   const filteredStudents = studentsData;
 
   const onMarksChange = useCallback((studentId: string, value: string) => {
+    // Validate that obtained marks cannot exceed total marks
+    if (value !== "" && !isNaN(Number(value))) {
+      const numValue = Number(value);
+      if (numValue > totalMarks) {
+        showErrorToast(`Obtained marks cannot exceed total marks (${totalMarks})`);
+        return;
+      }
+    }
     setMarksMap((prev) => ({ ...prev, [studentId]: value }));
-  }, []);
+  }, [totalMarks]);
 
   const handleUpdate = useCallback(
     (studentId: string, resultId: string, obtainedMarks: number) => {
