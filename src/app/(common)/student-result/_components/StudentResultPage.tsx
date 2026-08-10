@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { getMyResults } from "@/src/services/students";
+import { getMyResults, getMeritPosition } from "@/src/services/students";
 import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
 import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
 import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
@@ -220,6 +220,7 @@ interface WeeklySummaryData {
 
 export default function StudentResultsDashboard() {
   const [resultData, setResultData] = useState<ApiResponse | null>(null);
+  const [meritPosition, setMeritPosition] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"monthly" | "weekly">("monthly");
@@ -244,6 +245,52 @@ export default function StudentResultsDashboard() {
         if (mr?.month) setMonth(mr.month);
         if (wm?.week) setWeek(wm.week);
         if (wm?.year) setYear(wm.year);
+
+        // Fetch merit position
+        try {
+          // Get student info from cookie
+          const studentInfoCookie = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("studentInfo="));
+          
+          let studentId = "";
+          let classId = "";
+          
+          if (studentInfoCookie) {
+            try {
+              const decoded = decodeURIComponent(studentInfoCookie.split("=")[1]);
+              const info = JSON.parse(decoded);
+              studentId = info?.id || info?.stdRegNo || "";
+              classId = info?.stdClass?.id || info?.className?.match(/\d+/)?.[0] || "";
+            } catch (e) {
+              console.error("Error parsing student info cookie:", e);
+            }
+          }
+
+          // Get week, month, year from weekly marks or use defaults
+          const wm = res?.data?.weeklyMarks?.[0];
+          const week = wm?.week || "Week 1";
+          const month = wm?.month || "January";
+          const year = wm?.year || "2026";
+
+          const meritRes = await getMeritPosition({
+            studentId,
+            classId,
+            week,
+            month,
+            year,
+          });
+          
+          console.log("Merit position API response:", meritRes);
+          if (meritRes?.success && meritRes?.data) {
+            const position = meritRes.data.position || meritRes.data.meritPosition;
+            if (position) {
+              setMeritPosition(String(position));
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching merit position:", error);
+        }
       } catch {
         setError("ফলাফল লোড করতে ব্যর্থ। অনুগ্রহ করে আবার চেষ্টা করুন।");
       } finally {
@@ -373,6 +420,9 @@ export default function StudentResultsDashboard() {
 
   // ── Student info from cookie ─────────────────────────────────────────────
   const studentInfo = useMemo(() => getStudentFromCookie(), []);
+  
+  // ── Merit Position ──────────────────────────────────────────────────────
+  const displayMeritPosition = meritPosition || activeMonthly?.position;
 
   // ── Print handler ─────────────────────────────────────────────────────────
 
@@ -648,24 +698,32 @@ export default function StudentResultsDashboard() {
 
       {/* Main content */}
       <div className="flex-1 px-4 py-4 md:px-8 md:py-6 pb-4">
-        {/* Student Info Header */}
-        {studentInfo?.name && (
-          <div className="flex items-center gap-3 mb-4 bg-white rounded-xl px-5 py-3 shadow-sm border border-gray-100">
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-              <User size={18} className="text-orange-600" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900">
-                {studentInfo.name}
-              </p>
-              {studentInfo.stdRegNo && (
-                <p className="text-xs text-gray-400">
-                  ID: {studentInfo.stdRegNo}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
+         {/* Student Info Header */}
+         {studentInfo?.name && (
+           <div className="flex items-center gap-3 mb-4 bg-white rounded-xl px-5 py-3 shadow-sm border border-gray-100">
+             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+               <User size={18} className="text-orange-600" />
+             </div>
+             <div>
+               <p className="text-sm font-semibold text-gray-900">
+                 {studentInfo.name}
+               </p>
+               {studentInfo.stdRegNo && (
+                 <p className="text-xs text-gray-400">
+                   ID: {studentInfo.stdRegNo}
+                 </p>
+               )}
+             </div>
+             {displayMeritPosition && (
+               <div className="ml-auto">
+                 <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
+                   <span className="text-sm">🏆</span>
+                   Merit Position: {displayMeritPosition}
+                 </span>
+               </div>
+             )}
+           </div>
+         )}
 
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-4 bg-white rounded-xl px-3 py-2 shadow-sm border border-gray-100 w-fit">
@@ -937,11 +995,12 @@ export default function StudentResultsDashboard() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-gray-100">
-                                {(
+                                {(                                
                                   [
                                     ["Total Marks", "Sum of all marks obtained"],
                                     ["GPA", "Grade Point Average"],
                                     ["Grade", "Overall letter grade"],
+                                    ["Merit Position", "Student's rank in the class"],
                                     ["Present", "Days attended"],
                                     ["Absent", "Days missed"],
                                   ] as [string, string][]
@@ -970,6 +1029,9 @@ export default function StudentResultsDashboard() {
                                   ) : (
                                     <span className="text-gray-300">-</span>
                                   )}
+                                </td>
+                                <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
+                                  {displayMeritPosition || "-"}
                                 </td>
                                 <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                                   {weeklySummary.present}
