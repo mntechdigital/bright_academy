@@ -24,7 +24,7 @@ interface ClassData {
 
 interface WeeklyResultFormProps {
   classesData?: ClassData[];
-  onResultCreated?: () => void;
+  onResultCreated?: (data: any) => void;
 }
 
 const formatTime = (time: string) => {
@@ -54,7 +54,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
       classId: "",
       batchId: "",
       subjectId: "",
-      totalMarks: 0,
+      totalMarks: "25",
     },
     mode: "onSubmit",
   });
@@ -65,21 +65,92 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
   const subjects = selectedClass?.subjects || [];
 
   const onSubmit = async (data: any) => {
-    const res = await createWeeklyResult({
-      ...data,
-      totalMarks: parseInt(data.totalMarks, 10),
-      publishedDate: data.publishedDate
-        ? data.publishedDate.toISOString()
-        : undefined,
-    });
-    if (res.statusCode === 201) {
-      showSuccessToast("Weekly result created successfully!");
-      reset();
-      onResultCreated?.();
-    } else {
-      showErrorToast(res.message || "Failed to create weekly result");
-    }
-  };
+     console.log("=== FORM SUBMISSION STARTED ===");
+     console.log("Form submitted with data:", data);
+     
+     // Validate required fields
+     if (!data.month || !data.week || !data.publishedDate || !data.year || !data.classId || !data.batchId || !data.subjectId || !data.totalMarks) {
+       console.error("Validation failed - missing required fields");
+       showErrorToast("Please fill in all required fields");
+       return;
+     }
+     
+     // Get class name
+     const selectedClass = classesData.find((cls) => cls.id === data.classId);
+     const className = selectedClass?.className || '';
+     
+     // Get batch name
+     const selectedBatch = selectedClass?.batches?.find((batch) => batch.id === data.batchId);
+     const batchName = selectedBatch?.name || '';
+     
+     // Get subject name
+     const selectedSubject = selectedClass?.subjects?.find((subject) => subject.id === data.subjectId);
+     const subjectName = selectedSubject?.subjectName || '';
+     
+     // Prepare form data to pass to parent component
+     const formData = {
+       month: data.month,
+       week: data.week,
+       publishedDate: data.publishedDate ? data.publishedDate.toISOString() : undefined,
+       year: data.year,
+       stdClassId: data.classId,
+       className: className,
+       batchId: data.batchId,
+       batchName: batchName,
+       subjectId: data.subjectId,
+       subjectName: subjectName,
+       totalMarks: parseInt(data.totalMarks, 10),
+     };
+     
+     console.log("Form data prepared - Fetching students:", formData);
+     
+     try {
+       // Fetch students based on form data (class and batch)
+       const { getStudents } = await import("@/src/services/students");
+       
+       const query = [
+           {
+             key: "orderBy",
+             value: JSON.stringify({ createdAt: "desc" }),
+           },
+           { key: "page", value: "1" },
+           { key: "limit", value: "1000" },
+           { key: "filter", value: JSON.stringify({ classId: data.classId }) },
+         ];
+       
+       console.log("Fetching students with query:", query);
+       
+       const studentRes = await getStudents(query);
+       const allStudents = studentRes?.data?.data || [];
+       
+       console.log("Students fetched:", allStudents);
+       
+       // Filter students by batch if batch is selected
+       const filteredStudents = data.batchId 
+         ? allStudents.filter((student: any) => {
+             const studentBatchId = student.batch?.id || student.batchId || "";
+             return String(studentBatchId) === String(data.batchId);
+           })
+         : allStudents;
+       
+       console.log("Filtered students:", filteredStudents);
+       
+       if (filteredStudents.length === 0) {
+         showErrorToast("No students found for the selected class/batch");
+         return;
+       }
+       
+       showSuccessToast(`Found ${filteredStudents.length} students. Loading result table...`);
+       
+       // Trigger refresh to show the table with student data AND the fetched students
+       onResultCreated?.({ ...formData, students: filteredStudents });
+       
+       console.log("=== FORM SUBMISSION COMPLETED - Table will be shown ===");
+     } catch (error) {
+       console.error("Error fetching students:", error);
+       showErrorToast("Failed to fetch students. Please try again.");
+     }
+   };
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -321,30 +392,35 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
         <label className="block text-sm font-medium text-foreground mb-2">
           Total Marks
         </label>
-        <Controller
-          name="totalMarks"
-          control={control}
-          rules={{
-            required: "Total marks is required",
-            min: { value: 0, message: "Total marks must be at least 0" },
-            validate: (value) => Number.isInteger(value) || "Total marks must be an integer",
-          }}
-          render={({ field }) => (
-            <input
-              {...field}
-              type="number"
-              placeholder="Enter total marks"
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-              min={0}
-              step={1}
-              value={field.value}
-              onChange={(e) => field.onChange(e.target.value === "" ? "" : parseInt(e.target.value, 10))}
-            />
-          )}
-        />
-        {errors.totalMarks && (
-          <span className="text-red-500 text-xs">{errors.totalMarks.message}</span>
-        )}
+        <div className="relative">
+          <Controller
+            name="totalMarks"
+            control={control}
+            rules={{ 
+              required: "Total marks is required",
+              validate: (value) => {
+                const num = Number(value);
+                return (!isNaN(num) && Number.isInteger(num)) || "Total marks must be an integer";
+              }
+            }}
+            render={({ field }) => (
+              <>
+                <select
+                  {...field}
+                  className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                >
+                  <option value="">Select Total Marks</option>
+                  <option value="25">25</option>
+                  <option value="75">75</option>
+                </select>
+                {errors.totalMarks && (
+                  <span className="text-red-500 text-xs">{errors.totalMarks.message}</span>
+                )}
+              </>
+            )}
+          />
+          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        </div>
       </div>
       <div>
         <button

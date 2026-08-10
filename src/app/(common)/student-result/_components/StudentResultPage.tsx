@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { getMyResults } from "@/src/services/students";
 import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
+import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
 import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
 import brightpdf2 from "../../../../../public/brightpdf-2.jpeg";
 import brightpdf3 from "../../../../../public/brightpdf-3.jpeg";
@@ -193,6 +194,28 @@ function GradeBadge({ grade }: { grade?: string }) {
   );
 }
 
+// ─── Types for weekly computed data ──────────────────────────────────────────
+
+interface WeekData {
+  obtained: number;
+  total: number;
+}
+
+interface SubjectWeeksData {
+  subjectName: string;
+  weeks: Map<string, WeekData>;
+}
+
+interface WeeklySummaryData {
+  subjectArray: SubjectWeeksData[];
+  totalObtainedMarks: number;
+  totalFullMarks: number;
+  overallGPA: number;
+  overallGrade: string;
+  present: number;
+  absent: number;
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function StudentResultsDashboard() {
@@ -265,6 +288,88 @@ export default function StudentResultsDashboard() {
   const years = allYears.length ? allYears : ["2025", "2026"];
 
   const noData = monthlyResults.length === 0 && weeklyMarks.length === 0;
+
+  // ── Weekly computed data ─────────────────────────────────────────────────
+  const weeklySummary = useMemo<WeeklySummaryData>(() => {
+    const subjectMap = new Map<string, SubjectWeeksData>();
+
+    weeklyRows.forEach((row) => {
+      const subjectName = row.subject?.subjectName || "Unknown";
+      const weekNum = row.week?.replace("Week ", "") || "0";
+
+      if (!subjectMap.has(subjectName)) {
+        subjectMap.set(subjectName, {
+          subjectName,
+          weeks: new Map(),
+        });
+      }
+
+      const subjectData = subjectMap.get(subjectName)!;
+      subjectData.weeks.set(weekNum, {
+        obtained: row.obtainedMarks,
+        total: row.totalMarks,
+      });
+    });
+
+    const subjectArray = Array.from(subjectMap.values());
+
+    // Calculate overall summary
+    let totalObtainedMarks = 0;
+    let totalFullMarks = 0;
+    const allSubjectPoints: number[] = [];
+
+    subjectArray.forEach((subjectData) => {
+      const subjPoints: number[] = [];
+      [1, 2, 3, 4].forEach((weekNum) => {
+        const weekData = subjectData.weeks.get(String(weekNum));
+        if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
+          totalObtainedMarks += weekData.obtained;
+          totalFullMarks += weekData.total;
+          // Use actual marks and total marks to determine grade point (auto-detects 400-mark system)
+          const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
+          subjPoints.push(gradeResult.gradePoint);
+        }
+      });
+      if (subjPoints.length > 0) {
+        const avg = subjPoints.reduce((s, p) => s + p, 0) / subjPoints.length;
+        allSubjectPoints.push(avg);
+      }
+    });
+
+    const overallGPA = allSubjectPoints.length > 0
+      ? allSubjectPoints.reduce((s, p) => s + p, 0) / allSubjectPoints.length
+      : 0;
+
+    // Calculate overall grade based on total obtained marks vs total full marks
+    const overallGrade = totalObtainedMarks > 0 
+      ? getGradeFromMarks(totalObtainedMarks, totalFullMarks).letterGrade 
+      : "F";
+
+    // Calculate present/absent: for each subject, for each of 4 weeks,
+    // if marks exist → present, otherwise → absent
+    let present = 0;
+    let absent = 0;
+    subjectArray.forEach((subjectData) => {
+      [1, 2, 3, 4].forEach((weekNum) => {
+        const weekData = subjectData.weeks.get(String(weekNum));
+        if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
+          present++;
+        } else {
+          absent++;
+        }
+      });
+    });
+
+    return {
+      subjectArray,
+      totalObtainedMarks,
+      totalFullMarks,
+      overallGPA,
+      overallGrade,
+      present,
+      absent,
+    };
+  }, [weeklyRows]);
 
   // ── Student info from cookie ─────────────────────────────────────────────
   const studentInfo = useMemo(() => getStudentFromCookie(), []);
@@ -732,51 +837,152 @@ export default function StudentResultsDashboard() {
                             Subject
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Total Marks{" "}
-                            <Tooltip text="Maximum marks for this test" />
+                            Week-1
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Obtained Marks <Tooltip text="Your score" />
+                            Week-2
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">
-                            Week
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Week-3
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">
-                            Month
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Week-4
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400">
-                            Year
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Average Point
+                          </th>
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                            Total Marks
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {weeklyRows.map((row, i) => (
-                          <tr
-                            key={row.id ?? i}
-                            className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
-                          >
-                            <td className="py-4 px-6 font-medium text-gray-800">
-                              {row.subject?.subjectName ?? "-"}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-600">
-                              {row.totalMarks}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-600">
-                              {row.obtainedMarks}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {row.week}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {row.month}
-                            </td>
-                            <td className="py-4 px-4 text-center text-gray-500">
-                              {row.year}
-                            </td>
-                          </tr>
-                        ))}
+                       <tbody>
+                         {weeklySummary.subjectArray.map((subjectData, i) => {
+                           // Calculate average point and overall grade for this subject
+                           const points: number[] = [];
+                           [1, 2, 3, 4].forEach((weekNum) => {
+                             const weekData = subjectData.weeks.get(String(weekNum));
+                             if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
+                               // Use the actual total marks to determine grading system
+                               const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
+                               points.push(gradeResult.gradePoint);
+                             }
+                           });
+
+                          // Calculate total marks obtained for this subject across all weeks
+                          let subjectTotalObtained = 0;
+                          let subjectTotalFull = 0;
+                          [1, 2, 3, 4].forEach((weekNum) => {
+                            const weekData = subjectData.weeks.get(String(weekNum));
+                            if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
+                              subjectTotalObtained += weekData.obtained;
+                              subjectTotalFull += weekData.total;
+                            }
+                          });
+
+                          const averagePoint = points.length > 0 
+                            ? points.reduce((sum, p) => sum + p, 0) / points.length 
+                            : 0;
+
+                          return (
+                            <tr
+                              key={i}
+                              className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
+                            >
+                              <td className="py-4 px-6 font-medium text-gray-800">
+                                {subjectData.subjectName}
+                              </td>
+                              {[1, 2, 3, 4].map((weekNum) => {
+                                const weekData = subjectData.weeks.get(String(weekNum));
+                                
+                                return (
+                                  <td
+                                    key={weekNum}
+                                    className="py-4 px-4 text-center"
+                                  >
+                                    {weekData ? (
+                                      <div className="flex flex-col items-center">
+                                        <span className="font-semibold text-gray-800">
+                                          {weekData.obtained}
+                                        </span>
+                                        <span className="text-xs text-gray-400">
+                                          / {weekData.total}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-300">-</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                              <td className="py-4 px-4 text-center font-bold text-gray-800">
+                                {averagePoint > 0 ? averagePoint.toFixed(1) : "-"}
+                              </td>
+                              <td className="py-4 px-4 text-center font-bold text-gray-800">
+                                {subjectTotalObtained > 0 ? `${subjectTotalObtained} / ${subjectTotalFull}` : "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
+
+                    {/* Weekly Exam Summary */}
+                    {weeklySummary.subjectArray.length > 0 && (
+                      <div className="px-6 pt-6 pb-8 border-t border-gray-100">
+                        <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
+                          Exam Summary
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-100">
+                                {(
+                                  [
+                                    ["Total Marks", "Sum of all marks obtained"],
+                                    ["GPA", "Grade Point Average"],
+                                    ["Grade", "Overall letter grade"],
+                                    ["Present", "Days attended"],
+                                    ["Absent", "Days missed"],
+                                  ] as [string, string][]
+                                ).map(([label, tip]) => (
+                                  <th
+                                    key={label}
+                                    className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
+                                  >
+                                    {label}
+                                    <Tooltip text={tip} />
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                                  {`${weeklySummary.totalObtainedMarks} / ${weeklySummary.totalFullMarks}`}
+                                </td>
+                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                                  {weeklySummary.overallGPA > 0 ? weeklySummary.overallGPA.toFixed(2) : "-"}
+                                </td>
+                                <td className="py-4 px-4 text-center">
+                                  {weeklySummary.overallGrade !== "F" ? (
+                                    <GradeBadge grade={weeklySummary.overallGrade} />
+                                  ) : (
+                                    <span className="text-gray-300">-</span>
+                                  )}
+                                </td>
+                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                                  {weeklySummary.present}
+                                </td>
+                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                                  {weeklySummary.absent}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>

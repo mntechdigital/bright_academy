@@ -1,11 +1,6 @@
-import DeleteWeeklyResultDialog from "./DeleteWeeklyResultDialog";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { useState, useEffect } from 'react';
+import { ChevronDown, Trash2 } from 'lucide-react';
+import DeleteWeeklyResultDialog from './DeleteWeeklyResultDialog';
 
 const WeeklyResultTable = ({
   weeklyResults,
@@ -16,127 +11,153 @@ const WeeklyResultTable = ({
   weeklyResults: any[];
   selectedCard?: any;
   onCardClick?: (card: any) => void;
-  onDeleteSuccess?: () => void;
+  onDeleteSuccess?: () => Promise<void>;
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogData, setDeleteDialogData] = useState<any>(null);
 
+  // Remove duplicate weeks
   const uniqueResults = Array.from(
     new Map(
       weeklyResults.map((result) => [
-        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}-${result.batch?.id}`,
+        `${result.week}-${result.month}-${result.year}-${result.subject?.id}-${result.stdClass?.id}-${result.batch?.id || result.batchId || 'no-batch'}`,
         result,
       ])
     ).values()
   );
 
+  const handleDeleteWeek = (e: React.MouseEvent, result: any) => {
+    e.stopPropagation();
+    
+    if (!result) return;
+    
+    // Store the result data for deletion
+    const deleteData = {
+      stdClassId: String(result.stdClass?.id || result.stdClassId),
+      subjectId: String(result.subject?.id || result.subjectId),
+      week: result.week,
+      month: result.month,
+      year: result.year,
+      batchId: result.batch?.id || result.batchId,
+    };
+    
+    // Open dialog with delete data
+    setDeleteDialogData(deleteData);
+    setDeleteDialogOpen(true);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isDropdownOpen &&
+        !(event.target as Element).closest('.relative')
+      ) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () =>
+        document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isDropdownOpen]);
+
   if (uniqueResults.length === 0) {
     return (
       <div className="mt-6 flex flex-col items-center justify-center py-16 bg-white rounded-xl border border-gray-200 text-gray-400">
-        <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2a4 4 0 014-4h0a4 4 0 014 4v2M7 21h10a2 2 0 002-2v-1a7 7 0 00-14 0v1a2 2 0 002 2z" />
-        </svg>
         <p className="text-base font-medium">No results found</p>
-        <p className="text-sm mt-1">Weekly results will appear here once added.</p>
       </div>
     );
   }
 
+  const handleSelect = (result: any) => {
+    onCardClick?.(result);
+    setIsDropdownOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (!selectedCard?.id) return;
+    
+    // Open dialog with selected card id
+    setDeleteDialogData({ id: selectedCard.id });
+    setDeleteDialogOpen(true);
+  };
+
   return (
-    <div className="mt-6">
-      <Carousel
-        opts={{
-          align: "start",
-          loop: false,
-        }}
-        className="w-full"
-      >
-        <CarouselContent className="-ml-2 md:-ml-4">
-          {uniqueResults.map((result) => {
-            const isSelected = selectedCard?.id === result.id;
-            return (
-              <CarouselItem key={result.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                <div
-                  onClick={() => {
-                    console.log("Card clicked in table:", result.id);
-                    onCardClick?.(result);
-                  }}
-                  className={`relative h-full bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer ${
-                    isSelected
-                      ? "border-green-500 ring-2 ring-green-200"
-                      : "border-gray-200"
-                  }`}
-                >
-                  {/* Delete button — top right */}
-                  <div className="absolute top-2 right-2 z-10">
-                  <DeleteWeeklyResultDialog 
-                      id={result.id}
-                      stdClassId={result.stdClass?.id}
-                      batchId={result.batch?.id || result.batchId || result.student?.batchId}
-                      week={result.week}
-                      onDeleteSuccess={onDeleteSuccess}
-                    />
-                  </div>
+    <div className="mt-6 space-y-4">
+      <div className="relative">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Week
+        </label>
 
-                  {/* Card Header */}
-                  <div
-                    className={`px-3 pt-2.5 pb-2.5 border-b pr-8 ${
-                      isSelected
-                        ? "bg-green-100 border-green-300"
-                        : "bg-linear-to-r from-orange-50 to-amber-50 border-orange-100"
-                    }`}
-                  >
-                    <p className={`text-[10px] font-medium uppercase tracking-wide truncate ${
-                      isSelected ? "text-green-600" : "text-orange-500"
-                    }`}>
-                      {result.subject?.subjectName || "—"}
+        <button
+          type="button"
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="w-full md:w-96 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 flex items-center justify-between"
+        >
+          <span>
+            {selectedCard
+              ? `${selectedCard.week} - ${selectedCard.month} ${selectedCard.year}`
+              : 'Select a week'}
+          </span>
+          <ChevronDown className="h-4 w-4 text-gray-400" />
+        </button>
+
+        {isDropdownOpen && (
+          <div className="absolute z-20 w-full md:w-96 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+            {uniqueResults.map((result) => (
+              <div
+                key={result.id}
+                onClick={() => handleSelect(result)}
+                className={`px-4 py-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 ${
+                  selectedCard?.id === result.id ? 'bg-green-50' : ''
+                }`}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {result.subject?.subjectName}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <h3 className={`text-xs font-semibold truncate ${
-                        isSelected ? "text-green-900" : "text-gray-800"
-                      }`}>
-                        {result.stdClass?.className || "—"}
-                        {result.batch?.name ? ` · ${result.batch.name}` : ""}
-                      </h3>
-                      <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        isSelected 
-                          ? "bg-green-200 text-green-800"
-                          : "bg-orange-100 text-orange-700"
-                      }`}>
-                        Wk {result.week}
-                      </span>
-                    </div>
+                    <p className="text-xs text-gray-500">
+                      {result.stdClass?.className}
+                      {result.batch?.name ? ` · ${result.batch?.name}` : ''}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {result.week} · {result.month} {result.year}
+                    </p>
                   </div>
-
-                  {/* Card Body */}
-                  <div className="px-3 py-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
-                    <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Month</p>
-                      <p className="text-xs font-medium text-gray-700 truncate">{result.month}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Year</p>
-                      <p className="text-xs font-medium text-gray-700">{result.year}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Published</p>
-                      <p className="text-xs font-medium text-gray-700">
-                        {new Date(result.publishedDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">Marks</p>
-                      <p className={`text-xs font-bold ${
-                        isSelected ? "text-green-600" : "text-orange-500"
-                      }`}>{result.totalMarks}</p>
-                    </div>
-                  </div>
+                  <button
+                    onClick={(e) => handleDeleteWeek(e, result)}
+                    className="ml-2 p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Delete this week's data"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-              </CarouselItem>
-            );
-          })}
-        </CarouselContent>
-        <CarouselPrevious className="left-0 bg-orange-500 text-white" />
-        <CarouselNext className="right-0 bg-orange-500 text-white" />
-      </Carousel>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Professional Delete Dialog */}
+      {deleteDialogOpen && deleteDialogData && (
+        <DeleteWeeklyResultDialog
+          id={deleteDialogData?.id}
+          stdClassId={deleteDialogData?.stdClassId}
+          batchId={deleteDialogData?.batchId}
+          week={deleteDialogData?.week}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onDeleteSuccess={() => {
+            setDeleteDialogOpen(false);
+            onDeleteSuccess?.();
+          }}
+        />
+      )}
     </div>
   );
 };

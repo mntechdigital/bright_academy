@@ -1,13 +1,15 @@
 "use client";
-import React, { useTransition, useState, useCallback } from "react";
+import React, { useTransition, useState, useCallback, useMemo } from "react";
 import { Student } from "../studentTableTypes";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import {
   createWeeklyResultForSingleStd,
   updateWeeklyResultForSingleStd,
+  bulkUpsertStudentMarks,
 } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
+import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
 
 type WeeklyResult = {
   id: string;
@@ -45,7 +47,17 @@ const StudentRow = ({
   const inputValue =
     marksMap[student.id] !== undefined
       ? marksMap[student.id]
-      : existingResult?.obtainedMarks ?? "";
+      : (existingResult?.obtainedMarks ?? "");
+
+  // Calculate grade and point based on obtained marks and total marks
+  const obtainedMarks =
+    inputValue !== ""
+      ? Number(inputValue)
+      : (existingResult?.obtainedMarks ?? 0);
+  const { gradePoint, letterGrade } = getGradeFromMarks(
+    obtainedMarks,
+    totalMark,
+  );
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
@@ -70,9 +82,7 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <span className="inline-flex items-center gap-1 bg-green-50 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">
           <span className="w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-          {existingResult?.batch?.name ||
-            student.batch?.name ||
-            "No Batch"}
+          {existingResult?.batch?.name || student.batch?.name || "No Batch"}
         </span>
       </td>
       <td className="px-4 py-3 text-gray-900 text-sm font-medium">
@@ -81,7 +91,9 @@ const StudentRow = ({
       <td className="px-4 py-3">
         <div className="flex flex-col">
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             placeholder="Enter obtain mark"
             className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
             value={inputValue}
@@ -89,17 +101,39 @@ const StudentRow = ({
           />
         </div>
       </td>
+      <td className="px-4 py-3 text-center">
+        <span className="inline-flex items-center justify-center bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full min-w-12">
+          {obtainedMarks > 0 ? gradePoint.toFixed(1) : "-"}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <span
+          className={`inline-flex items-center justify-center text-xs font-bold px-3 py-1.5 rounded-full min-w-12 ${
+            letterGrade === "A+"
+              ? "bg-green-100 text-green-700"
+              : letterGrade === "A"
+                ? "bg-green-50 text-green-600"
+                : letterGrade === "A-"
+                  ? "bg-blue-100 text-blue-700"
+                  : letterGrade === "B"
+                    ? "bg-blue-50 text-blue-600"
+                    : letterGrade === "C"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : letterGrade === "D"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-red-100 text-red-700"
+          }`}
+        >
+          {obtainedMarks > 0 ? letterGrade : "-"}
+        </span>
+      </td>
       <td className="px-4 py-3">
         {isEditing && (
           <Button
             type="button"
             disabled={isUpdating}
             onClick={() =>
-              onUpdate(
-                student.id,
-                existingResult.id,
-                Number(inputValue || 0),
-              )
+              onUpdate(student.id, existingResult.id, Number(inputValue || 0))
             }
             className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-all hover:bg-blue-700 h-10 cursor-pointer whitespace-nowrap"
           >
@@ -125,12 +159,13 @@ const WeeklyResultTakeTable = ({
 }: {
   studentsData: Student[];
   weeklyResults: WeeklyResult[];
-  weeklyResultMeta: WeeklyResult;
+  weeklyResultMeta: WeeklyResult | any; // Allow any type for localStorage data
 }) => {
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [marksMap, setMarksMap] = useState<Record<string, string>>({});
-  const [localWeeklyResults, setLocalWeeklyResults] = useState<WeeklyResult[]>(initialWeeklyResults);
+  const [localWeeklyResults, setLocalWeeklyResults] =
+    useState<WeeklyResult[]>(initialWeeklyResults);
 
   const {
     totalMarks,
@@ -176,7 +211,16 @@ const WeeklyResultTakeTable = ({
         setUpdatingId(null);
       });
     },
-    [stdClassId, batchId, subject?.id, totalMarks, week, year, month, publishedDate],
+    [
+      stdClassId,
+      batchId,
+      subject?.id,
+      totalMarks,
+      week,
+      year,
+      month,
+      publishedDate,
+    ],
   );
 
   const handleSubmitAll = useCallback(() => {
@@ -190,32 +234,47 @@ const WeeklyResultTakeTable = ({
       let errorCount = 0;
       const newlyCreatedResults: WeeklyResult[] = [];
 
-      for (const student of newStudents) {
-        const obtainedMarks = marksMap[student.id];
-        if (!obtainedMarks || obtainedMarks === "") {
-          errorCount++;
-          continue;
-        }
+      // Prepare bulk payload
+      const bulkPayload = {
+        marks: newStudents
+          .map((student) => {
+            const obtainedMarks = marksMap[student.id];
+            if (!obtainedMarks || obtainedMarks === "") {
+              return null;
+            }
 
-        const payload = {
-          studentId: student.id,
-          stdClassId,
-          batchId,
-          subjectId: subject?.id,
-          obtainedMarks: parseInt(obtainedMarks, 10),
-          totalMarks,
-          week,
-          year,
-          month,
-          publishedDate,
-        };
+            return {
+              studentId: student.id,
+              stdClassId,
+              batchId,
+              subjectId: subject?.id,
+              obtainedMarks: parseInt(obtainedMarks, 10),
+              totalMarks,
+              week,
+              year,
+              month,
+              publishedDate,
+            };
+          })
+          .filter((item) => item !== null) as Record<string, any>[],
+      };
 
-        const res = await createWeeklyResultForSingleStd(payload);
-        if (res.statusCode === 201) {
-          successCount++;
-          // Construct a local result object so the Update button appears immediately
-          newlyCreatedResults.push({
-            id: res?.data?.id || res?.data?._id || `temp-${student.id}`,
+      // If no valid marks to submit, show error
+      if (bulkPayload.marks.length === 0) {
+        showErrorToast("No valid marks to submit. Please enter marks for at least one student.");
+        return;
+      }
+
+      // Send bulk request
+      const res = await bulkUpsertStudentMarks(bulkPayload);
+
+      if (res.statusCode === 200 || res.statusCode === 201) {
+        successCount = res?.data?.totalProcessed || bulkPayload.marks.length;
+        
+        // Construct local result objects so the Update button appears immediately
+        newlyCreatedResults.push(
+          ...bulkPayload.marks.map((mark, index) => ({
+            id: res?.data?.results?.[index]?.id || res?.data?.results?.[index]?._id || `temp-${mark.studentId}`,
             totalMarks,
             subject: subject || { id: "", subjectName: "" },
             week,
@@ -224,13 +283,18 @@ const WeeklyResultTakeTable = ({
             publishedDate,
             batch: batch || { id: "", name: "" },
             stdClass: stdClass || { id: "", name: "" },
-            studentId: student.id,
+            studentId: mark.studentId,
             stdRegNo: null,
-            obtainedMarks: parseInt(obtainedMarks, 10),
-          });
-        } else {
-          errorCount++;
-        }
+            obtainedMarks: mark.obtainedMarks,
+          }))
+        );
+
+        showSuccessToast(
+          `Successfully submitted ${successCount} student(s) result!`,
+        );
+      } else {
+        errorCount = bulkPayload.marks.length;
+        showErrorToast(res.message || `Failed to submit student(s) result.`);
       }
 
       if (newlyCreatedResults.length > 0) {
@@ -243,15 +307,6 @@ const WeeklyResultTakeTable = ({
           });
           return updated;
         });
-      }
-
-      if (successCount > 0) {
-        showSuccessToast(
-          `Successfully submitted ${successCount} student(s) result!`,
-        );
-      }
-      if (errorCount > 0) {
-        showErrorToast(`Failed to submit ${errorCount} student(s) result.`);
       }
     });
   }, [
@@ -276,6 +331,43 @@ const WeeklyResultTakeTable = ({
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 my-10">
+      {/* Selected Result Info Banner */}
+      <div className="mb-6 p-4 bg-linear-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">Currently Selected Result:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <p className="text-xs text-gray-500">Subject</p>
+                <p className="text-sm font-medium text-gray-900">{subject?.subjectName || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Class & Batch</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {stdClass?.className || "—"}
+                  {batch?.name ? ` · ${batch.name}` : ""}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Week & Period</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {week} · {month} {year}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Total Marks</p>
+                <p className="text-sm font-bold text-orange-600">{totalMarks}</p>
+              </div>
+            </div>
+          </div>
+          <div className="ml-4 shrink-0">
+            <span className="inline-flex items-center rounded-full bg-green-100 text-green-700 text-xs font-semibold px-3 py-1.5">
+              ✓ Active
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <h2 className="text-xl font-semibold text-gray-900 mr-3">Students</h2>
@@ -322,6 +414,28 @@ const WeeklyResultTakeTable = ({
                   </span>
                 </span>
               </th>
+              <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Point
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Grade point"
+                  >
+                    &#9432;
+                  </span>
+                </span>
+              </th>
+              <th className="px-4 py-3 font-semibold text-center whitespace-nowrap">
+                <span className="flex items-center gap-1">
+                  Grade
+                  <span
+                    className="cursor-pointer text-gray-400 hover:text-gray-600"
+                    title="Letter grade"
+                  >
+                    &#9432;
+                  </span>
+                </span>
+              </th>
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
                 Action
               </th>
@@ -349,7 +463,7 @@ const WeeklyResultTakeTable = ({
             ) : (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-4 py-8 text-center text-gray-400 text-sm"
                 >
                   No students found.

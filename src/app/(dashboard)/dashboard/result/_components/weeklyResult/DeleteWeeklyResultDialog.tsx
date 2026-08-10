@@ -22,11 +22,17 @@ interface DeleteWeeklyResultDialogProps {
   week?: string;
   trigger?: ReactNode;
   onDeleteSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const DeleteWeeklyResultDialog = ({ id, stdClassId, batchId, week, trigger, onDeleteSuccess }: DeleteWeeklyResultDialogProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+const DeleteWeeklyResultDialog = ({ id, stdClassId, batchId, week, trigger, onDeleteSuccess, open: controlledOpen, onOpenChange }: DeleteWeeklyResultDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = onOpenChange || setInternalOpen;
 
   const handleDelete = async () => {
     console.log("Delete button clicked with payload:", { id, stdClassId, batchId, week });

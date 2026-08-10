@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-export const showSuccessToast = (message: string) => {
+export const showSuccessToast = (message: string | React.ReactNode) => {
   toast.success(message, {
     icon: "✔️",
     className: "group toast-success",
@@ -18,7 +18,7 @@ export const showSuccessToast = (message: string) => {
   });
 };
 
-export const showErrorToast = (message: string) => {
+export const showErrorToast = (message: string | React.ReactNode) => {
   toast.error(message, {
     icon: "✖️",
     className: "group toast-error",

@@ -40,6 +40,7 @@ export const apiRequest = async (
   endpoint: string,
   options: RequestInit & { authRequired?: boolean } = {}
 ): Promise<any> => {
+  
   const headers = new Headers(options.headers);
 
   // Set Content-Type unless it's FormData
@@ -55,9 +56,14 @@ export const apiRequest = async (
     }
   }
 
+  
+  // Remove body from options to avoid conflicts
+  const { body, ...restOptions } = options;
+  
   const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-    ...options,
+    ...restOptions,
     headers,
+    body: body,
     cache: "no-store",
   });
 
