@@ -24,7 +24,7 @@ interface ClassData {
 
 interface WeeklyResultFormProps {
   classesData?: ClassData[];
-  onResultCreated?: () => void;
+  onResultCreated?: (data: any) => void;
 }
 
 const formatTime = (time: string) => {
@@ -64,7 +64,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
   const batches = selectedClass?.batches || [];
   const subjects = selectedClass?.subjects || [];
 
-  const onSubmit = (data: any) => {
+  const onSubmit = async (data: any) => {
      console.log("=== FORM SUBMISSION STARTED ===");
      console.log("Form submitted with data:", data);
      
@@ -87,7 +87,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
      const selectedSubject = selectedClass?.subjects?.find((subject) => subject.id === data.subjectId);
      const subjectName = selectedSubject?.subjectName || '';
      
-     // Store form data in localStorage for use by the table
+     // Prepare form data to pass to parent component
      const formData = {
        month: data.month,
        week: data.week,
@@ -102,15 +102,54 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
        totalMarks: parseInt(data.totalMarks, 10),
      };
      
-     localStorage.setItem('weeklyResultFormData', JSON.stringify(formData));
-     console.log("Form data saved to localStorage - NO API CALL:", formData);
+     console.log("Form data prepared - Fetching students:", formData);
      
-     // Trigger refresh to show the table (no API call here)
-     onResultCreated?.();
-     
-     showSuccessToast("Form submitted! Now enter marks for students and click 'Submit All Results'");
-     
-     console.log("=== FORM SUBMISSION COMPLETED - Table will be shown ===");
+     try {
+       // Fetch students based on form data (class and batch)
+       const { getStudents } = await import("@/src/services/students");
+       
+       const query = [
+           {
+             key: "orderBy",
+             value: JSON.stringify({ createdAt: "desc" }),
+           },
+           { key: "page", value: "1" },
+           { key: "limit", value: "1000" },
+           { key: "filter", value: JSON.stringify({ classId: data.classId }) },
+         ];
+       
+       console.log("Fetching students with query:", query);
+       
+       const studentRes = await getStudents(query);
+       const allStudents = studentRes?.data?.data || [];
+       
+       console.log("Students fetched:", allStudents);
+       
+       // Filter students by batch if batch is selected
+       const filteredStudents = data.batchId 
+         ? allStudents.filter((student: any) => {
+             const studentBatchId = student.batch?.id || student.batchId || "";
+             return String(studentBatchId) === String(data.batchId);
+           })
+         : allStudents;
+       
+       console.log("Filtered students:", filteredStudents);
+       
+       if (filteredStudents.length === 0) {
+         showErrorToast("No students found for the selected class/batch");
+         return;
+       }
+       
+       showSuccessToast(`Found ${filteredStudents.length} students. Loading result table...`);
+       
+       // Trigger refresh to show the table with student data AND the fetched students
+       onResultCreated?.({ ...formData, students: filteredStudents });
+       
+       console.log("=== FORM SUBMISSION COMPLETED - Table will be shown ===");
+     } catch (error) {
+       console.error("Error fetching students:", error);
+       showErrorToast("Failed to fetch students. Please try again.");
+     }
    };
 
   return (

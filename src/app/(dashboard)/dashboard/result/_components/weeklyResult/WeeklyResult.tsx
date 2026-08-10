@@ -29,13 +29,13 @@ const normalizeWeek = (week?: string) => {
 interface WeeklyResultProps {
   searchParams: { search: string; page: string };
   refreshTrigger?: number;
-  forceUpdateKey?: number;
+  formData?: any;
 }
 
 const WeeklyResult: React.FC<WeeklyResultProps> = ({
   searchParams,
   refreshTrigger = 0,
-  forceUpdateKey = 0,
+  formData,
 }) => {
   const [weeklyResultsData, setWeeklyResultsData] = useState<any[]>([]);
   const [studentData, setStudentData] = useState<any[]>([]);
@@ -45,27 +45,21 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
   });
 
   const [selectedResult, setSelectedResult] = useState<any>(null);
-  const [formDataFromStorage, setFormDataFromStorage] = useState<any>(null);
 
   const search = searchParams.search || "";
 
-  // Get form data from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("weeklyResultFormData");
+  // Use formData from props instead of localStorage
+  const formDataFromStorage = formData;
 
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        console.log("FORM DATA FROM STORAGE =>", parsed);
-        setFormDataFromStorage(parsed);
-      } catch (error) {
-        console.error("Failed to parse localStorage data", error);
-        setFormDataFromStorage(null);
-      }
-    } else {
-      setFormDataFromStorage(null);
-    }
-  }, [refreshTrigger, forceUpdateKey]);
+  // Reset data when formData changes
+  useEffect(() => {
+    setWeeklyResultsData([]);
+    setStudentData([]);
+    setSelectedResult(null);
+  }, [formData]);
+
+  // Use students from formData if available, otherwise fetch them
+  const studentsFromForm = formDataFromStorage?.students || [];
 
   // Fetch weekly results
   useEffect(() => {
@@ -95,6 +89,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
 
           data = res?.data?.data || [];
         } else {
+          // Fetch all weekly results when no formData (page load/refresh)
           const res = await getWeeklyResults([]);
           data = res?.data?.data || [];
         }
@@ -103,9 +98,13 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
 
         setWeeklyResultsData(data);
 
-        if (data.length > 0) {
-          setSelectedResult(data[0]);
-        }
+        // Only auto-select if no result is currently selected
+        setSelectedResult((prevSelected: any) => {
+          if (data.length > 0 && !prevSelected) {
+            return data[0];
+          }
+          return prevSelected;
+        });
       } catch (error) {
         console.error("Error fetching weekly results", error);
       }
@@ -163,12 +162,23 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
     });
   }, [weeklyResultsData, weeklyResultMeta]);
 
-  // Fetch students
+  // Fetch students when weeklyResultMeta changes
   useEffect(() => {
     const classId = weeklyResultMeta?.stdClass?.id;
 
     if (!classId) return;
 
+    // If students are already provided from form, use them
+    if (studentsFromForm.length > 0) {
+      setStudentData(studentsFromForm);
+      setStudentMeta({
+        totalPages: 1,
+        totalItems: studentsFromForm.length,
+      });
+      return;
+    }
+
+    // Otherwise fetch from API
     const fetchStudents = async () => {
       try {
         const query: TQuery[] = [
@@ -195,6 +205,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
             })
           : allStudents;
 
+        console.log("STUDENTS FETCHED IN WEEKLYRESULT:", filteredStudents);
+        
         setStudentData(filteredStudents);
         setStudentMeta({
           totalPages: 1,
@@ -206,7 +218,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
     };
 
     fetchStudents();
-  }, [weeklyResultMeta, search]);
+  }, [weeklyResultMeta, search, studentsFromForm]);
 
   // Dropdown selection
   const handleCardClick = useCallback((result: any) => {
