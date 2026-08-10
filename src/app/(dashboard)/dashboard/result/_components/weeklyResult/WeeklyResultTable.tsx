@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { ChevronDown, Trash2 } from 'lucide-react';
+import DeleteWeeklyResultDialog from './DeleteWeeklyResultDialog';
 
 const WeeklyResultTable = ({
   weeklyResults,
@@ -14,6 +14,8 @@ const WeeklyResultTable = ({
   onDeleteSuccess?: () => Promise<void>;
 }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteDialogData, setDeleteDialogData] = useState<any>(null);
 
   // Remove duplicate weeks
   const uniqueResults = Array.from(
@@ -25,38 +27,24 @@ const WeeklyResultTable = ({
     ).values()
   );
 
-  const handleDeleteWeek = async (e: React.MouseEvent, result: any) => {
+  const handleDeleteWeek = (e: React.MouseEvent, result: any) => {
     e.stopPropagation();
     
     if (!result) return;
     
-    const confirmMessage = `Are you sure you want to delete all data for ${result.week} - ${result.month} ${result.year}?\n\nThis will delete:\n- Subject: ${result.subject?.subjectName}\n- Class: ${result.stdClass?.className}${result.batch?.name ? `\n- Batch: ${result.batch?.name}` : ''}\n\nThis action cannot be undone.`;
+    // Store the result data for deletion
+    const deleteData = {
+      stdClassId: String(result.stdClass?.id || result.stdClassId),
+      subjectId: String(result.subject?.id || result.subjectId),
+      week: result.week,
+      month: result.month,
+      year: result.year,
+      batchId: result.batch?.id || result.batchId,
+    };
     
-    if (window.confirm(confirmMessage)) {
-      try {
-        // Import delete function dynamically to avoid circular dependencies
-        const { deleteWeeklyResultByClassAndSection } = await import('@/src/services/weeklyResult');
-        
-        const payload = {
-          stdClassId: String(result.stdClass?.id || result.stdClassId),
-          subjectId: String(result.subject?.id || result.subjectId),
-          week: result.week,
-          month: result.month,
-          year: result.year,
-          batchId: result.batch?.id || result.batchId,
-        };
-        
-        await deleteWeeklyResultByClassAndSection(payload);
-        
-        // Call the success callback to refresh data
-        if (onDeleteSuccess) {
-          await onDeleteSuccess();
-        }
-      } catch (error) {
-        console.error('Error deleting weekly result:', error);
-        alert('Failed to delete result. Please try again.');
-      }
-    }
+    // Open dialog with delete data
+    setDeleteDialogData(deleteData);
+    setDeleteDialogOpen(true);
   };
 
   // Close dropdown on outside click
@@ -90,24 +78,12 @@ const WeeklyResultTable = ({
     setIsDropdownOpen(false);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedCard?.id) return;
     
-    if (window.confirm('Are you sure you want to delete this result?')) {
-      try {
-        // Import delete function dynamically to avoid circular dependencies
-        const { deleteWeeklyResult } = await import('@/src/services/weeklyResult');
-        await deleteWeeklyResult(selectedCard.id);
-        
-        // Call the success callback to refresh data
-        if (onDeleteSuccess) {
-          await onDeleteSuccess();
-        }
-      } catch (error) {
-        console.error('Error deleting weekly result:', error);
-        alert('Failed to delete result. Please try again.');
-      }
-    }
+    // Open dialog with selected card id
+    setDeleteDialogData({ id: selectedCard.id });
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -166,6 +142,22 @@ const WeeklyResultTable = ({
           </div>
         )}
       </div>
+
+      {/* Professional Delete Dialog */}
+      {deleteDialogOpen && deleteDialogData && (
+        <DeleteWeeklyResultDialog
+          id={deleteDialogData?.id}
+          stdClassId={deleteDialogData?.stdClassId}
+          batchId={deleteDialogData?.batchId}
+          week={deleteDialogData?.week}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onDeleteSuccess={() => {
+            setDeleteDialogOpen(false);
+            onDeleteSuccess?.();
+          }}
+        />
+      )}
     </div>
   );
 };
