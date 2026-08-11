@@ -258,10 +258,13 @@ export default function StudentResultsDashboard() {
           
           if (studentInfoCookie) {
             try {
-              const decoded = decodeURIComponent(studentInfoCookie.split("=")[1]);
-              const info = JSON.parse(decoded);
-              studentId = info?.id || info?.stdRegNo || "";
-              classId = info?.stdClass?.id || info?.className?.match(/\d+/)?.[0] || "";
+              const cookieParts = studentInfoCookie.split("=");
+              if (cookieParts.length >= 2 && cookieParts[1]) {
+                const decoded = decodeURIComponent(cookieParts[1]);
+                const info = JSON.parse(decoded);
+                studentId = info?.id || info?.stdRegNo || "";
+                classId = info?.stdClass?.id || info?.className?.match(/\d+/)?.[0] || "";
+              }
             } catch (e) {
               console.error("Error parsing student info cookie:", e);
             }
@@ -281,7 +284,7 @@ export default function StudentResultsDashboard() {
             year,
           });
           
-          console.log("Merit position API response:", meritRes);
+          console.log("Merit position API response for weekly:", meritRes);
           if (meritRes?.success && meritRes?.data) {
             const position = meritRes.data.position || meritRes.data.meritPosition;
             if (position) {
