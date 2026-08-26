@@ -14,6 +14,7 @@ import {
   FileUp,
   File,
   X,
+  Eye,
 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { createNotice } from "@/src/services/notice";
@@ -26,6 +27,8 @@ interface CreateNoticeFormValues {
 const CreateNoticeForm = () => {
   const [isPending, startTransition] = useTransition();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateNoticeFormValues>({
@@ -46,11 +49,13 @@ const CreateNoticeForm = () => {
       formData.append("pdf", selectedFile);
 
       const res = await createNotice(formData);
-      console.log("create notice res==>",res);
+      console.log("create notice res==>", res);
       if (res.statusCode === 201) {
         showSuccessToast("Notice created successfully!");
         form.reset();
         setSelectedFile(null);
+        setPreviewUrl(null);
+        setShowPreview(false);
         router.push("/dashboard/notices");
       } else {
         showErrorToast(res.message || "Failed to create notice.");
@@ -70,11 +75,18 @@ const CreateNoticeForm = () => {
         return;
       }
       setSelectedFile(file);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setShowPreview(true);
     }
   };
 
   const removeFile = () => {
     setSelectedFile(null);
+    setPreviewUrl(null);
+    setShowPreview(false);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -141,21 +153,40 @@ const CreateNoticeForm = () => {
             PDF File<span className="text-red-500">*</span>
           </label>
           {selectedFile ? (
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <File className="h-5 w-5 text-[#F97316] shrink-0" />
-              <span className="text-sm text-gray-700 truncate flex-1">
-                {selectedFile.name}
-              </span>
-              <span className="text-xs text-gray-400 shrink-0">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </span>
-              <button
-                type="button"
-                onClick={removeFile}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
-              >
-                <X className="h-4 w-4 text-gray-500" />
-              </button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <File className="h-5 w-5 text-[#F97316] shrink-0" />
+                <span className="text-sm text-gray-700 truncate flex-1">
+                  {selectedFile.name}
+                </span>
+                <span className="text-xs text-gray-400 shrink-0">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                  title={showPreview ? "Hide preview" : "Show preview"}
+                >
+                  <Eye className="h-4 w-4 text-gray-500" />
+                </button>
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                >
+                  <X className="h-4 w-4 text-gray-500" />
+                </button>
+              </div>
+              {showPreview && previewUrl && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <iframe
+                    src={previewUrl}
+                    className="w-full h-[500px]"
+                    title="PDF Preview"
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#F97316] hover:bg-orange-50/30 transition-all">

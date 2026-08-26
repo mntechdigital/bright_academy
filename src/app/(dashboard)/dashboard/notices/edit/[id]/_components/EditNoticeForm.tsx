@@ -14,7 +14,8 @@ import {
   X,
   FileUp,
   File,
-  ExternalLink,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getNoticeById, updateNotice } from "@/src/services/notice";
@@ -29,6 +30,10 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
   const [isPending, startTransition] = useTransition();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [existingPdfUrl, setExistingPdfUrl] = useState<string>("");
+  const [newFilePreviewUrl, setNewFilePreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [showPreview, setShowPreview] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EditNoticeFormValues>({
@@ -55,6 +60,12 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
     };
     fetchNotice();
   }, [noticeId, form]);
+
+  useEffect(() => {
+    return () => {
+      if (newFilePreviewUrl) URL.revokeObjectURL(newFilePreviewUrl);
+    };
+  }, [newFilePreviewUrl]);
 
   const onSubmit: SubmitHandler<EditNoticeFormValues> = async (data) => {
     startTransition(async () => {
@@ -89,15 +100,26 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
         return;
       }
       setSelectedFile(file);
+      if (newFilePreviewUrl) URL.revokeObjectURL(newFilePreviewUrl);
+      const url = URL.createObjectURL(file);
+      setNewFilePreviewUrl(url);
+      setShowPreview(true);
     }
   };
 
   const removeFile = () => {
     setSelectedFile(null);
+    if (newFilePreviewUrl) URL.revokeObjectURL(newFilePreviewUrl);
+    setNewFilePreviewUrl(null);
+    setShowPreview(true);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
+  const existingPdfPreviewUrl = existingPdfUrl
+    ? `${process.env.NEXT_PUBLIC_API_URL}/notices/${noticeId}/pdf`
+    : "";
 
   return (
     <div className="p-6">
@@ -171,37 +193,77 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
 
           {/* Show existing PDF if no new file selected */}
           {existingPdfUrl && !selectedFile && (
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 mb-3">
-              <File className="h-5 w-5 text-green-500 shrink-0" />
-              <a
-                href={existingPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-orange-500 hover:text-orange-600 truncate flex-1"
-              >
-                Current PDF
-              </a>
-              <ExternalLink className="h-4 w-4 text-gray-400 shrink-0" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <File className="h-5 w-5 text-green-500 shrink-0" />
+                <span className="text-sm text-gray-700 truncate flex-1">
+                  Current PDF
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                  title={showPreview ? "Hide preview" : "Show preview"}
+                >
+                  {showPreview ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-500" />
+                  )}
+                </button>
+              </div>
+              {showPreview && existingPdfPreviewUrl && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <iframe
+                    src={existingPdfPreviewUrl}
+                    className="w-full h-[500px]"
+                    title="Current PDF Preview"
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {/* Show newly selected file */}
           {selectedFile ? (
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
-              <File className="h-5 w-5 text-[#F97316] shrink-0" />
-              <span className="text-sm text-gray-700 truncate flex-1">
-                {selectedFile.name}
-              </span>
-              <span className="text-xs text-gray-400 shrink-0">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </span>
-              <button
-                type="button"
-                onClick={removeFile}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
-              >
-                <X className="h-4 w-4 text-gray-500" />
-              </button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <File className="h-5 w-5 text-[#F97316] shrink-0" />
+                <span className="text-sm text-gray-700 truncate flex-1">
+                  {selectedFile.name}
+                </span>
+                <span className="text-xs text-gray-400 shrink-0">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                  title={showPreview ? "Hide preview" : "Show preview"}
+                >
+                  {showPreview ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-500" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={removeFile}
+                  className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                >
+                  <X className="h-4 w-4 text-gray-500" />
+                </button>
+              </div>
+              {showPreview && newFilePreviewUrl && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <iframe
+                    src={newFilePreviewUrl}
+                    className="w-full h-[500px]"
+                    title="New PDF Preview"
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#F97316] hover:bg-orange-50/30 transition-all">
