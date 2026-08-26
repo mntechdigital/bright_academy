@@ -3,6 +3,7 @@ import {
   Grip, 
   Package, 
   ImagePlus,
+  Bell,
   // HelpCircle
 } from "lucide-react";
 
@@ -47,6 +48,13 @@ export const NAV_ITEMS = [
     icon: Package,
     label: "Batches",
     href: "/batches"
+  },
+
+  // Notices - index: 20
+  {
+    icon: Bell,
+    label: "Notices",
+    href: "/notices"
   },
    
 ];
