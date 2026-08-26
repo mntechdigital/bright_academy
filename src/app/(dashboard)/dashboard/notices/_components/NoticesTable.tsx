@@ -100,7 +100,7 @@ const NoticesTable = ({ noticesData = [] }: { noticesData?: Notice[] }) => {
                     </td>
                     <td className="px-6 py-6 text-gray-600 text-base">
                       <a
-                        href={notice.pdfUrl}
+                        href={`${process.env.NEXT_PUBLIC_API_URL}/notices/${notice.id}/pdf`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-orange-500 hover:text-orange-600 transition-colors"

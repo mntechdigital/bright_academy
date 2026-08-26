@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useTransition } from "react";
+import React, { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
@@ -11,41 +11,73 @@ import {
   Plus,
   Loader2,
   Bell,
+  FileUp,
+  File,
+  X,
 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { createNotice } from "@/src/services/notice";
 
 interface CreateNoticeFormValues {
   title: string;
-  pdfUrl: string;
+  pdf: FileList;
 }
 
 const CreateNoticeForm = () => {
   const [isPending, startTransition] = useTransition();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateNoticeFormValues>({
     defaultValues: {
       title: "",
-      pdfUrl: "",
     },
   });
 
   const onSubmit: SubmitHandler<CreateNoticeFormValues> = async (data) => {
+    if (!selectedFile) {
+      showErrorToast("Please select a PDF file");
+      return;
+    }
+
     startTransition(async () => {
-      const payload = {
-        title: data.title,
-        pdfUrl: data.pdfUrl,
-      };
-      const res = await createNotice(payload);
-      console.log("Create Notice Response:", res);
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("pdf", selectedFile);
+
+      const res = await createNotice(formData);
+      console.log("create notice res==>",res);
       if (res.statusCode === 201) {
         showSuccessToast("Notice created successfully!");
         form.reset();
+        setSelectedFile(null);
         router.push("/dashboard/notices");
       } else {
         showErrorToast(res.message || "Failed to create notice.");
       }
     });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "application/pdf") {
+        showErrorToast("Only PDF files are allowed");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showErrorToast("File size must be less than 10MB");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const router = useRouter();
@@ -103,29 +135,48 @@ const CreateNoticeForm = () => {
           />
         </div>
 
-        {/* PDF URL Input */}
+        {/* PDF Upload Input */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            PDF URL<span className="text-red-500">*</span>
+            PDF File<span className="text-red-500">*</span>
           </label>
-          <Controller
-            name="pdfUrl"
-            control={form.control}
-            rules={{ required: "PDF URL is required" }}
-            render={({ field, fieldState: { error } }) => (
-              <div>
-                <input
-                  {...field}
-                  type="url"
-                  placeholder="https://example.com/routine.pdf"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                />
-                {error && (
-                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
-                )}
+          {selectedFile ? (
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <File className="h-5 w-5 text-[#F97316] shrink-0" />
+              <span className="text-sm text-gray-700 truncate flex-1">
+                {selectedFile.name}
+              </span>
+              <span className="text-xs text-gray-400 shrink-0">
+                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              </span>
+              <button
+                type="button"
+                onClick={removeFile}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#F97316] hover:bg-orange-50/30 transition-all">
+              <div className="flex flex-col items-center gap-2">
+                <FileUp className="h-8 w-8 text-gray-400" />
+                <span className="text-sm text-gray-500">
+                  Click to upload PDF
+                </span>
+                <span className="text-xs text-gray-400">
+                  Max size: 10MB
+                </span>
               </div>
-            )}
-          />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+          )}
         </div>
 
         {/* Submit Button */}

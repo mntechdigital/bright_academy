@@ -5,10 +5,10 @@ import { apiRequest } from "@/src/lib/apiRequest";
 import { TQuery } from "@/src/types/query.types";
 import { revalidatePath } from "next/cache";
 
-export const createNotice = async (payload: Record<string, any>) => {
+export const createNotice = async (payload: FormData) => {
   const response = await apiRequest("notices", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: payload,
     authRequired: true,
   });
 
@@ -54,10 +54,10 @@ export const getNoticeById = async (id: string) => {
   return response;
 };
 
-export const updateNotice = async (id: string, payload: Record<string, any>) => {
+export const updateNotice = async (id: string, payload: FormData) => {
   const response = await apiRequest(`notices/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    body: payload,
     authRequired: true,
   });
 

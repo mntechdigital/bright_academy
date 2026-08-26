@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useTransition } from "react";
+import React, { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
@@ -12,24 +12,28 @@ import {
   Loader2,
   Bell,
   X,
+  FileUp,
+  File,
+  ExternalLink,
 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getNoticeById, updateNotice } from "@/src/services/notice";
 
 interface EditNoticeFormValues {
   title: string;
-  pdfUrl: string;
   isPublished: boolean;
 }
 
 const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingPdfUrl, setExistingPdfUrl] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EditNoticeFormValues>({
     defaultValues: {
       title: "",
-      pdfUrl: "",
       isPublished: true,
     },
   });
@@ -41,9 +45,9 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
         if (res?.data) {
           form.reset({
             title: res.data.title || "",
-            pdfUrl: res.data.pdfUrl || "",
             isPublished: res.data.isPublished ?? true,
           });
+          setExistingPdfUrl(res.data.pdfUrl || "");
         }
       } catch (error) {
         console.error("Failed to fetch notice:", error);
@@ -54,13 +58,15 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
 
   const onSubmit: SubmitHandler<EditNoticeFormValues> = async (data) => {
     startTransition(async () => {
-      const payload = {
-        title: data.title,
-        pdfUrl: data.pdfUrl,
-        isPublished: data.isPublished,
-      };
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("isPublished", String(data.isPublished));
 
-      const res = await updateNotice(noticeId, payload);
+      if (selectedFile) {
+        formData.append("pdf", selectedFile);
+      }
+
+      const res = await updateNotice(noticeId, formData);
       if (res.statusCode === 200) {
         showSuccessToast(res.message || "Notice updated successfully!");
         form.reset();
@@ -69,6 +75,28 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
         showErrorToast(res.message || "Failed to update notice.");
       }
     });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "application/pdf") {
+        showErrorToast("Only PDF files are allowed");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showErrorToast("File size must be less than 10MB");
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -135,29 +163,66 @@ const EditNoticeForm = ({ noticeId }: { noticeId: string }) => {
           />
         </div>
 
-        {/* PDF URL Input */}
+        {/* PDF Upload Input */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-foreground mb-2">
-            PDF URL<span className="text-red-500">*</span>
+            PDF File
           </label>
-          <Controller
-            name="pdfUrl"
-            control={form.control}
-            rules={{ required: "PDF URL is required" }}
-            render={({ field, fieldState: { error } }) => (
-              <div>
-                <input
-                  {...field}
-                  type="url"
-                  placeholder="https://example.com/routine.pdf"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                />
-                {error && (
-                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
-                )}
+
+          {/* Show existing PDF if no new file selected */}
+          {existingPdfUrl && !selectedFile && (
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 mb-3">
+              <File className="h-5 w-5 text-green-500 shrink-0" />
+              <a
+                href={existingPdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-orange-500 hover:text-orange-600 truncate flex-1"
+              >
+                Current PDF
+              </a>
+              <ExternalLink className="h-4 w-4 text-gray-400 shrink-0" />
+            </div>
+          )}
+
+          {/* Show newly selected file */}
+          {selectedFile ? (
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+              <File className="h-5 w-5 text-[#F97316] shrink-0" />
+              <span className="text-sm text-gray-700 truncate flex-1">
+                {selectedFile.name}
+              </span>
+              <span className="text-xs text-gray-400 shrink-0">
+                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              </span>
+              <button
+                type="button"
+                onClick={removeFile}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="h-4 w-4 text-gray-500" />
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#F97316] hover:bg-orange-50/30 transition-all">
+              <div className="flex flex-col items-center gap-2">
+                <FileUp className="h-8 w-8 text-gray-400" />
+                <span className="text-sm text-gray-500">
+                  Click to upload new PDF
+                </span>
+                <span className="text-xs text-gray-400">
+                  Leave empty to keep current PDF
+                </span>
               </div>
-            )}
-          />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+          )}
         </div>
 
         {/* Is Published Toggle */}

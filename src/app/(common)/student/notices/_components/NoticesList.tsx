@@ -52,7 +52,7 @@ const NoticesList = ({ noticesData = [] }: { noticesData?: Notice[] }) => {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <a
-                href={notice.pdfUrl}
+                href={`${process.env.NEXT_PUBLIC_API_URL}/notices/${notice.id}/pdf`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -61,7 +61,7 @@ const NoticesList = ({ noticesData = [] }: { noticesData?: Notice[] }) => {
                 View PDF
               </a>
               <a
-                href={notice.pdfUrl}
+                href={`${process.env.NEXT_PUBLIC_API_URL}/notices/${notice.id}/pdf`}
                 download
                 className="inline-flex items-center gap-2 px-4 py-2 bg-[#F97316] text-white rounded-lg text-sm font-medium hover:bg-[#EA580C] transition-colors"
               >
