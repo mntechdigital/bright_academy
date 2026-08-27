@@ -19,6 +19,7 @@ import { getStudentById, updateStudent } from "@/src/services/students";
 
 interface EditStudentFormValues {
   name: string;
+  stdRegNo: string;
   classId: string;
   batchId: string;
   parentPhone: string;
@@ -58,6 +59,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
   const form = useForm<EditStudentFormValues>({
     defaultValues: {
       name: "",
+      stdRegNo: "",
       classId: "",
       batchId: "",
       parentPhone: "",
@@ -78,6 +80,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
         setSelectedClassId(student.classId || "");
         form.reset({
           name: student.name || "",
+          stdRegNo: student.stdRegNo || "",
           classId: student.classId || "",
           batchId: student.batchId || "",
           parentPhone: student.parentPhone || "",
@@ -99,6 +102,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
     startTransition(async () => {
       const payload = {
         name: data.name,
+        stdRegNo: data.stdRegNo || undefined,
         classId: data.classId,
         batchId: data.batchId || undefined,
         parentPhone: data.parentPhone,
@@ -160,6 +164,30 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
                   {...field}
                   type="text"
                   placeholder="William Shakespeare"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                />
+                {error && (
+                  <p className="mt-1 text-sm text-red-500">{error.message}</p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Registration No. */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Registration No.
+          </label>
+          <Controller
+            name="stdRegNo"
+            control={form.control}
+            render={({ field, fieldState: { error } }) => (
+              <div>
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="REG-2024-001"
                   className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                 />
                 {error && (
