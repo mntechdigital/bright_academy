@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { getMyResults, getMeritPosition } from "@/src/services/students";
 import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
 import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import { getStudentGroup } from "@/src/utils/studentGroup";
 import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
 import brightpdf2 from "../../../../../public/brightpdf-2.jpeg";
 import brightpdf3 from "../../../../../public/brightpdf-3.jpeg";
@@ -576,6 +577,7 @@ export default function StudentResultsDashboard() {
               <th class="label">Class</th>
               <th class="label">Roll</th>
               <th class="label">Name</th>
+              <th class="label">Group</th>
               <th class="label">Month</th>
               <th class="label">Year</th>
             </tr>
@@ -583,6 +585,7 @@ export default function StudentResultsDashboard() {
               <td class="value">${studentInfo?.className || "-"}</td>
               <td class="value">${studentInfo?.stdRegNo || "-"}</td>
               <td class="value">${studentInfo?.name || "-"}</td>
+              <td class="value">${getStudentGroup(studentInfo?.stdRegNo || "") || "-"}</td>
               <td class="value">${monthName}</td>
               <td class="value">${year}</td>
             </tr>
