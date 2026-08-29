@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Megaphone, FileText } from "lucide-react";
+import { getPublishedNotices } from "@/src/services/notice";
+import { TQuery } from "@/src/types/query.types";
 
 interface Notice {
   id: string;
@@ -15,19 +17,34 @@ export default function AnnouncementBanner() {
 
   useEffect(() => {
     const fetchNotices = async () => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/notices/published?page=1&limit=20`
-        );
-        const json = await res.json();
-        if (json?.success && json?.data?.data) {
-          setNotices(json.data.data);
-        }
-      } catch {
-        // silently fail
+      // This banner is public homepage UI, so we use the PUBLIC published-notices
+      // endpoint (no auth needed) — same one the public student notices page uses.
+      // NOTE: getNotices() (used in the admin panel) requires auth, so it can never
+      // work here for anonymous visitors.
+      const query: TQuery[] = [
+        {
+          key: "orderBy",
+          value: JSON.stringify({ createdAt: "desc" }),
+        },
+        {
+          key: "limit",
+          value: "20",
+        },
+      ];
+
+      const res = await getPublishedNotices(query);
+      const data = res?.data?.data;
+
+      if (Array.isArray(data)) {
+        // This endpoint only ever returns published notices.
+        setNotices(data as Notice[]);
       }
     };
-    fetchNotices();
+
+    // Non-critical UI: never let API failures crash the banner/page.
+    fetchNotices().catch(() => {
+      // silent — banner simply renders without notices when the API is unreachable
+    });
   }, []);
 
   const announcements = [
