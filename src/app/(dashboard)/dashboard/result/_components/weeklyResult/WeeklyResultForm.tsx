@@ -68,12 +68,12 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
      console.log("=== FORM SUBMISSION STARTED ===");
      console.log("Form submitted with data:", data);
      
-     // Validate required fields
-     if (!data.month || !data.week || !data.publishedDate || !data.year || !data.classId || !data.batchId || !data.subjectId || !data.totalMarks) {
-       console.error("Validation failed - missing required fields");
-       showErrorToast("Please fill in all required fields");
-       return;
-     }
+      // Validate required fields - batch is optional (class-wide submit)
+      if (!data.month || !data.week || !data.publishedDate || !data.year || !data.classId || !data.subjectId || !data.totalMarks) {
+        console.error("Validation failed - missing required fields");
+        showErrorToast("Please fill in all required fields");
+        return;
+      }
      
      // Get class name
      const selectedClass = classesData.find((cls) => cls.id === data.classId);
@@ -325,13 +325,12 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
         </div>
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Batch
+            Batch <span className="text-gray-400 font-normal">(Optional - leave empty for whole class)</span>
           </label>
           <div className="relative">
             <Controller
               name="batchId"
               control={control}
-              rules={{ required: "Batch is required" }}
               render={({ field }) => (
                 <>
                   <select
@@ -339,7 +338,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
                     disabled={!selectedClassId}
                     className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select Batch</option>
+                    <option value="">All Batches (Whole Class)</option>
                     {batches.map((batch) => (
                       <option key={batch.id} value={batch.id}>
                         {batch.name} ({formatTime(batch.startTime)} - {formatTime(batch.endTime)})
