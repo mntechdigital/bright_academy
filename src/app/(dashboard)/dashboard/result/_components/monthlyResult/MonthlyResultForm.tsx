@@ -29,7 +29,7 @@ interface FormValues {
   year: string;
   publishedDate: Date;
   classId: string;
-  batchId: string;
+  batchId: string; // optional - empty means whole class
   studentId: string;
 }
 
@@ -131,8 +131,15 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     // We don't reset here — user can keep what they entered
   };
 
+  // If no batch selected -> show all students of class (class-wide result)
+  // If batch selected -> show only students of that batch
   const students = (selectedClass?.students ?? [])
-    .filter((s) => !s.sectionId || s.sectionId === selectedBatchId)
+    .filter((s) => {
+      if (!selectedBatchId) return true; // whole class
+      // support both sectionId and batchId fields
+      const sBatchId = (s as any).batchId || s.sectionId || "";
+      return !sBatchId || String(sBatchId) === String(selectedBatchId);
+    })
     .map((s) => ({ id: s.id, name: s.name ?? s.studentName ?? s.fullName ?? "Unnamed" }));
 
   const onSubmit = (data: FormValues) => {
@@ -272,13 +279,13 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </div>
         )}
 
-        {/* Row 4 — Batch & Student */}
+        {/* Row 4 — Batch & Student - Batch optional for class-wide result */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Field label="Batch" error={errors.batchId?.message}>
-            <Controller name="batchId" control={control} rules={{ required: "Batch is required" }}
+          <Field label="Batch (Optional - leave empty for whole class)" error={errors.batchId?.message}>
+            <Controller name="batchId" control={control}
               render={({ field }) => (
                 <SelectField {...field} disabled={!selectedClassId}>
-                  <option value="">Select Batch</option>
+                  <option value="">All Batches (Whole Class)</option>
                   {batches.map((b) => <option key={b.id} value={b.id}>{b.name} ({formatTime(b.startTime)} - {formatTime(b.endTime)})</option>)}
                 </SelectField>
               )}
@@ -288,7 +295,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           <Field label="Student's Name" error={errors.studentId?.message}>
             <Controller name="studentId" control={control} rules={{ required: "Student is required" }}
               render={({ field }) => (
-                <SelectField {...field} disabled={!selectedBatchId || students.length === 0}>
+                <SelectField {...field} disabled={!selectedClassId || students.length === 0}>
                   <option value="">Select Student</option>
                   {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </SelectField>
