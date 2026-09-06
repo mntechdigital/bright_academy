@@ -178,13 +178,13 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
       return;
     }
 
-    // Otherwise fetch from API
+    // Otherwise fetch from API — sorted at DB level by registration number (asc) so pagination stays consistent
     const fetchStudents = async () => {
       try {
         const query: TQuery[] = [
           {
             key: "orderBy",
-            value: JSON.stringify({ createdAt: "desc" }),
+            value: JSON.stringify({ stdRegNo: "asc" }),
           },
           { key: "searchTerm", value: search },
           { key: "page", value: "1" },

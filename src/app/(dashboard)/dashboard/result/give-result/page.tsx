@@ -26,7 +26,7 @@ const GiveResultpage = async(props: {
     const query: TQuery[] = [
       {
         key: "orderBy",
-        value: JSON.stringify({ createdAt: "desc" }),
+        value: JSON.stringify({ stdRegNo: "asc" }),
       },
       {
         key: "searchTerm",
