@@ -182,14 +182,14 @@ function StudentCombobox({
       </PopoverTrigger>
       <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start" sideOffset={4}>
         <div className="flex flex-col">
-          <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2">
+          <div className="flex items-center gap-2 border-2 rounded-2xl border-orange-400 px-3 py-2 m-2">
             <Search className="h-4 w-4 shrink-0 text-gray-400" />
             <input
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Search by name or #reg no..."
+              placeholder="Search by name or reg no..."
               className="w-full bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none"
             />
           </div>
