@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { ChevronDown, CalendarIcon } from "lucide-react";
+import { ChevronDown, CalendarIcon, Search, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,7 +13,18 @@ import MonthlyResultTable from "./MonthlyResultTable";
 
 interface Batch  { id: string; name: string; startTime: string; endTime: string }
 interface Subject  { id: string; subjectName: string }
-interface Student  { id: string; name?: string; studentName?: string; fullName?: string; sectionId?: string }
+interface Student  {
+  id: string;
+  name?: string;
+  studentName?: string;
+  fullName?: string;
+  sectionId?: string;
+  batchId?: string;
+  stdRegNo?: string;
+  regNo?: string;
+  registrationNo?: string;
+  stdRegNoRaw?: string;
+}
 
 interface ClassData {
   id: string;
@@ -85,6 +96,143 @@ function SelectField({ children, ...props }: React.SelectHTMLAttributes<HTMLSele
   );
 }
 
+// ─── Student Combobox (searchable, shows reg no) ───────────────────────────────
+// Uses existing shadcn/ui Popover (Radix) — no new dependency (cmdk not in package.json)
+// Pattern: Popover + input + filtered list, keyboard: ArrowUp/Down, Enter, Escape
+function StudentCombobox({
+  students,
+  value,
+  onChange,
+  disabled,
+  placeholder = "Select Student",
+}: {
+  students: { id: string; name: string; stdRegNo: string }[];
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [highlighted, setHighlighted] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const selected = students.find((s) => s.id === value);
+
+  const filtered = useMemo(() => {
+    if (!query) return students;
+    const q = query.toLowerCase();
+    return students.filter(
+      (s) => s.name.toLowerCase().includes(q) || (s.stdRegNo || "").toLowerCase().includes(q)
+    );
+  }, [students, query]);
+
+  useEffect(() => setHighlighted(0), [filtered, query]);
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 0);
+    else setQuery("");
+  }, [open]);
+  useEffect(() => {
+    // scroll highlighted into view
+    if (listRef.current) {
+      const el = listRef.current.querySelector(`[data-index="${highlighted}"]`) as HTMLElement | null;
+      el?.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlighted]);
+
+  const handleSelect = (id: string) => {
+    onChange(id);
+    setOpen(false);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlighted((p) => Math.min(p + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlighted((p) => Math.max(p - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (filtered[highlighted]) handleSelect(filtered[highlighted].id);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 h-auto text-sm font-normal text-gray-700 hover:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+        >
+          <span className="truncate text-left">
+            {selected
+              ? `${selected.name} — #${selected.stdRegNo || selected.id.slice(0, 6)}`
+              : placeholder}
+          </span>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400 opacity-70" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start" sideOffset={4}>
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2">
+            <Search className="h-4 w-4 shrink-0 text-gray-400" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Search by name or #reg no..."
+              className="w-full bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none"
+            />
+          </div>
+          <div ref={listRef} className="max-h-60 overflow-y-auto p-1">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-6 text-center text-sm text-gray-400">No students found.</div>
+            ) : (
+              filtered.map((s, idx) => {
+                const isSelected = s.id === value;
+                const isHighlighted = idx === highlighted;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    data-index={idx}
+                    role="option"
+                    aria-selected={isSelected}
+                    onMouseEnter={() => setHighlighted(idx)}
+                    onClick={() => handleSelect(s.id)}
+                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                      isHighlighted ? "bg-gray-100" : ""
+                    } ${isSelected ? "bg-orange-50" : ""}`}
+                  >
+                    <span className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                      <span className={`truncate ${isSelected ? "font-medium text-gray-900" : "text-gray-700"}`}>
+                        {s.name}
+                      </span>
+                      <span className="shrink-0 text-xs text-gray-600">
+                        {s.stdRegNo || "—"}
+                      </span>
+                    </span>
+                    {isSelected && <Check className="ml-2 h-4 w-4 shrink-0 text-orange-500" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Input base style ─────────────────────────────────────────────────────────
 
 const inputBase =
@@ -140,7 +288,16 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
       const sBatchId = (s as any).batchId || s.sectionId || "";
       return !sBatchId || String(sBatchId) === String(selectedBatchId);
     })
-    .map((s) => ({ id: s.id, name: s.name ?? s.studentName ?? s.fullName ?? "Unnamed" }));
+    .map((s) => ({
+      id: s.id,
+      name: s.name ?? s.studentName ?? s.fullName ?? "Unnamed",
+      stdRegNo:
+        (s as any).stdRegNo ??
+        (s as any).regNo ??
+        (s as any).registrationNo ??
+        (s as any).stdRegNoRaw ??
+        "",
+    }));
 
   const onSubmit = (data: FormValues) => {
     const student = students.find((s) => s.id === data.studentId);
@@ -292,13 +449,16 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
             />
           </Field>
 
-          <Field label="Student's Name" error={errors.studentId?.message}>
+          <Field label="Select Student" error={errors.studentId?.message}>
             <Controller name="studentId" control={control} rules={{ required: "Student is required" }}
               render={({ field }) => (
-                <SelectField {...field} disabled={!selectedClassId || students.length === 0}>
-                  <option value="">Select Student</option>
-                  {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </SelectField>
+                <StudentCombobox
+                  students={students}
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={!selectedClassId || students.length === 0}
+                  placeholder="Select Student"
+                />
               )}
             />
           </Field>
