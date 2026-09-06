@@ -25,8 +25,13 @@ export const getStudents = async (query: TQuery[]) => {
   const params = new URLSearchParams();
   if (query.length > 0) {
     query.forEach((q) => {
+      // include class/batch/gender in query key — ensures fetch re-runs when filters change
       params.append(q.key, q.value);
     });
+  }
+  // Debug: verify request actually contains filters (check Network tab: should see class=class-7&batch=B-4&gender=Female)
+  if (process.env.NODE_ENV === "development") {
+    console.log("[getStudents] outgoing request:", `students?${params.toString()}`);
   }
   const response = await apiRequest(`students?${params.toString()}`, {
     method: "GET",
