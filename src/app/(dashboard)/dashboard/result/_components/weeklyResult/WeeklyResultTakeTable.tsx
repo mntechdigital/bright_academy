@@ -180,7 +180,17 @@ const WeeklyResultTakeTable = ({
 
   const batchId = batch?.id || "";
   const stdClassId = stdClass?.id || "";
-  const filteredStudents = studentsData;
+  // Defensive: always render students sorted ascending by Student's ID (stdRegNo)
+  const filteredStudents = useMemo(
+    () =>
+      [...studentsData].sort((a: any, b: any) =>
+        String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        })
+      ),
+    [studentsData]
+  );
 
   const onMarksChange = useCallback((studentId: string, value: string) => {
     // Validate that obtained marks cannot exceed total marks
