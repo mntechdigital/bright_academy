@@ -426,7 +426,17 @@ export default function StudentResultsDashboard() {
   const studentInfo = useMemo(() => getStudentFromCookie(), []);
   
   // ── Merit Position ──────────────────────────────────────────────────────
-  const displayMeritPosition = meritPosition || activeMonthly?.position;
+  // Prioritizes weekly meritPosition, falls back to monthly position (if non-empty)
+  const displayMeritPosition =
+    meritPosition ||
+    (activeMonthly?.position && String(activeMonthly.position).trim() !== ""
+      ? activeMonthly.position
+      : null);
+  // Monthly Exam Summary position: prioritize monthly stored position, fallback to weekly merit
+  const displayMonthlyPosition =
+    activeMonthly?.position && String(activeMonthly.position).trim() !== ""
+      ? activeMonthly.position
+      : meritPosition || null;
 
   // ── Print handler ─────────────────────────────────────────────────────────
 
@@ -867,7 +877,7 @@ export default function StudentResultsDashboard() {
                                 )}
                               </td>
                               <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
-                                {activeMonthly?.position ?? "-"}
+                                {displayMonthlyPosition || "-"}
                               </td>
                               <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                                 {activeMonthly?.present ?? "-"}
