@@ -297,7 +297,13 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
         (s as any).registrationNo ??
         (s as any).stdRegNoRaw ??
         "",
-    }));
+    }))
+    .sort((a, b) =>
+      String(a.stdRegNo).localeCompare(String(b.stdRegNo), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
+    );
 
   const onSubmit = (data: FormValues) => {
     const student = students.find((s) => s.id === data.studentId);

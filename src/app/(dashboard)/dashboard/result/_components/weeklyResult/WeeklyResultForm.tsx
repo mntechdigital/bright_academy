@@ -108,15 +108,15 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
        // Fetch students based on form data (class and batch)
        const { getStudents } = await import("@/src/services/students");
        
-       const query = [
-           {
-             key: "orderBy",
-             value: JSON.stringify({ createdAt: "desc" }),
-           },
-           { key: "page", value: "1" },
-           { key: "limit", value: "1000" },
-           { key: "filter", value: JSON.stringify({ classId: data.classId }) },
-         ];
+        const query = [
+            {
+              key: "orderBy",
+              value: JSON.stringify({ stdRegNo: "asc" }),
+            },
+            { key: "page", value: "1" },
+            { key: "limit", value: "1000" },
+            { key: "filter", value: JSON.stringify({ classId: data.classId }) },
+          ];
        
        console.log("Fetching students with query:", query);
        
@@ -125,15 +125,23 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
        
        console.log("Students fetched:", allStudents);
        
-       // Filter students by batch if batch is selected
-       const filteredStudents = data.batchId 
-         ? allStudents.filter((student: any) => {
-             const studentBatchId = student.batch?.id || student.batchId || "";
-             return String(studentBatchId) === String(data.batchId);
-           })
-         : allStudents;
-       
-       console.log("Filtered students:", filteredStudents);
+        // Filter students by batch if batch is selected
+        let filteredStudents = data.batchId 
+          ? allStudents.filter((student: any) => {
+              const studentBatchId = student.batch?.id || student.batchId || "";
+              return String(studentBatchId) === String(data.batchId);
+            })
+          : [...allStudents];
+
+        // Ensure ascending order by Student's ID (stdRegNo) even if backend order changes
+        filteredStudents.sort((a: any, b: any) =>
+          String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          })
+        );
+        
+        console.log("Filtered students:", filteredStudents);
        
        if (filteredStudents.length === 0) {
          showErrorToast("No students found for the selected class/batch");

@@ -168,12 +168,18 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
 
     if (!classId) return;
 
-    // If students are already provided from form, use them
+    // If students are already provided from form, use them (ensure asc order by stdRegNo)
     if (studentsFromForm.length > 0) {
-      setStudentData(studentsFromForm);
+      const sortedFromForm = [...studentsFromForm].sort((a: any, b: any) =>
+        String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        })
+      );
+      setStudentData(sortedFromForm);
       setStudentMeta({
         totalPages: 1,
-        totalItems: studentsFromForm.length,
+        totalItems: sortedFromForm.length,
       });
       return;
     }
@@ -198,12 +204,20 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
         const batchId =
           weeklyResultMeta?.batch?.id || weeklyResultMeta?.batchId;
 
-        const filteredStudents = batchId
+        let filteredStudents = batchId
           ? allStudents.filter((student: any) => {
               const studentBatchId = student.batch?.id || student.batchId || "";
               return String(studentBatchId) === String(batchId);
             })
-          : allStudents;
+          : [...allStudents];
+
+        // Defensive client-side sort — guarantees asc even if backend order changes
+        filteredStudents.sort((a: any, b: any) =>
+          String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          })
+        );
 
         console.log("STUDENTS FETCHED IN WEEKLYRESULT:", filteredStudents);
         
