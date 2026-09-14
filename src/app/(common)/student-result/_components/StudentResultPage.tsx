@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { getMyResults, getMeritPosition } from "@/src/services/students";
-import { ChevronDown, Calendar, Printer, HelpCircle, User } from "lucide-react";
+import { ChevronDown, Calendar, Printer, User } from "lucide-react";
 import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
@@ -95,25 +95,6 @@ const gradeColor = (grade?: string) => {
   if (g === "C") return "#d97706";
   return "#dc2626";
 };
-
-function Tooltip({ text }: { text: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <span className="relative inline-flex items-center ml-1">
-      <HelpCircle
-        size={13}
-        className="text-gray-400 cursor-help"
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-      />
-      {show && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 whitespace-nowrap bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 shadow-lg">
-          {text}
-        </span>
-      )}
-    </span>
-  );
-}
 
 function SelectField({
   label,
@@ -455,7 +436,7 @@ export default function StudentResultsDashboard() {
     const monthName = activeMonthly?.month || month;
     const examTitle =
       activeTab === "monthly"
-        ? `${activeMonthly?.monthlyExamName || "Monthly Assessment"} — ${monthName} ${year}`
+        ? `${activeMonthly?.monthlyExamName || "Monthly Assessment"}`
         : `LBE Result Sheet - ${year}`;
 
     const baseUrl = window.location.origin;
@@ -476,7 +457,7 @@ export default function StudentResultsDashboard() {
     w.document.write(`
       <html>
       <head>
-        <title>Bright Academy — Result</title>
+        <title>The Bright Academy</title>
         <style>
           @page { size: A4; margin: 10mm; }
           * { box-sizing: border-box; }
@@ -506,7 +487,7 @@ export default function StudentResultsDashboard() {
 
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
-            text-align: center; font-size: 20px; font-weight: 800; font-style: italic;
+            text-align: center; font-size: 20px; font-weight: 600; font-style: initial;
             padding: 16px 12px 14px;
             letter-spacing: 0.5px;
           }
@@ -732,7 +713,7 @@ export default function StudentResultsDashboard() {
              </div>
              {displayMeritPosition && (
                <div className="ml-auto">
-                 <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
+                 <span className="inline-flex items-center gap-1.5 bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
                    <span className="text-sm">🏆</span>
                    Merit Position: {displayMeritPosition}
                  </span>
@@ -844,14 +825,14 @@ export default function StudentResultsDashboard() {
                             <tr className="border-b border-gray-100">
                               {(
                                 [
-                                  ["Total Marks", "Sum of all marks obtained"],
-                                  ["GPA", "Grade Point Average"],
-                                  ["Grade", "Overall letter grade"],
-                                  ["Position", "Student's rank in the class"],
-                                  ["Present", "Days attended"],
-                                  ["Absent", "Days missed"],
-                                ] as [string, string][]
-                              ).map(([label, tip]) => (
+                                  ["Total Marks"],
+                                  ["GPA"],
+                                  ["Grade"],
+                                  ["Position"],
+                                  ["Present"],
+                                  ["Absent"],
+                                ] as [string][]
+                              ).map(([label]) => (
                                 <th
                                   key={label}
                                   className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
@@ -1011,22 +992,21 @@ export default function StudentResultsDashboard() {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-gray-100">
-                                {(                                
+                                {(
                                   [
-                                    ["Total Marks", "Sum of all marks obtained"],
-                                    ["GPA", "Grade Point Average"],
-                                    ["Grade", "Overall letter grade"],
-                                    ["Merit Position", "Student's rank in the class"],
-                                    ["Present", "Days attended"],
-                                    ["Absent", "Days missed"],
-                                  ] as [string, string][]
-                                ).map(([label, tip]) => (
+                                    ["Total Marks"],
+                                    ["GPA"],
+                                    ["Grade"],
+                                    ["Merit Position"],
+                                    ["Present"],
+                                    ["Absent"],
+                                  ] as [string][]
+                                ).map(([label]) => (
                                   <th
                                     key={label}
                                     className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
                                   >
                                     {label}
-                                    <Tooltip text={tip} />
                                   </th>
                                 ))}
                               </tr>
