@@ -14,6 +14,7 @@ import { createWeeklyResult } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { useForm, Controller } from "react-hook-form";
 import { months, weeks } from "@/src/constant/weeklyResult.constant";
+import { compareByRegNoAsc } from "@/src/utils/sortStudents";
 
 interface ClassData {
   id: string;
@@ -133,13 +134,8 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
             })
           : [...allStudents];
 
-        // Ensure ascending order by Student's ID (stdRegNo) even if backend order changes
-        filteredStudents.sort((a: any, b: any) =>
-          String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
-            numeric: true,
-            sensitivity: "base",
-          })
-        );
+        // Ensure ascending NUMERIC order by Student's ID (stdRegNo) even if backend order changes
+        filteredStudents.sort(compareByRegNoAsc);
         
         console.log("Filtered students:", filteredStudents);
        

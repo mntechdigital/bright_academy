@@ -12,6 +12,10 @@ import { TQuery } from "@/src/types/query.types";
 import { DashboardWrapper } from "../../../_components/DashboardWrapper";
 import WeeklyResultTable from "./WeeklyResultTable";
 import WeeklyResultTakeTable from "./WeeklyResultTakeTable";
+import {
+  compareByRegNoAsc,
+  sortStudentsByRegNoAsc,
+} from "@/src/utils/sortStudents";
 
 // Normalize week value
 const normalizeWeek = (week?: string) => {
@@ -168,14 +172,9 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
 
     if (!classId) return;
 
-    // If students are already provided from form, use them (ensure asc order by stdRegNo)
+    // If students are already provided from form, use them (ensure numeric asc order by stdRegNo)
     if (studentsFromForm.length > 0) {
-      const sortedFromForm = [...studentsFromForm].sort((a: any, b: any) =>
-        String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
-          numeric: true,
-          sensitivity: "base",
-        })
-      );
+      const sortedFromForm = sortStudentsByRegNoAsc(studentsFromForm);
       setStudentData(sortedFromForm);
       setStudentMeta({
         totalPages: 1,
@@ -211,13 +210,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
             })
           : [...allStudents];
 
-        // Defensive client-side sort — guarantees asc even if backend order changes
-        filteredStudents.sort((a: any, b: any) =>
-          String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
-            numeric: true,
-            sensitivity: "base",
-          })
-        );
+        // Defensive client-side sort — numeric asc by Student's ID even if backend order changes
+        filteredStudents.sort(compareByRegNoAsc);
 
         console.log("STUDENTS FETCHED IN WEEKLYRESULT:", filteredStudents);
         

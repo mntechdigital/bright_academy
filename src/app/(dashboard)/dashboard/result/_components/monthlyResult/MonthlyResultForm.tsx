@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import MonthlyResultTable from "./MonthlyResultTable";
+import { compareByRegNoAsc } from "@/src/utils/sortStudents";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -298,12 +299,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
         (s as any).stdRegNoRaw ??
         "",
     }))
-    .sort((a, b) =>
-      String(a.stdRegNo).localeCompare(String(b.stdRegNo), undefined, {
-        numeric: true,
-        sensitivity: "base",
-      })
-    );
+    .sort(compareByRegNoAsc);
 
   const onSubmit = (data: FormValues) => {
     const student = students.find((s) => s.id === data.studentId);
