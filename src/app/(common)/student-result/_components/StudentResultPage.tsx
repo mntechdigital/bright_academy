@@ -1,637 +1,56 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
-import { getMyResults, getMeritPosition } from "@/src/services/students";
-import { ChevronDown, Calendar, Printer, User } from "lucide-react";
-import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
-import { getStudentGroup } from "@/src/utils/studentGroup";
-import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
-import brightpdf2 from "../../../../../public/brightpdf-2.jpeg";
-import brightpdf3 from "../../../../../public/brightpdf-3.jpeg";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface SubjectResult {
-  id: string;
-  subjectName: string;
-  fullMarks: number;
-  highestMark: number;
-  marks: number;
-  point: number;
-  grade: string;
-}
-
-interface MonthlyResult {
-  id: string;
-  month: string;
-  monthlyExamName?: string;
-  gpa: number;
-  grade: string;
-  totalMarks: number;
-  position: string;
-  present: number;
-  absent: number;
-  results: SubjectResult[];
-}
-
-interface WeeklyMark {
-  id: string;
-  month: string;
-  week: string;
-  year: string;
-  obtainedMarks: number;
-  totalMarks: number;
-  subject: { subjectName: string };
-}
-
-interface ApiResponse {
-  success?: boolean;
-  statusCode?: number;
-  message?: string;
-  data?: {
-    monthlyResults?: MonthlyResult[];
-    weeklyMarks?: WeeklyMark[];
-  };
-}
-
-// ─── Utility: Read studentInfo cookie ─────────────────────────────────────────
-
-function getStudentFromCookie(): {
-  name: string;
-  stdRegNo?: string;
-  className?: string;
-} | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("studentInfo="));
-  if (!match) return null;
-  try {
-    const decoded = decodeURIComponent(match.split("=")[1]);
-    const info = JSON.parse(decoded);
-    const rawClass =
-      info?.className || info?.class || info?.stdClass?.className || "";
-    // Extract only the number from values like "class-6" → "6"
-    const classNumber = rawClass.match(/\d+/)?.[0] || rawClass;
-    return {
-      name: info?.name || "",
-      stdRegNo: info?.stdRegNo || info?.username || "",
-      className: classNumber,
-    };
-  } catch {
-    return null;
-  }
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const gradeColor = (grade?: string) => {
-  if (!grade) return "#9ca3af";
-  const g = grade.toUpperCase();
-  if (g === "A+") return "#16a34a";
-  if (g === "A") return "#22c55e";
-  if (g === "A-") return "#2563eb";
-  if (g === "B") return "#3b82f6";
-  if (g === "C") return "#d97706";
-  return "#dc2626";
-};
-
-function SelectField({
-  label,
-  value,
-  options,
-  onChange,
-  icon,
-}: {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs text-gray-400">{label}</label>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none bg-white border border-gray-200 rounded-lg px-4 py-3 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
-        >
-          {options.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-          {icon ?? <ChevronDown size={16} />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Tab Button ───────────────────────────────────────────────────────────────
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-5 py-2 text-sm font-medium rounded-lg transition-colors ${
-        active
-          ? "bg-orange-500 text-white shadow-sm"
-          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-// ─── Grade Badge ──────────────────────────────────────────────────────────────
-
-function GradeBadge({ grade }: { grade?: string }) {
-  if (!grade) return <span className="text-gray-300">-</span>;
-  const color = gradeColor(grade);
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 border rounded-full px-2.5 py-0.5 text-xs font-semibold"
-      style={{ color, borderColor: `${color}40` }}
-    >
-      <span
-        className="w-1.5 h-1.5 rounded-full"
-        style={{ background: color }}
-      />
-      {grade}
-    </span>
-  );
-}
-
-// ─── Types for weekly computed data ──────────────────────────────────────────
-
-interface WeekData {
-  obtained: number;
-  total: number;
-}
-
-interface SubjectWeeksData {
-  subjectName: string;
-  weeks: Map<string, WeekData>;
-}
-
-interface WeeklySummaryData {
-  subjectArray: SubjectWeeksData[];
-  totalObtainedMarks: number;
-  totalFullMarks: number;
-  overallGPA: number;
-  overallGrade: string;
-  present: number;
-  absent: number;
-}
+import { useRef } from "react";
+import { useStudentResults } from "./useStudentResults";
+import { usePrintResults } from "./usePrintResults";
+import FilterBar from "./FilterBar";
+import StudentInfoHeader from "./StudentInfoHeader";
+import ResultTabs from "./ResultTabs";
+import MonthlyResultsTable from "./MonthlyResultsTable";
+import WeeklyResultsTable from "./WeeklyResultsTable";
+import PrintButton from "./PrintButton";
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function StudentResultsDashboard() {
-  const [resultData, setResultData] = useState<ApiResponse | null>(null);
-  const [meritPosition, setMeritPosition] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"monthly" | "weekly">("monthly");
+  const {
+    loading,
+    error,
+    activeTab,
+    setActiveTab,
+    month,
+    setMonth,
+    week,
+    setWeek,
+    publishedDate,
+    setPublishedDate,
+    year,
+    setYear,
+    months,
+    weeks,
+    years,
+    noData,
+    monthlyResults,
+    weeklyRows,
+    activeMonthly,
+    subjectRows,
+    weeklySummary,
+    studentInfo,
+    displayMeritPosition,
+    displayMonthlyPosition,
+  } = useStudentResults();
+
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Filter state
-  const [month, setMonth] = useState("January");
-  const [week, setWeek] = useState("Week 1");
-  const [publishedDate, setPublishedDate] = useState("");
-  const [year, setYear] = useState("2026");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await getMyResults();
-        setResultData(res);
-
-        // Seed filters from first record
-        const mr = res?.data?.monthlyResults?.[0];
-        const wm = res?.data?.weeklyMarks?.[0];
-        if (mr?.month) setMonth(mr.month);
-        if (wm?.week) setWeek(wm.week);
-        if (wm?.year) setYear(wm.year);
-
-        // Fetch merit position
-        try {
-          // Get student info from cookie
-          const studentInfoCookie = document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("studentInfo="));
-
-          let studentId = "";
-          let classId = "";
-
-          if (studentInfoCookie) {
-            try {
-              const cookieParts = studentInfoCookie.split("=");
-              if (cookieParts.length >= 2 && cookieParts[1]) {
-                const decoded = decodeURIComponent(cookieParts[1]);
-                const info = JSON.parse(decoded);
-                studentId = info?.id || info?.stdRegNo || "";
-                classId = info?.stdClass?.id || info?.className?.match(/\d+/)?.[0] || "";
-              }
-            } catch (e) {
-              console.error("Error parsing student info cookie:", e);
-            }
-          }
-
-          // Get week, month, year from weekly marks or use defaults
-          const wm = res?.data?.weeklyMarks?.[0];
-          const week = wm?.week || "Week 1";
-          const month = wm?.month || "January";
-          const year = wm?.year || "2026";
-
-          const meritRes = await getMeritPosition({
-            studentId,
-            classId,
-            week,
-            month,
-            year,
-          });
-
-          console.log("Merit position API response for weekly:", meritRes);
-          if (meritRes?.success && meritRes?.data) {
-            const position = meritRes.data.position || meritRes.data.meritPosition;
-            if (position) {
-              setMeritPosition(String(position));
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching merit position:", error);
-        }
-      } catch {
-        setError("ফলাফল লোড করতে ব্যর্থ। অনুগ্রহ করে আবার চেষ্টা করুন।");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  // ── Derived ───────────────────────────────────────────────────────────────
-
-  const monthlyResults = resultData?.data?.monthlyResults ?? [];
-  const weeklyMarks = resultData?.data?.weeklyMarks ?? [];
-
-  const activeMonthly = monthlyResults[0];
-  const subjectRows: SubjectResult[] = activeMonthly?.results ?? [];
-
-  const weeklyRows = weeklyMarks;
-
-  const allMonths = [...new Set(monthlyResults.map((r) => r.month))];
-  const allWeeks = [...new Set(weeklyMarks.map((r) => r.week))];
-  const allYears = [...new Set(weeklyMarks.map((r) => r.year))];
-
-  const months = allMonths.length
-    ? allMonths
-    : [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-  const weeks = allWeeks.length
-    ? allWeeks
-    : ["Week 1", "Week 2", "Week 3", "Week 4"];
-  const years = allYears.length ? allYears : ["2025", "2026"];
-
-  const noData = monthlyResults.length === 0 && weeklyMarks.length === 0;
-
-  // ── Weekly computed data ─────────────────────────────────────────────────
-  const weeklySummary = useMemo<WeeklySummaryData>(() => {
-    const subjectMap = new Map<string, SubjectWeeksData>();
-
-    weeklyRows.forEach((row) => {
-      const subjectName = row.subject?.subjectName || "Unknown";
-      const weekNum = row.week?.replace("Week ", "") || "0";
-
-      if (!subjectMap.has(subjectName)) {
-        subjectMap.set(subjectName, {
-          subjectName,
-          weeks: new Map(),
-        });
-      }
-
-      const subjectData = subjectMap.get(subjectName)!;
-      subjectData.weeks.set(weekNum, {
-        obtained: row.obtainedMarks,
-        total: row.totalMarks,
-      });
-    });
-
-    const subjectArray = Array.from(subjectMap.values());
-
-    // Calculate overall summary
-    let totalObtainedMarks = 0;
-    let totalFullMarks = 0;
-    const allSubjectPoints: number[] = [];
-
-    subjectArray.forEach((subjectData) => {
-      const subjPoints: number[] = [];
-      [1, 2, 3, 4].forEach((weekNum) => {
-        const weekData = subjectData.weeks.get(String(weekNum));
-        if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-          totalObtainedMarks += weekData.obtained;
-          totalFullMarks += weekData.total;
-          // Use actual marks and total marks to determine grade point (auto-detects 400-mark system)
-          const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
-          subjPoints.push(gradeResult.gradePoint);
-        }
-      });
-      if (subjPoints.length > 0) {
-        const avg = subjPoints.reduce((s, p) => s + p, 0) / subjPoints.length;
-        allSubjectPoints.push(avg);
-      }
-    });
-
-    const overallGPA = allSubjectPoints.length > 0
-      ? allSubjectPoints.reduce((s, p) => s + p, 0) / allSubjectPoints.length
-      : 0;
-
-    // Calculate overall grade based on total obtained marks vs total full marks
-    const overallGrade = totalObtainedMarks > 0
-      ? getGradeFromMarks(totalObtainedMarks, totalFullMarks).letterGrade
-      : "F";
-
-    // Calculate present/absent: for each subject, for each of 4 weeks,
-    // if marks exist → present, otherwise → absent
-    let present = 0;
-    let absent = 0;
-    subjectArray.forEach((subjectData) => {
-      [1, 2, 3, 4].forEach((weekNum) => {
-        const weekData = subjectData.weeks.get(String(weekNum));
-        if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-          present++;
-        } else {
-          absent++;
-        }
-      });
-    });
-
-    return {
-      subjectArray,
-      totalObtainedMarks,
-      totalFullMarks,
-      overallGPA,
-      overallGrade,
-      present,
-      absent,
-    };
-  }, [weeklyRows]);
-
-  // ── Student info from cookie ─────────────────────────────────────────────
-  const studentInfo = useMemo(() => getStudentFromCookie(), []);
-
-  // ── Merit Position ──────────────────────────────────────────────────────
-  // Prioritizes weekly meritPosition, falls back to monthly position (if non-empty)
-  const displayMeritPosition =
-    meritPosition ||
-    (activeMonthly?.position && String(activeMonthly.position).trim() !== ""
-      ? activeMonthly.position
-      : null);
-  // Monthly Exam Summary position: prioritize monthly stored position, fallback to weekly merit
-  const displayMonthlyPosition =
-    activeMonthly?.position && String(activeMonthly.position).trim() !== ""
-      ? activeMonthly.position
-      : meritPosition || null;
-
   // ── Print handler ─────────────────────────────────────────────────────────
-
-  const handlePrint = () => {
-    if (!printRef.current) return;
-    const printContents = printRef.current.innerHTML;
-    const w = window.open("", "_blank");
-    if (!w) return;
-
-    const today = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-
-    const monthName = activeMonthly?.month || month;
-    const examTitle =
-      activeTab === "monthly"
-        ? `${activeMonthly?.monthlyExamName || "Monthly Assessment"}`
-        : `LBE Result Sheet - ${year}`;
-
-    const baseUrl = window.location.origin;
-
-    // Resolve image URL - public folder imports return the path
-    const getImgUrl = (img: any) => {
-      if (typeof img === "string")
-        return img.startsWith("http") ? img : `${baseUrl}${img}`;
-      if (img?.src)
-        return img.src.startsWith("http") ? img.src : `${baseUrl}${img.src}`;
-      return "";
-    };
-
-    const bannerImg1 = getImgUrl(brightpdf1);
-    const bannerImg2 = getImgUrl(brightpdf2);
-    const bannerImg3 = getImgUrl(brightpdf3);
-
-    w.document.write(`
-      <html>
-      <head>
-        <title>The Bright Academy</title>
-        <style>
-          @page { size: A4; margin: 10mm; }
-          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            color: #111827;
-            margin: 0;
-            font-size: 12.5px;
-          }
-
-          /* ── Top banner with images ──────────────── */
-          .banner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #d1d5db;
-            padding: 8px 4px 12px;
-          }
-          .banner img {
-            max-height: 90px;
-            width: 100%;
-            object-fit: contain;
-          }
-          .banner .banner-left { width: 15%; text-align: left; }
-          .banner .banner-middle { width: 55%; text-align: center; }
-          .banner .banner-right { width: 30%; text-align: right; }
-
-          /* ── Exam title bar ───────────────────────── */
-          .exam-title {
-            text-align: center; font-size: 20px; font-weight: 700; font-style: initial;
-            padding: 16px 12px 14px;
-            letter-spacing: 0.5px;
-          }
-
-          /* ── Info grid ────────────────────────────── */
-          table.info-grid { width: 100%; border-collapse: collapse; }
-          table.info-grid td { border: 1px solid #000; padding: 10px 16px; }
-          table.info-grid td.label { font-size: 14px; color: #1f2937; width: 14%; }
-          table.info-grid td.value { font-weight: 600; font-size: 15px; }
-
-          div { overflow: visible !important; }
-
-          table {
-            width: 100% !important;
-            border-collapse: collapse !important;
-            margin-bottom: 20px;
-          }
-          th, td {
-            padding: 12px 14px !important;
-            font-size: 14px !important;
-            text-align: center !important;
-          }
-          th {
-            background: transparent !important;
-            color: #111827 !important;
-            font-weight: 700 !important;
-            font-size: 14px !important;
-          }
-          th *, td * { color: inherit !important; }
-          td:first-child, th:first-child { text-align: left !important; }
-          tr { background: transparent !important; }
-
-          /* Week-2 / Week-4 highlighted columns (print override) */
-          td.bg-slate-100 { background: #f1f5f9 !important; }
-
-          span[class*="rounded-full"][class*="inline-flex"] {
-            border: none !important; background: transparent !important;
-            padding: 0 !important; border-radius: 0 !important;
-            font-weight: 700 !important; display: inline !important;
-          }
-          span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
-
-          h3 {
-            text-align: center; font-weight: 700; font-size: 16px;
-            padding: 10px; margin: 0 0 14px;
-            border-bottom: 2px solid #000;
-            background: transparent;
-          }
-
-          .signatures { display: flex; justify-content: space-between; padding: 60px 4px 20px; }
-          .signature { text-align: left; width: 42%; }
-          .signature .line { border-top: 2px solid #000; margin-bottom: 6px; }
-          .signature .role { font-size: 14px; font-weight: 600; }
-          .signature .date { margin-top: 14px; font-size: 13px; color: #374151; }
-
-          @media print { .no-print { display: none !important; } }
-        </style>
-      </head>
-      <body>
-
-        <div class="sheet">
-
-          <div class="banner">
-            <div class="banner-left">
-              <img src="${bannerImg2}" alt="Bright Academy" />
-            </div>
-            <div class="banner-middle">
-              <img src="${bannerImg1}" alt="Bright Academy" />
-            </div>
-            <div class="banner-right">
-              <img src="${bannerImg3}" alt="Bright Academy" />
-            </div>
-          </div>
-
-          <div class="exam-title">${examTitle}</div>
-          <div style="text-align: center; font-size: 13px; color: #374151; margin-bottom: 10px;">
-            Date of Publication: ${today}
-          </div>
-          <table class="info-grid">
-            <tr>
-              <th class="label">Class</th>
-              <th class="label">Roll</th>
-              <th class="label">Name</th>
-              <th class="label">Group</th>
-              <th class="label">Month</th>
-              <th class="label">Year</th>
-            </tr>
-            <tr>
-              <td class="value">${studentInfo?.className || "-"}</td>
-              <td class="value">${studentInfo?.stdRegNo || "-"}</td>
-              <td class="value">${studentInfo?.name || "-"}</td>
-              <td class="value">${getStudentGroup(studentInfo?.stdRegNo || "") || "-"}</td>
-              <td class="value">${monthName}</td>
-              <td class="value">${year}</td>
-            </tr>
-          </table>
-
-          ${printContents}
-
-          <div class="signatures">
-            <div class="signature">
-              <div class="line">&nbsp;</div>
-              <div class="role">Guardian's Signature</div>
-              <div class="date">Date: ....................................</div>
-            </div>
-            <div class="signature">
-              <div class="line">&nbsp;</div>
-              <div class="role">Director's Signature</div>
-              <div class="date">Date: ....................................</div>
-            </div>
-          </div>
-
-        </div>
-
-        <script>
-          // Force borders via inline style — wins over any Tailwind
-          // class remnants copied in from the live page, since inline
-          // style has the highest specificity available.
-          (function () {
-            document.querySelectorAll('table').forEach(function (t) {
-              t.style.setProperty('border-collapse', 'collapse', 'important');
-              t.style.setProperty('border', '1.5px solid #000', 'important');
-            });
-            document.querySelectorAll('table th, table td').forEach(function (cell) {
-              cell.style.setProperty('border', '1px solid #000', 'important');
-            });
-            document.querySelectorAll('table th').forEach(function (th) {
-              th.style.setProperty('background', '#e5e7eb', 'important');
-              th.style.setProperty('font-weight', '700', 'important');
-            });
-            // Preserve column highlighting in print (body cells only — headers stay plain)
-            document.querySelectorAll('td.bg-slate-100').forEach(function (el) {
-              el.style.setProperty('background', '#CFCFD1', 'important');
-            });
-          })();
-        </script>
-
-      </body>
-      </html>
-    `);
-    w.document.close();
-    w.print();
-  };
+  const { handlePrint } = usePrintResults({
+    printRef,
+    activeTab,
+    activeMonthly,
+    month,
+    year,
+    studentInfo,
+  });
 
   // ── Loading / Error ───────────────────────────────────────────────────────
 
@@ -661,90 +80,30 @@ export default function StudentResultsDashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Dark filter bar */}
-      <div className=" px-4 pt-4 pb-6 md:px-8">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-          <SelectField
-            label="Month"
-            value={month}
-            options={months}
-            onChange={setMonth}
-          />
-          <SelectField
-            label="Week"
-            value={week}
-            options={weeks}
-            onChange={setWeek}
-          />
-
-          {/* Published Date */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-400">Published Date</label>
-            <div className="relative">
-              <input
-                type="date"
-                value={publishedDate}
-                onChange={(e) => setPublishedDate(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Calendar size={16} />
-              </div>
-            </div>
-          </div>
-
-          <SelectField
-            label="Year"
-            value={year}
-            options={years}
-            onChange={setYear}
-          />
-        </div>
-      </div>
+      <FilterBar
+        months={months}
+        month={month}
+        onMonthChange={setMonth}
+        weeks={weeks}
+        week={week}
+        onWeekChange={setWeek}
+        publishedDate={publishedDate}
+        onPublishedDateChange={setPublishedDate}
+        years={years}
+        year={year}
+        onYearChange={setYear}
+      />
 
       {/* Main content */}
       <div className="flex-1 px-4 py-4 md:px-8 md:py-6 pb-4">
-         {/* Student Info Header */}
-         {studentInfo?.name && (
-           <div className="flex items-center gap-3 mb-4 bg-white rounded-xl px-5 py-3 shadow-sm border border-gray-100">
-             <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-               <User size={18} className="text-orange-600" />
-             </div>
-             <div>
-               <p className="text-sm font-semibold text-gray-900">
-                 {studentInfo.name}
-               </p>
-               {studentInfo.stdRegNo && (
-                 <p className="text-xs text-gray-400">
-                   ID: {studentInfo.stdRegNo}
-                 </p>
-               )}
-             </div>
-             {displayMeritPosition && (
-               <div className="ml-auto">
-                 <span className="inline-flex items-center gap-1.5 bg-linear-to-r from-orange-500 to-amber-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
-                   <span className="text-sm">🏆</span>
-                   Merit Position: {displayMeritPosition}
-                 </span>
-               </div>
-             )}
-           </div>
-         )}
+        {/* Student Info Header */}
+        <StudentInfoHeader
+          studentInfo={studentInfo}
+          displayMeritPosition={displayMeritPosition}
+        />
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-4 bg-white rounded-xl px-3 py-2 shadow-sm border border-gray-100 w-fit">
-          <TabButton
-            active={activeTab === "monthly"}
-            onClick={() => setActiveTab("monthly")}
-          >
-            Monthly Results
-          </TabButton>
-          <TabButton
-            active={activeTab === "weekly"}
-            onClick={() => setActiveTab("weekly")}
-          >
-            Weekly Marks
-          </TabButton>
-        </div>
+        <ResultTabs activeTab={activeTab} onChange={setActiveTab} />
 
         {noData ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
@@ -760,316 +119,28 @@ export default function StudentResultsDashboard() {
           >
             {/* ── MONTHLY TAB ──────────────────────────────────────────── */}
             {activeTab === "monthly" && (
-              <>
-                {monthlyResults.length === 0 ? (
-                  <div className="py-16 text-center text-gray-400 text-sm">
-                    কোনো মাসিক ফলাফল পাওয়া যায়নি।
-                  </div>
-                ) : (
-                  <>
-                    {/* Subject table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-100 bg-gray-50/60">
-                            <th className="py-3 px-4 text-left font-medium text-gray-400">
-                              Subject
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Full Marks
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Highest Mark
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Marks Obtained
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                              Point
-                            </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400">
-                              Grade
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {subjectRows.map((row, i) => (
-                            <tr
-                              key={row.id ?? i}
-                              className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
-                            >
-                              <td className="py-4 px-4 font-medium text-gray-800">
-                                {row.subjectName}
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
-                                {row.fullMarks}
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-600">
-                                {row.highestMark}
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
-                                {row.marks}
-                              </td>
-                              <td className="py-4 px-4 text-center text-gray-600">
-                                {row.point}
-                              </td>
-                              <td className="py-4 px-4 text-center bg-slate-100">
-                                <GradeBadge grade={row.grade} />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Exam Summary */}
-                    <div className="px-6 pt-6 pb-8 border-t border-gray-100">
-                      <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
-                        Exam Summary
-                      </h3>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-100">
-                              {(
-                                [
-                                  ["Total Marks"],
-                                  ["GPA"],
-                                  ["Grade"],
-                                  ["Position"],
-                                  ["Present"],
-                                  ["Absent"],
-                                ] as [string][]
-                              ).map(([label]) => (
-                                <th
-                                  key={label}
-                                  className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
-                                >
-                                  {label}
-                                </th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                {activeMonthly?.totalMarks ?? "-"}
-                              </td>
-                              <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                {activeMonthly?.gpa ?? "-"}
-                              </td>
-                              <td className="py-4 px-4 text-center">
-                                {activeMonthly?.grade?.toUpperCase() === "F" ? (
-                                  <span className="text-gray-300">-</span>
-                                ) : (
-                                  <GradeBadge grade={activeMonthly?.grade} />
-                                )}
-                              </td>
-                              <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
-                                {displayMonthlyPosition || "-"}
-                              </td>
-                              <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                {activeMonthly?.present ?? "-"}
-                              </td>
-                              <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                {activeMonthly?.absent ?? "-"}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </>
+              <MonthlyResultsTable
+                monthlyResults={monthlyResults}
+                activeMonthly={activeMonthly}
+                subjectRows={subjectRows}
+                displayMonthlyPosition={displayMonthlyPosition}
+              />
             )}
 
             {/* ── WEEKLY TAB ───────────────────────────────────────────── */}
             {activeTab === "weekly" && (
-              <>
-                {weeklyRows.length === 0 ? (
-                  <div className="py-16 text-center text-gray-400 text-sm">
-                    কোনো সাপ্তাহিক মার্ক পাওয়া যায়নি।
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50/60">
-                          <th className="py-3 px-6 text-left font-medium text-gray-400">
-                            Subject
-                          </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Week-1
-                          </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Week-2
-                          </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Week-3
-                          </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Week-4
-                          </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Average Point
-                          </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
-                            Total Marks
-                          </th>
-                        </tr>
-                      </thead>
-                       <tbody>
-                         {weeklySummary.subjectArray.map((subjectData, i) => {
-                           // Calculate average point and overall grade for this subject
-                           const points: number[] = [];
-                           [1, 2, 3, 4].forEach((weekNum) => {
-                             const weekData = subjectData.weeks.get(String(weekNum));
-                             if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-                               // Use the actual total marks to determine grading system
-                               const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
-                               points.push(gradeResult.gradePoint);
-                             }
-                           });
-
-                          // Calculate total marks obtained for this subject across all weeks
-                          let subjectTotalObtained = 0;
-                          let subjectTotalFull = 0;
-                          [1, 2, 3, 4].forEach((weekNum) => {
-                            const weekData = subjectData.weeks.get(String(weekNum));
-                            if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-                              subjectTotalObtained += weekData.obtained;
-                              subjectTotalFull += weekData.total;
-                            }
-                          });
-
-                          const averagePoint = points.length > 0
-                            ? points.reduce((sum, p) => sum + p, 0) / points.length
-                            : 0;
-
-                          return (
-                            <tr
-                              key={i}
-                              className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
-                            >
-                              <td className="py-4 px-6 font-medium text-gray-800">
-                                {subjectData.subjectName}
-                              </td>
-                              {[1, 2, 3, 4].map((weekNum) => {
-                                const weekData = subjectData.weeks.get(String(weekNum));
-                                // Highlight Week-2 and Week-4 columns regardless of
-                                // whether data exists for them (matches the monthly
-                                // table's fixed-column highlight pattern).
-                                const isHighlighted = weekNum === 2 || weekNum === 4;
-                                return (
-                                  <td
-                                    key={weekNum}
-                                    className={`py-4 px-4 text-center ${isHighlighted ? "bg-slate-100" : ""}`}
-                                  >
-                                    {weekData ? (
-                                      <div className="flex flex-col items-center">
-                                        <span className="font-semibold text-gray-800">
-                                          {weekData.obtained}
-                                        </span>
-                                        <span className="text-xs text-gray-400">
-                                          / {weekData.total}
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <span className="text-gray-300"></span>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                              <td className="py-4 px-4 text-center font-bold text-gray-800">
-                                {averagePoint > 0 ? averagePoint.toFixed(1) : "-"}
-                              </td>
-                              <td className="py-4 px-4 text-center font-bold text-gray-800">
-                                {subjectTotalObtained > 0 ? `${subjectTotalObtained} / ${subjectTotalFull}` : "-"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-
-                    {/* Weekly Exam Summary */}
-                    {weeklySummary.subjectArray.length > 0 && (
-                      <div className="px-6 pt-6 pb-8 border-t border-gray-100">
-                        <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
-                          Exam Summary
-                        </h3>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-gray-100">
-                                {(
-                                  [
-                                    ["Total Marks"],
-                                    ["GPA"],
-                                    ["Grade"],
-                                    ["Merit Position"],
-                                    ["Present"],
-                                    ["Absent"],
-                                  ] as [string][]
-                                ).map(([label]) => (
-                                  <th
-                                    key={label}
-                                    className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
-                                  >
-                                    {label}
-                                  </th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                  {`${weeklySummary.totalObtainedMarks} / ${weeklySummary.totalFullMarks}`}
-                                </td>
-                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                  {weeklySummary.overallGPA > 0 ? weeklySummary.overallGPA.toFixed(2) : "-"}
-                                </td>
-                                <td className="py-4 px-4 text-center">
-                                  {weeklySummary.overallGrade !== "F" ? (
-                                    <GradeBadge grade={weeklySummary.overallGrade} />
-                                  ) : (
-                                    <span className="text-gray-300"></span>
-                                  )}
-                                </td>
-                                <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
-                                  {displayMeritPosition || "-"}
-                                </td>
-                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                  {weeklySummary.present}
-                                </td>
-                                <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                                  {weeklySummary.absent}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
+              <WeeklyResultsTable
+                weeklyRows={weeklyRows}
+                weeklySummary={weeklySummary}
+                displayMeritPosition={displayMeritPosition}
+              />
             )}
           </div>
         )}
       </div>
 
       {/* Sticky Print button */}
-      <div className="px-4 pb-4 md:px-8 md:pb-6">
-        <button
-          onClick={handlePrint}
-          className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-semibold text-base py-4 rounded-xl transition-colors shadow-lg shadow-orange-200"
-        >
-          <Printer size={20} />
-          Print
-        </button>
-      </div>
+      <PrintButton onClick={handlePrint} />
     </div>
   );
 }
