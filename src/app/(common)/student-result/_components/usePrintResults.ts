@@ -113,6 +113,7 @@ export function usePrintResults({
             padding: 12px 14px !important;
             font-size: 14px !important;
             text-align: center !important;
+            white-space: nowrap !important;
           }
           th {
             background: transparent !important;
@@ -217,6 +218,7 @@ export function usePrintResults({
             });
             document.querySelectorAll('table th, table td').forEach(function (cell) {
               cell.style.setProperty('border', '1px solid #000', 'important');
+              cell.style.setProperty('white-space', 'nowrap', 'important');
             });
             document.querySelectorAll('table th').forEach(function (th) {
               th.style.setProperty('background', '#e5e7eb', 'important');
