@@ -182,7 +182,7 @@ const CreateNoticeForm = () => {
                 <div className="rounded-lg border border-gray-200 overflow-hidden">
                   <iframe
                     src={previewUrl}
-                    className="w-full h-[500px]"
+                    className="w-full h-125"
                     title="PDF Preview"
                   />
                 </div>

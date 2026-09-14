@@ -10,6 +10,7 @@ import {
 } from "@/src/services/weeklyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getGradeFromMarks, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import { sortStudentsByRegNoAsc } from "@/src/utils/sortStudents";
 
 type WeeklyResult = {
   id: string;
@@ -27,6 +28,7 @@ type WeeklyResult = {
 };
 
 const StudentRow = ({
+  serialNo,
   student,
   totalMark,
   marksMap,
@@ -35,6 +37,7 @@ const StudentRow = ({
   onUpdate,
   isUpdating,
 }: {
+  serialNo: number;
   student: Student;
   totalMark: number;
   marksMap: Record<string, string>;
@@ -61,6 +64,9 @@ const StudentRow = ({
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
+      <td className="px-4 py-3 text-gray-900 text-sm font-medium">
+        {serialNo}
+      </td>
       <td className="px-4 py-3">
         <div className="font-medium text-gray-900 text-sm">{student.name}</div>
         <div className="text-xs text-gray-500">{student.username}</div>
@@ -180,15 +186,9 @@ const WeeklyResultTakeTable = ({
 
   const batchId = batch?.id || "";
   const stdClassId = stdClass?.id || "";
-  // Defensive: always render students sorted ascending by Student's ID (stdRegNo)
+  // Defensive: always render students sorted ascending by Student's ID (stdRegNo, numeric)
   const filteredStudents = useMemo(
-    () =>
-      [...studentsData].sort((a: any, b: any) =>
-        String(a.stdRegNo ?? "").localeCompare(String(b.stdRegNo ?? ""), undefined, {
-          numeric: true,
-          sensitivity: "base",
-        })
-      ),
+    () => sortStudentsByRegNoAsc(studentsData),
     [studentsData]
   );
 
@@ -399,6 +399,9 @@ const WeeklyResultTakeTable = ({
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
+                Serial No.
+              </th>
+              <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
                 Student's Name
               </th>
               <th className="px-4 py-3 font-semibold text-left whitespace-nowrap">
@@ -461,13 +464,14 @@ const WeeklyResultTakeTable = ({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filteredStudents.length > 0 ? (
-              filteredStudents.map((student) => {
+              filteredStudents.map((student, index) => {
                 const existingResult = localWeeklyResults.find(
                   (r: WeeklyResult) => r.studentId === student.id,
                 );
                 return (
                   <StudentRow
                     key={student.id}
+                    serialNo={index + 1}
                     student={student}
                     totalMark={existingResult?.totalMarks ?? totalMarks ?? 0}
                     marksMap={marksMap}
@@ -481,7 +485,7 @@ const WeeklyResultTakeTable = ({
             ) : (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="px-4 py-8 text-center text-gray-400 text-sm"
                 >
                   No students found.
