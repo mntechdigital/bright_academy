@@ -976,7 +976,7 @@ export default function StudentResultsDashboard() {
                                         </span>
                                       </div>
                                     ) : (
-                                      <span className="text-gray-300">-</span>
+                                      <span className="text-gray-300"></span>
                                     )}
                                   </td>
                                 );
