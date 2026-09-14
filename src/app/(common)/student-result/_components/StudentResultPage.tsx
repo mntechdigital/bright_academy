@@ -512,7 +512,7 @@ export default function StudentResultsDashboard() {
             text-align: center !important;
           }
           th {
-            background: #e5e7eb !important;
+            background: transparent !important;
             color: #111827 !important;
             font-weight: 700 !important;
             font-size: 14px !important;
@@ -619,9 +619,9 @@ export default function StudentResultsDashboard() {
               th.style.setProperty('background', '#e5e7eb', 'important');
               th.style.setProperty('font-weight', '700', 'important');
             });
-            // Preserve Week-2 / Week-4 column highlighting in print
-            document.querySelectorAll('td.bg-slate-100, th.bg-slate-100').forEach(function (el) {
-              el.style.setProperty('background', '#f1f5f9', 'important');
+            // Preserve column highlighting in print (body cells only — headers stay plain)
+            document.querySelectorAll('td.bg-slate-100').forEach(function (el) {
+              el.style.setProperty('background', '#CFCFD1', 'important');
             });
           })();
         </script>
@@ -775,19 +775,19 @@ export default function StudentResultsDashboard() {
                             <th className="py-3 px-4 text-left font-medium text-gray-400">
                               Subject
                             </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                               Full Marks
                             </th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                               Highest Mark
                             </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                            <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                               Marks Obtained
                             </th>
                             <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                               Point
                             </th>
-                            <th className="py-3 px-4 text-center font-medium text-gray-400 bg-slate-100">
+                            <th className="py-3 px-4 text-center font-medium text-gray-400">
                               Grade
                             </th>
                           </tr>
@@ -902,13 +902,13 @@ export default function StudentResultsDashboard() {
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Week-1
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Week-2
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Week-3
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Week-4
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
@@ -1034,7 +1034,7 @@ export default function StudentResultsDashboard() {
                                   {weeklySummary.overallGrade !== "F" ? (
                                     <GradeBadge grade={weeklySummary.overallGrade} />
                                   ) : (
-                                    <span className="text-gray-300">-</span>
+                                    <span className="text-gray-300"></span>
                                   )}
                                 </td>
                                 <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
