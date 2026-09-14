@@ -460,7 +460,8 @@ export default function StudentResultsDashboard() {
         <title>The Bright Academy</title>
         <style>
           @page { size: A4; margin: 10mm; }
-          * { box-sizing: border-box; }
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           body {
             font-family: 'Segoe UI', Arial, sans-serif;
             color: #111827;
@@ -487,7 +488,7 @@ export default function StudentResultsDashboard() {
 
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
-            text-align: center; font-size: 20px; font-weight: 600; font-style: initial;
+            text-align: center; font-size: 20px; font-weight: 700; font-style: initial;
             padding: 16px 12px 14px;
             letter-spacing: 0.5px;
           }
@@ -519,6 +520,10 @@ export default function StudentResultsDashboard() {
           th *, td * { color: inherit !important; }
           td:first-child, th:first-child { text-align: left !important; }
           tr { background: transparent !important; }
+
+          /* Empty week cells: bg-slate-100 + text-slate-500 + larger font (print override) */
+          td.bg-slate-100 { background: #f1f5f9 !important; }
+          td.bg-slate-100 span { color: #64748b !important; font-size: 16px !important; font-weight: 500 !important; }
 
           span[class*="rounded-full"][class*="inline-flex"] {
             border: none !important; background: transparent !important;
@@ -614,6 +619,15 @@ export default function StudentResultsDashboard() {
             document.querySelectorAll('table th').forEach(function (th) {
               th.style.setProperty('background', '#e5e7eb', 'important');
               th.style.setProperty('font-weight', '700', 'important');
+            });
+            // Preserve empty-week styling in print (bg-slate-100 / text-slate-500)
+            document.querySelectorAll('td.bg-slate-100').forEach(function (td) {
+              td.style.setProperty('background', '#f1f5f9', 'important');
+            });
+            document.querySelectorAll('td.bg-slate-100 span').forEach(function (span) {
+              span.style.setProperty('color', '#64748b', 'important');
+              span.style.setProperty('font-size', '16px', 'important');
+              span.style.setProperty('font-weight', '500', 'important');
             });
           })();
         </script>
@@ -949,11 +963,11 @@ export default function StudentResultsDashboard() {
                               </td>
                               {[1, 2, 3, 4].map((weekNum) => {
                                 const weekData = subjectData.weeks.get(String(weekNum));
-                                
+                                const isEmpty = !weekData;
                                 return (
                                   <td
                                     key={weekNum}
-                                    className="py-4 px-4 text-center"
+                                    className={`py-4 px-4 text-center ${isEmpty ? "bg-slate-100" : ""}`}
                                   >
                                     {weekData ? (
                                       <div className="flex flex-col items-center">
@@ -965,7 +979,7 @@ export default function StudentResultsDashboard() {
                                         </span>
                                       </div>
                                     ) : (
-                                      <span className="text-gray-300">-</span>
+                                      <span className="text-slate-500 text-base font-medium"> </span>
                                     )}
                                   </td>
                                 );
