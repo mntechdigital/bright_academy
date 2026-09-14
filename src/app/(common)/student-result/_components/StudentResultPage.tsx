@@ -234,10 +234,10 @@ export default function StudentResultsDashboard() {
           const studentInfoCookie = document.cookie
             .split("; ")
             .find((row) => row.startsWith("studentInfo="));
-          
+
           let studentId = "";
           let classId = "";
-          
+
           if (studentInfoCookie) {
             try {
               const cookieParts = studentInfoCookie.split("=");
@@ -265,7 +265,7 @@ export default function StudentResultsDashboard() {
             month,
             year,
           });
-          
+
           console.log("Merit position API response for weekly:", meritRes);
           if (meritRes?.success && meritRes?.data) {
             const position = meritRes.data.position || meritRes.data.meritPosition;
@@ -373,8 +373,8 @@ export default function StudentResultsDashboard() {
       : 0;
 
     // Calculate overall grade based on total obtained marks vs total full marks
-    const overallGrade = totalObtainedMarks > 0 
-      ? getGradeFromMarks(totalObtainedMarks, totalFullMarks).letterGrade 
+    const overallGrade = totalObtainedMarks > 0
+      ? getGradeFromMarks(totalObtainedMarks, totalFullMarks).letterGrade
       : "F";
 
     // Calculate present/absent: for each subject, for each of 4 weeks,
@@ -405,7 +405,7 @@ export default function StudentResultsDashboard() {
 
   // ── Student info from cookie ─────────────────────────────────────────────
   const studentInfo = useMemo(() => getStudentFromCookie(), []);
-  
+
   // ── Merit Position ──────────────────────────────────────────────────────
   // Prioritizes weekly meritPosition, falls back to monthly position (if non-empty)
   const displayMeritPosition =
@@ -521,9 +521,8 @@ export default function StudentResultsDashboard() {
           td:first-child, th:first-child { text-align: left !important; }
           tr { background: transparent !important; }
 
-          /* Empty week cells: bg-slate-100 + text-slate-500 + larger font (print override) */
+          /* Week-2 / Week-4 highlighted columns (print override) */
           td.bg-slate-100 { background: #f1f5f9 !important; }
-          td.bg-slate-100 span { color: #64748b !important; font-size: 16px !important; font-weight: 500 !important; }
 
           span[class*="rounded-full"][class*="inline-flex"] {
             border: none !important; background: transparent !important;
@@ -620,14 +619,9 @@ export default function StudentResultsDashboard() {
               th.style.setProperty('background', '#e5e7eb', 'important');
               th.style.setProperty('font-weight', '700', 'important');
             });
-            // Preserve empty-week styling in print (bg-slate-100 / text-slate-500)
-            document.querySelectorAll('td.bg-slate-100').forEach(function (td) {
-              td.style.setProperty('background', '#f1f5f9', 'important');
-            });
-            document.querySelectorAll('td.bg-slate-100 span').forEach(function (span) {
-              span.style.setProperty('color', '#64748b', 'important');
-              span.style.setProperty('font-size', '16px', 'important');
-              span.style.setProperty('font-weight', '500', 'important');
+            // Preserve Week-2 / Week-4 column highlighting in print
+            document.querySelectorAll('td.bg-slate-100, th.bg-slate-100').forEach(function (el) {
+              el.style.setProperty('background', '#f1f5f9', 'important');
             });
           })();
         </script>
@@ -908,13 +902,13 @@ export default function StudentResultsDashboard() {
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Week-1
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
                             Week-2
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
                             Week-3
                           </th>
-                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
+                          <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap bg-slate-100">
                             Week-4
                           </th>
                           <th className="py-3 px-4 text-center font-medium text-gray-400 whitespace-nowrap">
@@ -949,8 +943,8 @@ export default function StudentResultsDashboard() {
                             }
                           });
 
-                          const averagePoint = points.length > 0 
-                            ? points.reduce((sum, p) => sum + p, 0) / points.length 
+                          const averagePoint = points.length > 0
+                            ? points.reduce((sum, p) => sum + p, 0) / points.length
                             : 0;
 
                           return (
@@ -963,11 +957,14 @@ export default function StudentResultsDashboard() {
                               </td>
                               {[1, 2, 3, 4].map((weekNum) => {
                                 const weekData = subjectData.weeks.get(String(weekNum));
-                                const isEmpty = !weekData;
+                                // Highlight Week-2 and Week-4 columns regardless of
+                                // whether data exists for them (matches the monthly
+                                // table's fixed-column highlight pattern).
+                                const isHighlighted = weekNum === 2 || weekNum === 4;
                                 return (
                                   <td
                                     key={weekNum}
-                                    className={`py-4 px-4 text-center ${isEmpty ? "bg-slate-100" : ""}`}
+                                    className={`py-4 px-4 text-center ${isHighlighted ? "bg-slate-100" : ""}`}
                                   >
                                     {weekData ? (
                                       <div className="flex flex-col items-center">
@@ -979,7 +976,7 @@ export default function StudentResultsDashboard() {
                                         </span>
                                       </div>
                                     ) : (
-                                      <span className="text-slate-500 text-base font-medium"> </span>
+                                      <span className="text-gray-300">-</span>
                                     )}
                                   </td>
                                 );
