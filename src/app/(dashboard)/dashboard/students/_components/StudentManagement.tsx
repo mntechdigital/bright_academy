@@ -10,10 +10,12 @@ interface Student {
   name: string;
   id: string;
   studentName: string;
+  stdRegNo?: string | null;
   parentPhone: string;
   address: string;
   gender: string;
   classId: string;
+  batchId?: string | null;
   batch?: {
     id: string;
     name: string;
@@ -45,6 +47,11 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
   const selectedClass = searchParams.get("class") || searchParams.get("classId") || "";
   const selectedBatch = searchParams.get("batch") || searchParams.get("batchId") || "";
   const selectedGender = searchParams.get("gender") || "All";
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const limit = 10;
+  const hasClassFilter = !!selectedClass;
+  // Preserve current filter query string for edit-return navigation
+  const preservedQueryString = searchParams.toString();
 
   const selectedClassObj = classesData.find(
     (c) => c.id === selectedClass || c.className === selectedClass
@@ -231,12 +238,16 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
+                  {hasClassFilter ? "Serial No" : "SL"}
+                </th>
                 <th className="px-6 lg:px-12 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     Student Name
                     <HelpCircle className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 </th>
+                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Reg No</th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Class</th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Batch</th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Parent Phone</th>
@@ -246,14 +257,21 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
             </thead>
             <tbody className="divide-y divide-gray-100">
               {studentsData.length > 0 ? (
-                studentsData.map((student) => (
+                studentsData.map((student, index) => {
+                  const serialNo = (currentPage - 1) * limit + index + 1;
+                  const editHref = preservedQueryString
+                    ? `/dashboard/students/edit/${student.id}?${preservedQueryString}`
+                    : `/dashboard/students/edit/${student.id}`;
+                  return (
                   <tr
                     key={student.id}
                     className={`transition-colors ${isHighlighted(student.name || student.studentName || "") ? "bg-yellow-100 border-l-4 border-yellow-500 font-semibold" : "hover:bg-gray-50"}`}
                   >
+                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base font-medium">{serialNo}</td>
                     <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
                       {student.name || "N/A"}
                     </td>
+                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">{student.stdRegNo || "—"}</td>
                     <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
                         {student.stdClass?.className || "N/A"}
@@ -274,16 +292,16 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
                         <DeleteStudentDialog id={student.id} />
-                        <Link href={`/dashboard/students/edit/${student.id}`} className="text-orange-500 hover:text-orange-600 transition-colors">
+                        <Link href={editHref} className="text-orange-500 hover:text-orange-600 transition-colors">
                           <Edit2 className="w-5 h-5" />
                         </Link>
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 text-base">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500 text-base">
                     No students found
                   </td>
                 </tr>
