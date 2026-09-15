@@ -30,6 +30,15 @@ export const getStudents = async (query: TQuery[]) => {
     });
   }
   // Debug: verify request actually contains filters (check Network tab: should see class=class-7&batch=B-4&gender=Female)
+  // Always log orderBy shape in dev — critical for step 1 of pipeline debug (needsNumericSort)
+  const orderByParam = query.find((q) => q.key === "orderBy")?.value;
+  if (orderByParam) {
+    try {
+      console.log("[getStudents] orderBy param (raw):", orderByParam, "parsed:", JSON.parse(orderByParam));
+    } catch {
+      console.log("[getStudents] orderBy param (raw, non-JSON):", orderByParam);
+    }
+  }
   if (process.env.NODE_ENV === "development") {
     console.log("[getStudents] outgoing request:", `students?${params.toString()}`);
   }

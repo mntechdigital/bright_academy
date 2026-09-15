@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,8 +53,11 @@ const formatTime = (time: string) => {
 
 const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const preservedQuery = searchParams.toString();
+  const backToStudentsHref = preservedQuery ? `/dashboard/students?${preservedQuery}` : "/dashboard/students";
 
   const form = useForm<EditStudentFormValues>({
     defaultValues: {
@@ -114,7 +117,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
       if (res.statusCode === 200) {
         showSuccessToast(res.message || "Student updated successfully!");
         form.reset();
-        router.push("/dashboard/students");
+        router.push(backToStudentsHref);
       } else {
         showErrorToast(res.message || "Failed to update student.");
       }
@@ -134,7 +137,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
         </Link>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
         <Link
-          href="/dashboard/students"
+          href={backToStudentsHref}
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
         >
           <UserPlus className="h-4 w-4" />
@@ -359,7 +362,7 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
           </Button>
           <Button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => router.push(backToStudentsHref)}
             className="rounded-lg bg-red-500 py-3 font-semibold text-white transition-all hover:bg-red-600 h-12 px-6 cursor-pointer"
           >
             <X className="h-4 w-4" />

@@ -10,10 +10,12 @@ interface Student {
   name: string;
   id: string;
   studentName: string;
+  stdRegNo?: string | null;
   parentPhone: string;
   address: string;
   gender: string;
   classId: string;
+  batchId?: string | null;
   batch?: {
     id: string;
     name: string;
@@ -45,6 +47,11 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
   const selectedClass = searchParams.get("class") || searchParams.get("classId") || "";
   const selectedBatch = searchParams.get("batch") || searchParams.get("batchId") || "";
   const selectedGender = searchParams.get("gender") || "All";
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  const limit = 10;
+  const hasClassFilter = !!selectedClass;
+  // Preserve current filter query string for edit-return navigation
+  const preservedQueryString = searchParams.toString();
 
   const selectedClassObj = classesData.find(
     (c) => c.id === selectedClass || c.className === selectedClass
@@ -132,7 +139,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
             {/* Consistent gap-3 between all elements, wraps cleanly on small screens */}
             <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
               {/* Search — w-full on mobile (own line), 300px fixed + inline with filters on sm+ */}
-              <form onSubmit={handleSearch} className="w-full sm:w-[300px] shrink-0">
+              <form onSubmit={handleSearch} className="w-full sm:w-75 shrink-0">
                 <div className="relative h-11">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   <input
@@ -151,7 +158,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                 <select
                   value={selectedClass}
                   onChange={handleClassChange}
-                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-[150px]"
+                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-37.5"
                 >
                   <option value="">All Classes</option>
                   {classesData.map((cls) => (
@@ -168,7 +175,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                 <select
                   value={selectedBatch}
                   onChange={handleBatchChange}
-                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-37.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">All Batches</option>
                   {uniqueBatches.map((batch: any) => (
@@ -185,7 +192,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                 <select
                   value={selectedGender}
                   onChange={handleGenderChange}
-                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-[150px]"
+                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-37.5"
                 >
                   <option value="All">All Genders</option>
                   <option value="Male">Male</option>
@@ -231,12 +238,16 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
+                  {hasClassFilter ? "Serial No" : "SL"}
+                </th>
                 <th className="px-6 lg:px-12 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     Student Name
                     <HelpCircle className="w-4 h-4 text-gray-400 shrink-0" />
                   </div>
                 </th>
+                <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Reg No</th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Class</th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Batch</th>
                 <th className="px-6 py-5 text-left text-base font-medium text-gray-600 whitespace-nowrap">Parent Phone</th>
@@ -245,15 +256,23 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
+              {/* PIPELINE STEP 4: Do NOT re-sort studentsData here — backend already returns numeric stdRegNo order when class filtered. Client-side .sort() would override it (often lexicographically). */}
               {studentsData.length > 0 ? (
-                studentsData.map((student) => (
+                studentsData.map((student, index) => {
+                  const serialNo = (currentPage - 1) * limit + index + 1;
+                  const editHref = preservedQueryString
+                    ? `/dashboard/students/edit/${student.id}?${preservedQueryString}`
+                    : `/dashboard/students/edit/${student.id}`;
+                  return (
                   <tr
                     key={student.id}
                     className={`transition-colors ${isHighlighted(student.name || student.studentName || "") ? "bg-yellow-100 border-l-4 border-yellow-500 font-semibold" : "hover:bg-gray-50"}`}
                   >
+                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base font-medium">{serialNo}</td>
                     <td className="px-6 lg:px-12 py-6 text-gray-700 font-medium whitespace-nowrap text-base">
                       {student.name || "N/A"}
                     </td>
+                    <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">{student.stdRegNo || "—"}</td>
                     <td className="px-6 py-6 text-gray-600 whitespace-nowrap text-base">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
                         {student.stdClass?.className || "N/A"}
@@ -274,16 +293,16 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                     <td className="px-6 py-6">
                       <div className="flex items-center gap-4">
                         <DeleteStudentDialog id={student.id} />
-                        <Link href={`/dashboard/students/edit/${student.id}`} className="text-orange-500 hover:text-orange-600 transition-colors">
+                        <Link href={editHref} className="text-orange-500 hover:text-orange-600 transition-colors">
                           <Edit2 className="w-5 h-5" />
                         </Link>
                       </div>
                     </td>
                   </tr>
-                ))
+                )})
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500 text-base">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500 text-base">
                     No students found
                   </td>
                 </tr>

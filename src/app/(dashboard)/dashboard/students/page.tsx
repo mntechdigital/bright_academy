@@ -65,8 +65,15 @@ const StudentsPage = async (props: {
     }
   }
 
+  // Class-wise serial: when a class is filtered, sort by stdRegNo ascending so 1..N is stable
+  // Prisma requires array syntax for multi-field orderBy: [{stdRegNo:"asc"},{name:"asc"}] — object with 3 keys throws
+  // "Expected StudentOrderByWithRelationInput[], provided Object" and returns 0 rows (caught as error).
+  // Single-field sort can stay as object.
+  const orderBy = classFilterRaw
+    ? [{ stdRegNo: "asc" }, { name: "asc" }, { createdAt: "asc" }]
+    : { createdAt: "desc" };
   const query: TQuery[] = [
-    { key: "orderBy", value: JSON.stringify({ createdAt: "desc" }) },
+    { key: "orderBy", value: JSON.stringify(orderBy) },
     { key: "searchTerm", value: search },
     { key: "page", value: page.toString() },
     { key: "limit", value: "10" },
