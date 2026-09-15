@@ -49,7 +49,7 @@ export const GRADE_SYSTEM_400 = [
   { minMark: 237, maxMark: 276, grade: "A-", gradePoint: 3.5 },
   { minMark: 197, maxMark: 236, grade: "B", gradePoint: 3 },
   { minMark: 157, maxMark: 196, grade: "C", gradePoint: 2 },
-  { minMark: 129, maxMark: 136, grade: "D", gradePoint: 1 },
+  { minMark: 129, maxMark: 156, grade: "D", gradePoint: 1 },
   { minMark: 0, maxMark: 128, grade: "F", gradePoint: 0 },
 ];
 
