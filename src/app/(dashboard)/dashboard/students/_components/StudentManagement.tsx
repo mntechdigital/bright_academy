@@ -139,7 +139,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
             {/* Consistent gap-3 between all elements, wraps cleanly on small screens */}
             <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
               {/* Search — w-full on mobile (own line), 300px fixed + inline with filters on sm+ */}
-              <form onSubmit={handleSearch} className="w-full sm:w-[300px] shrink-0">
+              <form onSubmit={handleSearch} className="w-full sm:w-75 shrink-0">
                 <div className="relative h-11">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   <input
@@ -158,7 +158,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                 <select
                   value={selectedClass}
                   onChange={handleClassChange}
-                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-[150px]"
+                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-37.5"
                 >
                   <option value="">All Classes</option>
                   {classesData.map((cls) => (
@@ -175,7 +175,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                 <select
                   value={selectedBatch}
                   onChange={handleBatchChange}
-                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-[150px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-37.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">All Batches</option>
                   {uniqueBatches.map((batch: any) => (
@@ -192,7 +192,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
                 <select
                   value={selectedGender}
                   onChange={handleGenderChange}
-                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-[150px]"
+                  className="h-11 appearance-none border border-gray-200 rounded-lg bg-white pl-4 pr-9 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent cursor-pointer min-w-37.5"
                 >
                   <option value="All">All Genders</option>
                   <option value="Male">Male</option>
