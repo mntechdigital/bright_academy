@@ -256,6 +256,7 @@ const StudentManagement = ({ studentsData = [], classesData = [], totalStudents 
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
+              {/* PIPELINE STEP 4: Do NOT re-sort studentsData here — backend already returns numeric stdRegNo order when class filtered. Client-side .sort() would override it (often lexicographically). */}
               {studentsData.length > 0 ? (
                 studentsData.map((student, index) => {
                   const serialNo = (currentPage - 1) * limit + index + 1;
