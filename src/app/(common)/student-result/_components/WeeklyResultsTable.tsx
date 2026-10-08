@@ -99,9 +99,6 @@ function WeeklyResultsTable({
                               <span className="font-semibold text-gray-800">
                                 {weekData.obtained}
                               </span>
-                              <span className="text-xs text-gray-400">
-                                / {weekData.total}
-                              </span>
                             </div>
                           ) : (
                             <span className="text-gray-300"></span>
@@ -113,7 +110,7 @@ function WeeklyResultsTable({
                       {averagePoint > 0 ? averagePoint.toFixed(1) : "-"}
                     </td>
                     <td className="py-4 px-4 text-center font-bold text-gray-800">
-                      {subjectTotalObtained > 0 ? `${subjectTotalObtained} / ${subjectTotalFull}` : "-"}
+                      {subjectTotalObtained > 0 ? subjectTotalObtained : "-"}
                     </td>
                   </tr>
                 );
