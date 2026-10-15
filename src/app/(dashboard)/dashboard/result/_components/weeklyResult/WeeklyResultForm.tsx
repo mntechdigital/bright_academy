@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronDown, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +11,10 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { createWeeklyResult } from "@/src/services/weeklyResult";
+import { getExamRoutines } from "@/src/services/examRoutines";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { useForm, Controller } from "react-hook-form";
-import { months, weeks } from "@/src/constant/weeklyResult.constant";
+import { months, CREATE_RESULT_WEEKS } from "@/src/constant/weeklyResult.constant";
 import { compareByRegNoAsc } from "@/src/utils/sortStudents";
 
 interface ClassData {
@@ -45,6 +46,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors, isSubmitting, isSubmitSuccessful },
   } = useForm({
     defaultValues: {
@@ -64,6 +66,105 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
   const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
   const batches = selectedClass?.batches || [];
   const subjects = selectedClass?.subjects || [];
+  const selectedWeek = watch("week");
+  const selectedYear = watch("year");
+  const selectedSubjectId = watch("subjectId");
+
+  // Exam routine for the selected class+year, cached per class+year so that
+  // changing only the week does not refetch. Null = not loaded / none.
+  const routineCache = React.useRef(new Map<string, any[]>());
+  const [routines, setRoutines] = useState<any[] | null>(null);
+  const [routineLoading, setRoutineLoading] = useState(false);
+  // Admin override: show every subject of the class (for re-exams etc.).
+  const [showAllSubjects, setShowAllSubjects] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!selectedClassId || !selectedYear) {
+      setRoutines(null);
+      setRoutineLoading(false);
+      return;
+    }
+
+    const cacheKey = `${selectedClassId}|${selectedYear}`;
+    const cached = routineCache.current.get(cacheKey);
+    if (cached) {
+      setRoutines(cached);
+      setRoutineLoading(false);
+      return;
+    }
+
+    setRoutineLoading(true);
+    getExamRoutines({ year: selectedYear, classId: selectedClassId })
+      .then((res) => {
+        if (cancelled) return;
+        const list = Array.isArray(res?.data) ? res.data : [];
+        routineCache.current.set(cacheKey, list);
+        setRoutines(list);
+        setRoutineLoading(false);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch exam routine:", error);
+        if (cancelled) return;
+        // Fall back to all subjects of the class without blocking the form.
+        setRoutines(null);
+        setRoutineLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClassId, selectedYear]);
+
+  // Reset the override whenever the class or year changes.
+  useEffect(() => {
+    setShowAllSubjects(false);
+  }, [selectedClassId, selectedYear]);
+
+  // Subjects of the routine week matching the selected week, or null when no
+  // routine/week match applies (fall back to all subjects of the class).
+  const routineSubjectOptions = React.useMemo(() => {
+    if (!routines || !selectedWeek) return null;
+    const matchedWeek = routines
+      .flatMap((routine) => routine?.weeks ?? [])
+      .find((week) => week?.weekLabel === selectedWeek);
+    if (!matchedWeek) return null;
+    const list = (matchedWeek.subjects ?? [])
+      .filter((item: any) => item?.subject?.id)
+      .map((item: any) => ({
+        id: item.subject.id,
+        subjectName: item.subject.subjectName,
+      }));
+    return [...new Map(list.map((opt: any) => [opt.id, opt])).values()];
+  }, [routines, selectedWeek]);
+
+  const subjectOptions =
+    showAllSubjects || !routineSubjectOptions ? subjects : routineSubjectOptions;
+
+  // Reset the selected subject when it is not in the new option list
+  // (class, year, week or override change).
+  useEffect(() => {
+    if (
+      selectedSubjectId &&
+      !subjectOptions.some((opt: any) => String(opt.id) === String(selectedSubjectId))
+    ) {
+      setValue("subjectId", "");
+    }
+  }, [subjectOptions, selectedSubjectId, setValue]);
+
+  let subjectHint: string | null = null;
+  if (selectedClassId) {
+    if (showAllSubjects && routineSubjectOptions) {
+      subjectHint = "Showing all subjects";
+    } else if (routineLoading) {
+      subjectHint = "Loading exam routine…";
+    } else if (routineSubjectOptions) {
+      subjectHint = `Showing subjects from the exam routine (${routineSubjectOptions.length})`;
+    } else if (selectedWeek) {
+      subjectHint = "No routine found for this week, showing all subjects";
+    }
+  }
 
   const onSubmit = async (data: any) => {
      console.log("=== FORM SUBMISSION STARTED ===");
@@ -206,7 +307,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
                     className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
                   >
                     <option value="">Select Week</option>
-                    {weeks.map((week) => (
+                    {CREATE_RESULT_WEEKS.map((week) => (
                       <option key={week} value={week}>
                         {week}
                       </option>
@@ -376,7 +477,7 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
                   className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">Select Subject</option>
-                  {subjects.map((subject) => (
+                  {subjectOptions.map((subject: any) => (
                     <option key={subject.id} value={subject.id}>
                       {subject.subjectName}
                     </option>
@@ -384,6 +485,20 @@ const WeeklyResultForm = ({ classesData = [], onResultCreated }: WeeklyResultFor
                 </select>
                 {errors.subjectId && (
                   <span className="text-red-500 text-xs">{errors.subjectId.message}</span>
+                )}
+                {subjectHint && (
+                  <p className="mt-1 text-xs text-gray-500">{subjectHint}</p>
+                )}
+                {routineSubjectOptions && (
+                  <label className="mt-2 inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showAllSubjects}
+                      onChange={(e) => setShowAllSubjects(e.target.checked)}
+                      className="h-4 w-4 accent-[#F97316]"
+                    />
+                    Show all subjects
+                  </label>
                 )}
               </>
             )}
