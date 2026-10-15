@@ -1,5 +1,6 @@
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import GradeBadge from "./GradeBadge";
+import WeekSelector from "./WeekSelector";
 import type { WeeklyMark, WeeklySummaryData } from "./types";
 
 // ─── Weekly Tab ───────────────────────────────────────────────────────────────
@@ -8,10 +9,16 @@ function WeeklyResultsTable({
   weeklyRows,
   weeklySummary,
   displayMeritPosition,
+  meritWeek,
+  onMeritWeekChange,
+  weeksWithData,
 }: {
   weeklyRows: WeeklyMark[];
   weeklySummary: WeeklySummaryData;
   displayMeritPosition: string | null;
+  meritWeek: string;
+  onMeritWeekChange: (v: string) => void;
+  weeksWithData: string[];
 }) {
   return (
     <>
@@ -20,8 +27,14 @@ function WeeklyResultsTable({
           কোনো সাপ্তাহিক মার্ক পাওয়া যায়নি।
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <>
+          <WeekSelector
+            value={meritWeek}
+            onChange={onMeritWeekChange}
+            weeksWithData={weeksWithData}
+          />
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm mt-2">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="py-3 px-6 text-left font-medium text-gray-400">
@@ -177,7 +190,8 @@ function WeeklyResultsTable({
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </>
       )}
     </>
   );

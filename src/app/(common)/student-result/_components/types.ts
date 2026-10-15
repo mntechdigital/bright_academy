@@ -21,6 +21,9 @@ export interface MonthlyResult {
   present: number;
   absent: number;
   results: SubjectResult[];
+  // Monthly records carry no year column; createdAt is used to prefer the
+  // record matching the selected year.
+  createdAt?: string;
 }
 
 export interface WeeklyMark {
