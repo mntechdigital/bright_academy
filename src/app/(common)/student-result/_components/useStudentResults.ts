@@ -139,21 +139,25 @@ export function useStudentResults() {
   );
 
   const monthlyForMonth = useMemo(
-    () => monthlyResults.filter((r) => r.month === month),
-    [monthlyResults, month]
+    () =>
+      monthlyResults.filter(
+        (r) =>
+          r.month === month &&
+          (!r.createdAt ||
+            createdAtYear(r.createdAt) === "" ||
+            createdAtYear(r.createdAt) === year)
+      ),
+    [monthlyResults, month, year]
   );
 
-  // Monthly records carry no year column, so prefer the record whose
-  // createdAt year matches the selected year, then fall back to the first
-  // month match.
+  // Monthly records carry no year column; createdAt is used to keep only the
+  // record(s) matching the selected year (records without createdAt stay
+  // visible for any year). No fallback to another year's record — otherwise
+  // the Monthly tab would show stale data after a Year change.
   const activeMonthly = useMemo(() => {
     if (monthlyForMonth.length === 0) return undefined;
-    return (
-      monthlyForMonth.find(
-        (r) => r.createdAt && createdAtYear(r.createdAt) === year
-      ) ?? monthlyForMonth[0]
-    );
-  }, [monthlyForMonth, year]);
+    return monthlyForMonth[0];
+  }, [monthlyForMonth]);
 
   const subjectRows: SubjectResult[] = activeMonthly?.results ?? [];
   const weeklyRows = filteredWeekly;
@@ -179,8 +183,32 @@ export function useStudentResults() {
     setWeek(latest ?? "Week 1");
   }, [weeksWithData, week]);
 
-  const allMonths = [...new Set(monthlyResults.map((r) => r.month))];
-  const allYears = [...new Set(weeklyMarks.map((r) => r.year))];
+  // Month/Year options are the union of months/years found in EITHER
+  // weeklyMarks or monthlyResults. Building them from only one source caused
+  // the reported desync: the default month (most recent across both sources,
+  // e.g. December from weeklyMarks) had no matching <option> when
+  // monthlyResults only contained June, so the native select fell back to
+  // displaying its first option (June) while the state (December) still
+  // drove the table. Keeping both lists as unions guarantees the controlled
+  // select value always matches an option.
+  const allMonths = [
+    ...new Set([
+      ...weeklyMarks.map((r) => r.month),
+      ...monthlyResults.map((r) => r.month),
+    ]),
+  ].filter((m) => MONTH_INDEX[m] !== undefined);
+  // Calendar order keeps the existing UI stable.
+  allMonths.sort((a, b) => MONTH_INDEX[a] - MONTH_INDEX[b]);
+  const allYears = [
+    ...new Set([
+      ...weeklyMarks
+        .map((r) => r.year)
+        .filter((y) => typeof y === "string" && /^\d{4}$/.test(y)),
+      ...monthlyResults
+        .map((r) => createdAtYear(r.createdAt))
+        .filter((y) => /^\d{4}$/.test(y)),
+    ]),
+  ].sort((a, b) => Number(b) - Number(a));
 
   const months = allMonths.length ? allMonths : [...MONTH_NAMES];
   const years = allYears.length ? allYears : ["2025", "2026"];
