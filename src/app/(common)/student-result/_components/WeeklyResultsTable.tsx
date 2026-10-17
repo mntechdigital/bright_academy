@@ -161,7 +161,9 @@ function WeeklyResultsTable({
                       ).map(([label]) => (
                         <th
                           key={label}
-                          className="py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap"
+                          className={`py-2 px-4 text-center font-medium text-gray-400 whitespace-nowrap ${
+                            label === "Scheduled" ? "no-print" : ""
+                          }`}
                         >
                           {label}
                         </th>
@@ -197,7 +199,7 @@ function WeeklyResultsTable({
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {weeklySummary.absent}
                       </td>
-                      <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                      <td className="no-print py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {weeklySummary.scheduledExams}
                         <span className="block text-xs font-normal text-gray-400 mt-1 whitespace-nowrap">
                           {weeklySummary.present + weeklySummary.absent ===

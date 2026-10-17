@@ -2,6 +2,9 @@ import { FILTER_WEEKS } from "./useStudentResults";
 
 // ─── Week selector (Weekly tab only — picks the merit week) ──────────────────
 // Weeks without marks for the selected Month + Year are visible but disabled.
+// `no-print` is only defined inside the print stylesheet that
+// usePrintResults writes into the print window (@media print), so this control
+// is hidden in the printed output and stays visible on screen.
 
 function WeekSelector({
   value,
@@ -13,7 +16,7 @@ function WeekSelector({
   weeksWithData: string[];
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 pt-4 md:px-6">
+    <div className="no-print flex flex-wrap items-center gap-2 px-4 pt-4 md:px-6">
       <span className="text-xs text-gray-400 mr-1">Merit week:</span>
       {FILTER_WEEKS.map((w) => {
         const enabled = weeksWithData.includes(w);
