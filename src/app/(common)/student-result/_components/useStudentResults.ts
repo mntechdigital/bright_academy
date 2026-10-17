@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getMyResults, getMeritPosition } from "@/src/services/students";
+import { getExamRoutines } from "@/src/services/examRoutines";
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
+import {
+  computeExamSummary,
+  RoutineForSummary,
+  weekNumber,
+} from "@/src/utils/examSummary";
 import {
   ApiResponse,
   SubjectResult,
@@ -33,14 +39,6 @@ const MONTH_INDEX: Record<string, number> = Object.fromEntries(
 // Only Week 1 to Week 4 exist in a month. Stored records using any other
 // week value are left untouched; they simply cannot be selected here.
 export const FILTER_WEEKS = ["Week 1", "Week 2", "Week 3", "Week 4"];
-
-function weekNumber(week: string | undefined): number | null {
-  if (!week) return null;
-  const cleaned = week.trim().replace(/Week[- ]?/i, "").trim();
-  if (!/^\d+$/.test(cleaned)) return null;
-  const num = parseInt(cleaned, 10);
-  return num >= 1 && num <= 4 ? num : null;
-}
 
 function createdAtYear(value: string | undefined): string {
   if (!value) return "";
@@ -216,13 +214,44 @@ export function useStudentResults() {
   const noData = monthlyResults.length === 0 && weeklyMarks.length === 0;
   const filteredEmpty = !noData && filteredWeekly.length === 0 && !activeMonthly;
 
+  // ── Student info from cookie ──────────────────────────────────────────
+  const studentInfo = useMemo(() => getStudentFromCookie(), []);
+  const classId = useMemo(() => getMeritIdsFromCookie().classId, []);
+
+  // ── Exam routine for this class + year ─────────────────────────────────
+  // Supplies the Total Marks denominator and the list of scheduled
+  // (week, subject) exams. A class without a routine falls back to the
+  // student's own saved marks (see computeExamSummary).
+  const [routine, setRoutine] = useState<RoutineForSummary | null>(null);
+  useEffect(() => {
+    if (!classId || !/^\d{4}$/.test(year)) {
+      setRoutine(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getExamRoutines({ classId, year });
+        if (cancelled) return;
+        const list = Array.isArray(res?.data) ? res.data : [];
+        setRoutine((list[0] as RoutineForSummary | undefined) ?? null);
+      } catch (error) {
+        console.error("Failed to load exam routine for summary:", error);
+        if (!cancelled) setRoutine(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [classId, year]);
+
   // ── Weekly computed data (selected Month + Year) ──────────────────────
   const weeklySummary = useMemo<WeeklySummaryData>(() => {
     const subjectMap = new Map<string, SubjectWeeksData>();
 
     weeklyRows.forEach((row) => {
       const subjectName = row.subject?.subjectName || "Unknown";
-      const weekNum = row.week?.replace("Week ", "") || "0";
+      const weekNum = weekNumber(row.week);
 
       if (!subjectMap.has(subjectName)) {
         subjectMap.set(subjectName, {
@@ -231,8 +260,8 @@ export function useStudentResults() {
         });
       }
 
-      const subjectData = subjectMap.get(subjectName)!;
-      subjectData.weeks.set(weekNum, {
+      if (weekNum === null) return;
+      subjectMap.get(subjectName)!.weeks.set(String(weekNum), {
         obtained: row.obtainedMarks,
         total: row.totalMarks,
       });
@@ -240,26 +269,35 @@ export function useStudentResults() {
 
     const subjectArray = Array.from(subjectMap.values());
 
-    // Calculate overall summary
-    let totalObtainedMarks = 0;
-    let totalFullMarks = 0;
-    const allSubjectPoints: number[] = [];
+    // The totals come from the routine via one shared function, so the screen
+    // and the print view can never disagree.
+    const summary = computeExamSummary(routine, weeklyRows);
 
+    if (summary.warnings.length > 0) {
+      console.warn("[Exam Summary] routine problems:", {
+        classId,
+        year,
+        warnings: summary.warnings,
+      });
+    }
+
+    // GPA keeps its existing definition: the mean of per-subject mean grade
+    // points, each derived from that week's own full marks. It is deliberately
+    // independent of the routine denominator.
+    const allSubjectPoints: number[] = [];
     subjectArray.forEach((subjectData) => {
       const subjPoints: number[] = [];
       [1, 2, 3, 4].forEach((weekNum) => {
         const weekData = subjectData.weeks.get(String(weekNum));
         if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-          totalObtainedMarks += weekData.obtained;
-          totalFullMarks += weekData.total;
-          // Use actual marks and total marks to determine grade point (auto-detects 400-mark system)
           const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
           subjPoints.push(gradeResult.gradePoint);
         }
       });
       if (subjPoints.length > 0) {
-        const avg = subjPoints.reduce((s, p) => s + p, 0) / subjPoints.length;
-        allSubjectPoints.push(avg);
+        allSubjectPoints.push(
+          subjPoints.reduce((s, p) => s + p, 0) / subjPoints.length
+        );
       }
     });
 
@@ -267,39 +305,27 @@ export function useStudentResults() {
       ? allSubjectPoints.reduce((s, p) => s + p, 0) / allSubjectPoints.length
       : 0;
 
-    // Calculate overall grade based on total obtained marks vs total full marks
-    const overallGrade = totalObtainedMarks > 0
-      ? getGradeFromMarks(totalObtainedMarks, totalFullMarks).letterGrade
+    // Reuses the corrected routine denominator, so this now selects the /400
+    // grading table instead of silently falling through to /100.
+    const overallGrade = summary.totalObtainedMarks > 0
+      ? getGradeFromMarks(summary.totalObtainedMarks, summary.totalFullMarks).letterGrade
       : "F";
-
-    // Calculate present/absent: for each subject, for each of 4 weeks,
-    // if marks exist → present, otherwise → absent
-    let present = 0;
-    let absent = 0;
-    subjectArray.forEach((subjectData) => {
-      [1, 2, 3, 4].forEach((weekNum) => {
-        const weekData = subjectData.weeks.get(String(weekNum));
-        if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-          present++;
-        } else {
-          absent++;
-        }
-      });
-    });
 
     return {
       subjectArray,
-      totalObtainedMarks,
-      totalFullMarks,
+      totalObtainedMarks: summary.totalObtainedMarks,
+      totalFullMarks: summary.totalFullMarks,
+      scheduledExams: summary.scheduledExams,
+      percentage: summary.percentage,
+      warnings: summary.warnings,
+      usedRowFallback: summary.usedRowFallback,
       overallGPA,
       overallGrade,
-      present,
-      absent,
+      present: summary.present,
+      absent: summary.absent,
     };
-  }, [weeklyRows]);
+  }, [weeklyRows, routine, classId, year]);
 
-  // ── Student info from cookie ──────────────────────────────────────────
-  const studentInfo = useMemo(() => getStudentFromCookie(), []);
 
   // ── Merit position (selected Week + Month + Year) ─────────────────────
   // Refetched whenever the selection changes; the previous value is cleared

@@ -137,6 +137,13 @@ function WeeklyResultsTable({
               <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
                 Exam Summary
               </h3>
+              {weeklySummary.warnings.length > 0 && (
+                <ul className="mb-4 space-y-1 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
+                  {weeklySummary.warnings.map((warning) => (
+                    <li key={warning}>{warning}</li>
+                  ))}
+                </ul>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -149,6 +156,7 @@ function WeeklyResultsTable({
                           ["Merit Position"],
                           ["Present"],
                           ["Absent"],
+                          ["Scheduled"],
                         ] as [string][]
                       ).map(([label]) => (
                         <th
@@ -164,6 +172,11 @@ function WeeklyResultsTable({
                     <tr>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {`${weeklySummary.totalObtainedMarks} / ${weeklySummary.totalFullMarks}`}
+                        {weeklySummary.percentage !== null && (
+                          <span className="block text-xs font-normal text-gray-400 mt-1">
+                            {weeklySummary.percentage}%
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {weeklySummary.overallGPA > 0 ? weeklySummary.overallGPA.toFixed(2) : "-"}
@@ -183,6 +196,15 @@ function WeeklyResultsTable({
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {weeklySummary.absent}
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
+                        {weeklySummary.scheduledExams}
+                        <span className="block text-xs font-normal text-gray-400 mt-1 whitespace-nowrap">
+                          {weeklySummary.present + weeklySummary.absent ===
+                          weeklySummary.scheduledExams
+                            ? "all accounted for"
+                            : "mismatch"}
+                        </span>
                       </td>
                     </tr>
                   </tbody>
