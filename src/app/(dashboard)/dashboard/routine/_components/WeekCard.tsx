@@ -17,6 +17,9 @@ interface SubjectOption {
 interface WeekCardProps {
   week: WeekInput;
   weekIndex: number;
+  // Week numbers already stored on the routine, used to flag a collision with
+  // an existing week before submitting.
+  existingWeekNos?: number[];
   subjectOptions: SubjectOption[];
   onChange: (weekKey: string, patch: Partial<WeekInput>) => void;
   onRemove: (weekKey: string) => void;
@@ -69,6 +72,7 @@ export const computedWeekMarks = (week: WeekInput): number => {
 const WeekCard = ({
   week,
   weekIndex,
+  existingWeekNos,
   subjectOptions,
   onChange,
   onRemove,
@@ -84,9 +88,19 @@ const WeekCard = ({
   const computed = computedWeekMarks(week);
   const printed = parsePositiveInt(week.totalMarks);
   const mismatch = printed !== null && computed !== printed;
+  // Week numbers already stored on the routine this form will append to.
+  // A clash means the server would reject the save with 409.
+  const ownWeekNo = parsePositiveInt(week.weekNo);
+  const hasWeekNoClash =
+    ownWeekNo !== null &&
+    (existingWeekNos?.includes(ownWeekNo) ?? false);
 
   return (
-    <div className="rounded-xl border border-gray-200 overflow-hidden">
+    <div
+      className={`rounded-xl border overflow-hidden ${
+        hasWeekNoClash ? "border-red-300" : "border-gray-200"
+      }`}
+    >
       <div className="flex items-center gap-2 px-4 py-3 bg-gray-50">
         <button
           type="button"
@@ -137,8 +151,17 @@ const WeekCard = ({
                 inputMode="numeric"
                 value={week.weekNo}
                 onChange={(e) => onChange(week.key, { weekNo: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
+                className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:ring-1 ${
+                  hasWeekNoClash
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-300"
+                    : "border-gray-200 focus:border-[#F97316] focus:ring-[#F97316]"
+                }`}
               />
+              {hasWeekNoClash && (
+                <p className="mt-1 text-xs font-medium text-red-500">
+                  Week {ownWeekNo} already exists in this routine
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">

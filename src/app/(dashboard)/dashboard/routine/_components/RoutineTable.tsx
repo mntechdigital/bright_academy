@@ -157,6 +157,14 @@ const RoutineTable = ({
                   const hasMismatch = routine.weeks.some(
                     (week) => week.marksMismatch
                   );
+                  // Real count of stored week records (server `_count`), with a
+                  // fallback for older payloads that predate `weekCount`.
+                  const weekNumbers = (
+                    routine.weekNumbers ?? routine.weeks.map((w) => w.weekNo)
+                  )
+                    .slice()
+                    .sort((a, b) => a - b);
+                  const weekCount = routine.weekCount ?? weekNumbers.length;
                   return (
                     <tr
                       key={routine.id}
@@ -172,7 +180,12 @@ const RoutineTable = ({
                         {routine.year}
                       </td>
                       <td className="px-6 py-5 text-gray-600 text-base whitespace-nowrap">
-                        {routine.weeks.length}
+                        {weekCount}
+                        {weekNumbers.length > 0 && (
+                          <span className="ml-2 text-sm text-gray-400">
+                            {weekNumbers.join(", ")}
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         {hasMismatch ? (

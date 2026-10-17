@@ -8,11 +8,13 @@ import { revalidatePath } from "next/cache";
 export const getExamRoutines = async (params: {
   year?: string;
   classId?: string;
+  examName?: string;
   stream?: string;
 } = {}) => {
   const searchParams = new URLSearchParams();
   if (params.year) searchParams.append("year", params.year);
   if (params.classId) searchParams.append("classId", params.classId);
+  if (params.examName) searchParams.append("examName", params.examName);
   if (params.stream) searchParams.append("stream", params.stream);
 
   const query = searchParams.toString();
@@ -48,6 +50,23 @@ const revalidateRoutinePaths = () => {
 // Admin write endpoints — auth token attached.
 export const createExamRoutine = async (payload: Record<string, any>) => {
   const response = await apiRequest("exam-routines", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    authRequired: true,
+  });
+
+  revalidateRoutinePaths();
+
+  return response;
+};
+
+// Appends new weeks to an existing routine. Never modifies or removes the
+// weeks already stored, so it is safe to call with any missing week numbers.
+export const addExamRoutineWeeks = async (
+  id: string,
+  payload: Record<string, any>
+) => {
+  const response = await apiRequest(`exam-routines/${id}/weeks`, {
     method: "POST",
     body: JSON.stringify(payload),
     authRequired: true,

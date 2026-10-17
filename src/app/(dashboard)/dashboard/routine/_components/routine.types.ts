@@ -34,6 +34,10 @@ export interface ExamRoutineRow {
     id: string;
     className: string;
   };
+  // Real number of stored week records (server `_count`), never the highest
+  // week number. `weekNumbers` is sorted ascending.
+  weekCount?: number;
+  weekNumbers?: number[];
   weeks: RoutineWeekRow[];
 }
 

@@ -22,11 +22,14 @@ import {
   DoorOpenIcon,
   Plus,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import {
+  addExamRoutineWeeks,
   createExamRoutine,
   getExamRoutineById,
+  getExamRoutines,
   updateExamRoutine,
 } from "@/src/services/examRoutines";
 import { getClasses } from "@/src/services/classes";
@@ -64,6 +67,15 @@ const makeWeek = (key: string, weekNo: number): WeekInput => ({
   subjects: [makeSubject(`${key}-s0`)],
 });
 
+// Highest gap in [1..max] that is not already taken, so "Add Week" proposes a
+// sensible free slot instead of always max + 1.
+const nextFreeWeekNo = (taken: number[]): number => {
+  const used = new Set(taken);
+  for (let candidate = 1; ; candidate += 1) {
+    if (!used.has(candidate)) return candidate;
+  }
+};
+
 const RoutineForm = ({ routineId }: RoutineFormProps) => {
   const router = useRouter();
   const isEdit = !!routineId;
@@ -73,6 +85,11 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [weeks, setWeeks] = useState<WeekInput[]>([makeWeek("w0", 1)]);
   const [pendingClassId, setPendingClassId] = useState<string | null>(null);
+  // Routine that already exists for the chosen class + exam name + year.
+  // When set, the form appends weeks to it instead of creating a new routine.
+  const [existingRoutine, setExistingRoutine] =
+    useState<ExamRoutineRow | null>(null);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(false);
   const keyCounter = useRef(1);
 
   const nextKey = (prefix: string) => {
@@ -92,8 +109,21 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
   });
 
   const selectedClassId = form.watch("classId");
+  const watchedExamName = form.watch("examName");
+  const watchedYear = form.watch("year");
   const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
   const subjectOptions = selectedClass?.subjects ?? [];
+
+  // Week numbers already stored on the matched routine (ascending).
+  const existingWeekNos = React.useMemo(() => {
+    if (!existingRoutine) return [];
+    const numbers =
+      existingRoutine.weekNumbers ??
+      existingRoutine.weeks.map((week) => week.weekNo);
+    return [...numbers].sort((a, b) => a - b);
+  }, [existingRoutine]);
+
+  const appendToExisting = !!existingRoutine;
 
   // Load classes (with their subjects) for the class/subject selects.
   useEffect(() => {
@@ -173,6 +203,45 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routineId]);
 
+  // Detect an existing routine for the chosen class + exam name + year so the
+  // form can switch to "append weeks" instead of failing with a 409.
+  useEffect(() => {
+    if (isEdit) return;
+
+    const examName = watchedExamName.trim();
+    const year = watchedYear.trim();
+    const classId = selectedClassId;
+
+    if (!classId || !examName || !/^\d{4}$/.test(year)) {
+      setExistingRoutine(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsCheckingExisting(true);
+
+    const check = async () => {
+      try {
+        const res = await getExamRoutines({ classId, examName, year });
+        if (cancelled) return;
+        const match = Array.isArray(res?.data)
+          ? (res.data as ExamRoutineRow[])[0]
+          : undefined;
+        setExistingRoutine(match?.id ? match : null);
+      } catch (error) {
+        console.error("Failed to look up existing exam routine:", error);
+        if (!cancelled) setExistingRoutine(null);
+      } finally {
+        if (!cancelled) setIsCheckingExisting(false);
+      }
+    };
+    check();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, selectedClassId, watchedExamName, watchedYear]);
+
   // ---- week / subject / alternative state helpers ----
   const patchWeek = (weekKey: string, patch: Partial<WeekInput>) => {
     setWeeks((prev) =>
@@ -184,12 +253,16 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
 
   const addWeek = () => {
     setWeeks((prev) => {
-      const maxNo = prev.reduce((max, week) => {
-        const num = parsePositiveInt(week.weekNo);
-        return num !== null && num > max ? num : max;
-      }, 0);
+      // Skip week numbers already stored on the existing routine so "Add Week"
+      // proposes the first free slot (e.g. 1 when only Week 4 exists).
+      const taken = [
+        ...existingWeekNos,
+        ...prev
+          .map((week) => parsePositiveInt(week.weekNo))
+          .filter((value): value is number => value !== null),
+      ];
       const key = nextKey("w");
-      return [...prev, makeWeek(key, maxNo + 1)];
+      return [...prev, makeWeek(key, nextFreeWeekNo(taken))];
     });
   };
 
@@ -465,6 +538,14 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
         showErrorToast(`Duplicate week no. ${weekNo}: must be unique.`);
         return;
       }
+      // When appending, block week numbers the routine already stores so the
+      // user gets an inline error instead of a 409 from the server.
+      if (existingWeekNos.includes(weekNo)) {
+        showErrorToast(
+          `Week ${weekNo} already exists in this routine (${label}). Pick a different week no.`
+        );
+        return;
+      }
       seenWeekNos.add(weekNo);
 
       const totalMarks = parsePositiveInt(week.totalMarks);
@@ -556,6 +637,24 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
           router.push("/dashboard/routine");
         } else {
           showErrorToast(res?.message || "Failed to update exam routine.");
+        }
+        return;
+      }
+
+      // The routine already exists for this class + exam name + year: append
+      // the new weeks to it rather than attempting a second create.
+      if (existingRoutine) {
+        const res = await addExamRoutineWeeks(existingRoutine.id, {
+          weeks: payloadWeeks,
+        });
+        if (res?.statusCode === 201) {
+          showSuccessToast(
+            res.message ||
+              `Added ${payloadWeeks.length} week(s) to the existing routine.`
+          );
+          router.push("/dashboard/routine");
+        } else {
+          showErrorToast(res?.message || "Failed to add weeks to exam routine.");
         }
         return;
       }
@@ -754,11 +853,49 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
           </div>
         </div>
 
+        {/* Existing routine detected — weeks will be appended, not re-created. */}
+        {appendToExisting && existingRoutine && (
+          <div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  Routine already exists — new weeks will be added to it.
+                </p>
+                <p className="text-sm text-amber-700">
+                  &quot;{existingRoutine.examName}&quot; for year{" "}
+                  {existingRoutine.year} · {existingRoutine.stdClass?.className}{" "}
+                  already has {existingWeekNos.length} week(s):{" "}
+                  <span className="font-medium">
+                    {existingWeekNos.join(", ") || "none"}
+                  </span>
+                  . Saving will append these weeks to the existing routine.
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/dashboard/routine/edit/${existingRoutine.id}`}
+              className="shrink-0 whitespace-nowrap text-sm font-medium text-amber-800 underline hover:text-amber-900"
+            >
+              Open existing routine
+            </Link>
+          </div>
+        )}
+
+        {isCheckingExisting && (
+          <p className="text-sm text-gray-500">Checking for an existing routine...</p>
+        )}
+
         {/* Weeks */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">
               Weeks ({weeks.length})
+              {appendToExisting && existingWeekNos.length > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  existing: {existingWeekNos.join(", ")}
+                </span>
+              )}
             </h2>
             <button
               type="button"
@@ -766,7 +903,7 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
               className="inline-flex items-center gap-1 px-4 py-2 border border-orange-300 text-orange-600 rounded-xl hover:bg-orange-50 transition-colors text-sm font-medium"
             >
               <Plus className="h-4 w-4" />
-              Add week
+              Add Week
             </button>
           </div>
 
@@ -776,11 +913,20 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
             </p>
           )}
 
-          {weeks.map((week, index) => (
+          {[...weeks]
+            .sort((a, b) => {
+              const aNo = parsePositiveInt(a.weekNo);
+              const bNo = parsePositiveInt(b.weekNo);
+              if (aNo === null) return 1;
+              if (bNo === null) return -1;
+              return aNo - bNo;
+            })
+            .map((week, index) => (
             <WeekCard
               key={week.key}
               week={week}
               weekIndex={index}
+              existingWeekNos={existingWeekNos}
               subjectOptions={subjectOptions}
               onChange={patchWeek}
               onRemove={removeWeek}
@@ -811,7 +957,11 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
             ) : (
               <>
                 <Save className="h-4 w-4" />
-                {isEdit ? "Update Routine" : "Create Routine"}
+                {isEdit
+                  ? "Update Routine"
+                  : appendToExisting
+                    ? "Add Weeks to Existing Routine"
+                    : "Create Routine"}
               </>
             )}
           </Button>
