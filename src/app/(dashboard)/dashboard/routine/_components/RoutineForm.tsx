@@ -33,9 +33,14 @@ import {
   updateExamRoutine,
 } from "@/src/services/examRoutines";
 import { getClasses } from "@/src/services/classes";
+import {
+  DEFAULT_EXAM_NAME,
+  MARKS_PER_SUBJECT,
+  SUBJECTS_PER_WEEK,
+  TOTAL_MARKS_PER_WEEK,
+} from "@/src/constant/routine.constant";
 import WeekCard, { parsePositiveInt } from "./WeekCard";
 import {
-  AlternativeInput,
   ClassOption,
   ExamRoutineRow,
   RoutineHeaderValues,
@@ -50,21 +55,21 @@ interface RoutineFormProps {
 const makeSubject = (key: string): SubjectInput => ({
   key,
   subjectId: "",
-  displayName: "",
-  displayNameTouched: false,
-  fullMarks: "",
-  expanded: false,
   alternatives: [],
 });
+
+// A week always holds exactly SUBJECTS_PER_WEEK fixed subject rows.
+const makeSubjectRows = (weekKey: string, count = SUBJECTS_PER_WEEK) =>
+  Array.from({ length: count }, (_, index) => makeSubject(`${weekKey}-s${index}`));
 
 const makeWeek = (key: string, weekNo: number): WeekInput => ({
   key,
   weekNo: String(weekNo),
   weekLabel: "",
-  totalMarks: "",
   durationHours: "",
   open: true,
-  subjects: [makeSubject(`${key}-s0`)],
+  subjects: makeSubjectRows(key),
+  legacySubjectCount: false,
 });
 
 // Highest gap in [1..max] that is not already taken, so "Add Week" proposes a
@@ -102,17 +107,16 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     defaultValues: {
       classId: "",
       year: new Date().getFullYear().toString(),
-      examName: "",
-      month: "",
     },
     mode: "onSubmit",
   });
 
   const selectedClassId = form.watch("classId");
-  const watchedExamName = form.watch("examName");
   const watchedYear = form.watch("year");
+  const [isSubjectsLoading, setIsSubjectsLoading] = useState(false);
   const selectedClass = classesData.find((cls) => cls.id === selectedClassId);
   const subjectOptions = selectedClass?.subjects ?? [];
+  const hasEnoughSubjects = subjectOptions.length >= SUBJECTS_PER_WEEK;
 
   // Week numbers already stored on the matched routine (ascending).
   const existingWeekNos = React.useMemo(() => {
@@ -144,6 +148,16 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     fetchClasses();
   }, []);
 
+  // Class subjects arrive eagerly with the class list; this only reflects the
+  // fetch window so the dropdowns can show a loading state.
+  useEffect(() => {
+    if (!selectedClassId) {
+      setIsSubjectsLoading(false);
+      return;
+    }
+    setIsSubjectsLoading(classesData.length === 0);
+  }, [selectedClassId, classesData.length]);
+
   // Load the routine in edit mode.
   useEffect(() => {
     if (!routineId) return;
@@ -160,35 +174,40 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
         form.reset({
           classId: routine.stdClass?.id || "",
           year: routine.year || "",
-          examName: routine.examName || "",
-          month: routine.month || "",
         });
+
         setWeeks(
           routine.weeks.map((week, weekIndex) => ({
             key: `w${weekIndex}`,
             weekNo: String(week.weekNo),
             weekLabel:
               week.weekLabel === `Week ${week.weekNo}` ? "" : week.weekLabel,
-            totalMarks: String(week.totalMarks),
             durationHours:
               week.durationHours === null || week.durationHours === undefined
                 ? ""
                 : String(week.durationHours),
             open: weekIndex === 0,
-            subjects: week.subjects.map((subject, subjectIndex) => ({
-              key: `w${weekIndex}-s${subjectIndex}`,
-              subjectId: subject.subject?.id || "",
-              displayName: subject.displayName || "",
-              displayNameTouched:
-                (subject.displayName || "") !==
-                (subject.subject?.subjectName || ""),
-              fullMarks: String(subject.fullMarks),
-              expanded: false,
-              alternatives: (subject.alternatives ?? []).map((alt) => ({
-                name: alt.name,
-                streams: [...alt.streams],
+            legacySubjectCount: week.subjects.length !== SUBJECTS_PER_WEEK,
+            subjects: [
+              // Keep every stored subject, then pad up to the fixed row count so
+              // nothing is silently dropped from an edited routine. Whether a
+              // subject is still offered by the class is decided at render time
+              // from the class's subject list.
+              ...week.subjects.map((subject, subjectIndex) => ({
+                key: `w${weekIndex}-s${subjectIndex}`,
+                subjectId: subject.subject?.id || "",
+                storedDisplayName:
+                  subject.displayName || subject.subject?.subjectName || "",
+                alternatives: (subject.alternatives ?? []).map((alt) => ({
+                  name: alt.name,
+                  streams: [...alt.streams],
+                })),
               })),
-            })),
+              ...makeSubjectRows(
+                `w${weekIndex}`,
+                Math.max(0, SUBJECTS_PER_WEEK - week.subjects.length)
+              ),
+            ],
           }))
         );
         keyCounter.current = 1000;
@@ -203,16 +222,16 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routineId]);
 
-  // Detect an existing routine for the chosen class + exam name + year so the
-  // form can switch to "append weeks" instead of failing with a 409.
+  // Detect an existing routine for the chosen class + DEFAULT_EXAM_NAME + year
+  // so the form can switch to "append weeks" instead of failing with a 409.
   useEffect(() => {
     if (isEdit) return;
 
-    const examName = watchedExamName.trim();
+    const examName = DEFAULT_EXAM_NAME;
     const year = watchedYear.trim();
     const classId = selectedClassId;
 
-    if (!classId || !examName || !/^\d{4}$/.test(year)) {
+    if (!classId || !/^\d{4}$/.test(year)) {
       setExistingRoutine(null);
       return;
     }
@@ -240,7 +259,7 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     return () => {
       cancelled = true;
     };
-  }, [isEdit, selectedClassId, watchedExamName, watchedYear]);
+  }, [isEdit, selectedClassId, watchedYear]);
 
   // ---- week / subject / alternative state helpers ----
   const patchWeek = (weekKey: string, patch: Partial<WeekInput>) => {
@@ -276,10 +295,10 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     });
   };
 
-  const patchSubject = (
+  const handleSubjectSelect = (
     weekKey: string,
     subjectKey: string,
-    patch: Partial<SubjectInput>
+    subjectId: string
   ) => {
     setWeeks((prev) =>
       prev.map((week) =>
@@ -287,9 +306,17 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
           ? week
           : {
               ...week,
+              // Replacing a legacy subject clears its "not in list" warning.
+              legacySubjectCount: false,
               subjects: week.subjects.map((subject) =>
                 subject.key === subjectKey
-                  ? { ...subject, ...patch }
+                  ? {
+                      ...subject,
+                      subjectId,
+                      storedDisplayName:
+                        subjectOptions.find((opt) => opt.id === subjectId)
+                          ?.subjectName ?? "",
+                    }
                   : subject
               ),
             }
@@ -297,167 +324,6 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     );
   };
 
-  const addSubject = (weekKey: string) => {
-    const key = nextKey(`${weekKey}-s`);
-    setWeeks((prev) =>
-      prev.map((week) =>
-        week.key !== weekKey
-          ? week
-          : { ...week, subjects: [...week.subjects, makeSubject(key)] }
-      )
-    );
-  };
-
-  const removeSubject = (weekKey: string, subjectKey: string) => {
-    setWeeks((prev) =>
-      prev.map((week) => {
-        if (week.key !== weekKey) return week;
-        if (week.subjects.length <= 1) {
-          showErrorToast("A week must have at least one subject.");
-          return week;
-        }
-        return {
-          ...week,
-          subjects: week.subjects.filter(
-            (subject) => subject.key !== subjectKey
-          ),
-        };
-      })
-    );
-  };
-
-  const handleSubjectSelect = (
-    weekKey: string,
-    subjectKey: string,
-    subjectId: string
-  ) => {
-    const option = subjectOptions.find((opt) => opt.id === subjectId);
-    setWeeks((prev) =>
-      prev.map((week) =>
-        week.key !== weekKey
-          ? week
-          : {
-              ...week,
-              subjects: week.subjects.map((subject) => {
-                if (subject.key !== subjectKey) return subject;
-                return {
-                  ...subject,
-                  subjectId,
-                  displayName: subject.displayNameTouched
-                    ? subject.displayName
-                    : option?.subjectName || "",
-                };
-              }),
-            }
-      )
-    );
-  };
-
-  const patchAlternative = (
-    weekKey: string,
-    subjectKey: string,
-    altIndex: number,
-    patch: Partial<AlternativeInput>
-  ) => {
-    setWeeks((prev) =>
-      prev.map((week) =>
-        week.key !== weekKey
-          ? week
-          : {
-              ...week,
-              subjects: week.subjects.map((subject) =>
-                subject.key !== subjectKey
-                  ? subject
-                  : {
-                      ...subject,
-                      alternatives: subject.alternatives.map((alt, index) =>
-                        index === altIndex ? { ...alt, ...patch } : alt
-                      ),
-                    }
-              ),
-            }
-      )
-    );
-  };
-
-  const addAlternative = (weekKey: string, subjectKey: string) => {
-    setWeeks((prev) =>
-      prev.map((week) =>
-        week.key !== weekKey
-          ? week
-          : {
-              ...week,
-              subjects: week.subjects.map((subject) =>
-                subject.key !== subjectKey
-                  ? subject
-                  : {
-                      ...subject,
-                      alternatives: [
-                        ...subject.alternatives,
-                        { name: "", streams: [] },
-                      ],
-                    }
-              ),
-            }
-      )
-    );
-  };
-
-  const removeAlternative = (
-    weekKey: string,
-    subjectKey: string,
-    altIndex: number
-  ) => {
-    setWeeks((prev) =>
-      prev.map((week) =>
-        week.key !== weekKey
-          ? week
-          : {
-              ...week,
-              subjects: week.subjects.map((subject) =>
-                subject.key !== subjectKey
-                  ? subject
-                  : {
-                      ...subject,
-                      alternatives: subject.alternatives.filter(
-                        (_, index) => index !== altIndex
-                      ),
-                    }
-              ),
-            }
-      )
-    );
-  };
-
-  const toggleStream = (
-    weekKey: string,
-    subjectKey: string,
-    altIndex: number,
-    stream: string
-  ) => {
-    setWeeks((prev) =>
-      prev.map((week) =>
-        week.key !== weekKey
-          ? week
-          : {
-              ...week,
-              subjects: week.subjects.map((subject) => {
-                if (subject.key !== subjectKey) return subject;
-                return {
-                  ...subject,
-                  alternatives: subject.alternatives.map((alt, index) => {
-                    if (index !== altIndex) return alt;
-                    const streams = alt.streams.includes(stream)
-                      ? alt.streams.filter((s) => s !== stream)
-                      : [...alt.streams, stream];
-                    return { ...alt, streams };
-                  }),
-                };
-              }),
-            }
-      )
-    );
-  };
 
   // ---- class change with warning ----
   const requestClassChange = (nextClassId: string) => {
@@ -477,18 +343,12 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
     const nextClassId = pendingClassId;
     setPendingClassId(null);
     form.setValue("classId", nextClassId);
-    // Reset the subject selects for the new class.
+    // Subjects belong to a specific class, so every selection (and any
+    // stream alternative) is cleared when the class changes.
     setWeeks((prev) =>
       prev.map((week) => ({
         ...week,
-        subjects: week.subjects.map((subject) => ({
-          ...subject,
-          subjectId: "",
-          displayName: "",
-          displayNameTouched: false,
-          alternatives: [],
-          expanded: false,
-        })),
+        subjects: makeSubjectRows(week.key, week.subjects.length),
       }))
     );
   };
@@ -503,14 +363,30 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
       showErrorToast("Year must be a 4-digit string.");
       return;
     }
-    if (!header.examName.trim()) {
-      showErrorToast("Exam name is required.");
-      return;
-    }
     if (weeks.length === 0) {
       showErrorToast("Add at least one week.");
       return;
     }
+    if (isSubjectsLoading) {
+      showErrorToast("Subjects are still loading. Please wait.");
+      return;
+    }
+    if (subjectOptions.length === 0) {
+      showErrorToast(
+        "No subjects found for this class. Add subjects to the class first."
+      );
+      return;
+    }
+    if (!hasEnoughSubjects) {
+      showErrorToast(
+        `This class has only ${subjectOptions.length} subject(s), but a week requires exactly ${SUBJECTS_PER_WEEK}. Add more subjects to the class first.`
+      );
+      return;
+    }
+
+    const subjectNameById = new Map(
+      subjectOptions.map((opt) => [opt.id, opt.subjectName])
+    );
 
     const seenWeekNos = new Set<number>();
     const payloadWeeks: {
@@ -548,12 +424,6 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
       }
       seenWeekNos.add(weekNo);
 
-      const totalMarks = parsePositiveInt(week.totalMarks);
-      if (totalMarks === null) {
-        showErrorToast(`Total marks must be a positive integer (${label}).`);
-        return;
-      }
-
       let durationHours: number | null = null;
       if (week.durationHours.trim() !== "") {
         const parsed = parsePositiveInt(week.durationHours);
@@ -566,50 +436,54 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
         durationHours = parsed;
       }
 
-      if (week.subjects.length === 0) {
-        showErrorToast(`Each week needs at least one subject (${label}).`);
+      if (week.subjects.length !== SUBJECTS_PER_WEEK) {
+        showErrorToast(
+          `A week must have exactly ${SUBJECTS_PER_WEEK} subjects, but ${label} has ${week.subjects.length}.`
+        );
         return;
       }
 
       const seenSubjectIds = new Set<string>();
       const payloadSubjects: (typeof payloadWeeks)[number]["subjects"] = [];
-      for (const subject of week.subjects) {
+      for (const [rowIndex, subject] of week.subjects.entries()) {
+        const rowLabel = `${label}, subject ${rowIndex + 1}`;
         if (!subject.subjectId) {
-          showErrorToast(`Select a subject for every row (${label}).`);
+          showErrorToast(
+            `Select a subject for every row (${rowLabel}). All ${SUBJECTS_PER_WEEK} subjects are required.`
+          );
+          return;
+        }
+        const subjectName = subjectNameById.get(subject.subjectId);
+        if (!subjectName) {
+          showErrorToast(
+            `The subject selected in ${rowLabel} is not in this class's subject list. Pick a different one.`
+          );
           return;
         }
         if (seenSubjectIds.has(subject.subjectId)) {
           showErrorToast(
-            `The same subject cannot appear twice in the same week (${label}).`
+            `The same subject cannot appear twice in the same week (${rowLabel}).`
           );
           return;
         }
         seenSubjectIds.add(subject.subjectId);
 
-        const fullMarks = parsePositiveInt(subject.fullMarks);
-        if (fullMarks === null) {
-          showErrorToast(
-            `Full marks must be a positive integer (${label}).`
-          );
-          return;
-        }
-
         const alternatives = [];
         for (const alt of subject.alternatives) {
           if (!alt.name.trim()) {
             showErrorToast(
-              `Alternative names cannot be empty (${label}). Remove the row or fill it in.`
+              `Alternative names cannot be empty (${rowLabel}). Remove the row or fill it in.`
             );
             return;
           }
           alternatives.push({ name: alt.name.trim(), streams: alt.streams });
         }
 
-        const displayName = subject.displayName.trim();
+        // Marks and display name are derived from the chosen subject.
         payloadSubjects.push({
           subjectId: subject.subjectId,
-          ...(displayName ? { displayName } : {}),
-          fullMarks,
+          displayName: subjectName,
+          fullMarks: MARKS_PER_SUBJECT,
           alternatives,
         });
       }
@@ -618,7 +492,8 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
       payloadWeeks.push({
         weekNo,
         ...(weekLabel ? { weekLabel } : {}),
-        totalMarks,
+        // Always the sum of the fixed subject marks.
+        totalMarks: TOTAL_MARKS_PER_WEEK,
         durationHours,
         subjects: payloadSubjects,
       });
@@ -626,10 +501,11 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
 
     startTransition(async () => {
       if (isEdit && routineId) {
+        // `month` is intentionally omitted so the backend keeps the stored
+        // value instead of wiping it.
         const res = await updateExamRoutine(routineId, {
-          examName: header.examName.trim(),
+          examName: DEFAULT_EXAM_NAME,
           year: header.year.trim(),
-          month: header.month.trim() ? header.month.trim() : null,
           weeks: payloadWeeks,
         });
         if (res?.statusCode === 200) {
@@ -660,9 +536,8 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
       }
 
       const res = await createExamRoutine({
-        examName: header.examName.trim(),
+        examName: DEFAULT_EXAM_NAME,
         year: header.year.trim(),
-        month: header.month.trim() ? header.month.trim() : null,
         classId: header.classId,
         weeks: payloadWeeks,
       });
@@ -740,7 +615,18 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
         className="max-w-full space-y-6"
       >
         {/* Header fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Exam name
+            </label>
+            <div className="rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-600">
+              {DEFAULT_EXAM_NAME}
+              <p className="mt-1 text-xs text-gray-500">
+                Fixed for this routine form.
+              </p>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               Class<span className="text-red-500">*</span>
@@ -808,46 +694,6 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
                     <p className="mt-1 text-sm text-red-500">{error.message}</p>
                   )}
                 </div>
-              )}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Exam name<span className="text-red-500">*</span>
-            </label>
-            <Controller
-              name="examName"
-              control={form.control}
-              rules={{ required: "Exam name is required" }}
-              render={({ field, fieldState: { error } }) => (
-                <div>
-                  <input
-                    {...field}
-                    type="text"
-                    placeholder="LBE Weekly Exam Routine"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                  />
-                  {error && (
-                    <p className="mt-1 text-sm text-red-500">{error.message}</p>
-                  )}
-                </div>
-              )}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Month <span className="text-gray-400">(optional)</span>
-            </label>
-            <Controller
-              name="month"
-              control={form.control}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  type="text"
-                  placeholder="January"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 placeholder-gray-400 outline-none transition-all focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                />
               )}
             />
           </div>
@@ -928,15 +774,9 @@ const RoutineForm = ({ routineId }: RoutineFormProps) => {
               weekIndex={index}
               existingWeekNos={existingWeekNos}
               subjectOptions={subjectOptions}
+              subjectsLoading={isSubjectsLoading}
               onChange={patchWeek}
               onRemove={removeWeek}
-              onUpdateSubject={patchSubject}
-              onAddSubject={addSubject}
-              onRemoveSubject={removeSubject}
-              onUpdateAlternative={patchAlternative}
-              onAddAlternative={addAlternative}
-              onRemoveAlternative={removeAlternative}
-              onToggleStream={toggleStream}
               onSubjectSelect={handleSubjectSelect}
             />
           ))}

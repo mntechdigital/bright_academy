@@ -55,13 +55,16 @@ export interface AlternativeInput {
   streams: string[];
 }
 
+// A subject row is fixed: the marks are always MARKS_PER_SUBJECT and the
+// display name always mirrors the chosen subject, so neither is editable.
+// `alternatives` is carried through the form untouched so editing a routine
+// never drops the stored stream alternatives.
 export interface SubjectInput {
   key: string;
   subjectId: string;
-  displayName: string;
-  displayNameTouched: boolean;
-  fullMarks: string;
-  expanded: boolean;
+  // Name to show when the stored subject is no longer in the class's subject
+  // list. The row still renders this name so nothing is silently dropped.
+  storedDisplayName?: string;
   alternatives: AlternativeInput[];
 }
 
@@ -69,15 +72,14 @@ export interface WeekInput {
   key: string;
   weekNo: string;
   weekLabel: string;
-  totalMarks: string;
   durationHours: string;
   open: boolean;
   subjects: SubjectInput[];
+  // True when the stored week did not follow the 4-subject rule.
+  legacySubjectCount: boolean;
 }
 
 export interface RoutineHeaderValues {
   classId: string;
   year: string;
-  examName: string;
-  month: string;
 }

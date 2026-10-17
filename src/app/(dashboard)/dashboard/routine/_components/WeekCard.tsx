@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { ChevronDown, Minus, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Trash2 } from "lucide-react";
 import {
-  AlternativeInput,
-  STREAM_OPTIONS,
-  SubjectInput,
-  WeekInput,
-} from "./routine.types";
+  MARKS_PER_SUBJECT,
+  SUBJECTS_PER_WEEK,
+  TOTAL_MARKS_PER_WEEK,
+} from "@/src/constant/routine.constant";
+import { WeekInput } from "./routine.types";
 
 interface SubjectOption {
   id: string;
@@ -21,33 +21,9 @@ interface WeekCardProps {
   // an existing week before submitting.
   existingWeekNos?: number[];
   subjectOptions: SubjectOption[];
+  subjectsLoading?: boolean;
   onChange: (weekKey: string, patch: Partial<WeekInput>) => void;
   onRemove: (weekKey: string) => void;
-  onUpdateSubject: (
-    weekKey: string,
-    subjectKey: string,
-    patch: Partial<SubjectInput>
-  ) => void;
-  onAddSubject: (weekKey: string) => void;
-  onRemoveSubject: (weekKey: string, subjectKey: string) => void;
-  onUpdateAlternative: (
-    weekKey: string,
-    subjectKey: string,
-    altIndex: number,
-    patch: Partial<AlternativeInput>
-  ) => void;
-  onAddAlternative: (weekKey: string, subjectKey: string) => void;
-  onRemoveAlternative: (
-    weekKey: string,
-    subjectKey: string,
-    altIndex: number
-  ) => void;
-  onToggleStream: (
-    weekKey: string,
-    subjectKey: string,
-    altIndex: number,
-    stream: string
-  ) => void;
   onSubjectSelect: (
     weekKey: string,
     subjectKey: string,
@@ -62,38 +38,40 @@ export const parsePositiveInt = (value: string): number | null => {
   return num > 0 ? num : null;
 };
 
-export const computedWeekMarks = (week: WeekInput): number => {
-  return week.subjects.reduce((sum, subject) => {
-    const marks = parsePositiveInt(subject.fullMarks);
-    return sum + (marks ?? 0);
-  }, 0);
-};
-
 const WeekCard = ({
   week,
   weekIndex,
   existingWeekNos,
   subjectOptions,
+  subjectsLoading = false,
   onChange,
   onRemove,
-  onUpdateSubject,
-  onAddSubject,
-  onRemoveSubject,
-  onUpdateAlternative,
-  onAddAlternative,
-  onRemoveAlternative,
-  onToggleStream,
   onSubjectSelect,
 }: WeekCardProps) => {
-  const computed = computedWeekMarks(week);
-  const printed = parsePositiveInt(week.totalMarks);
-  const mismatch = printed !== null && computed !== printed;
   // Week numbers already stored on the routine this form will append to.
   // A clash means the server would reject the save with 409.
   const ownWeekNo = parsePositiveInt(week.weekNo);
   const hasWeekNoClash =
-    ownWeekNo !== null &&
-    (existingWeekNos?.includes(ownWeekNo) ?? false);
+    ownWeekNo !== null && (existingWeekNos?.includes(ownWeekNo) ?? false);
+
+  const optionById = React.useMemo(
+    () => new Map(subjectOptions.map((opt) => [opt.id, opt])),
+    [subjectOptions]
+  );
+
+  // A subject already chosen in another row of THIS week cannot be picked
+  // again. Different weeks may reuse the same subjects.
+  const chosenElsewhere = React.useMemo(() => {
+    const chosen = new Set(
+      week.subjects
+        .map((subject) => subject.subjectId)
+        .filter((id): id is string => !!id)
+    );
+    return chosen;
+  }, [week.subjects]);
+
+  const filledCount = week.subjects.filter((subject) => subject.subjectId).length;
+  const isComplete = filledCount === SUBJECTS_PER_WEEK;
 
   return (
     <div
@@ -117,22 +95,20 @@ const WeekCard = ({
             </span>
           )}
         </button>
-        <span className="ml-auto text-xs text-gray-500">
-          Computed {computed} / Printed {week.totalMarks.trim() || "—"}
+        <span
+          className={`ml-auto px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
+            isComplete
+              ? "bg-emerald-50 text-emerald-600"
+              : "bg-amber-50 text-amber-600"
+          }`}
+        >
+          Total: {TOTAL_MARKS_PER_WEEK}
         </span>
-        {mismatch ? (
-          <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold whitespace-nowrap">
-            Warning: mismatch
-          </span>
-        ) : (
-          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold whitespace-nowrap">
-            Match
-          </span>
-        )}
         <button
           type="button"
           onClick={() => onRemove(week.key)}
           title="Remove week"
+          aria-label="Remove week"
           className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
         >
           <Trash2 className="h-4 w-4" />
@@ -141,7 +117,15 @@ const WeekCard = ({
 
       {week.open && (
         <div className="p-4 space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {week.legacySubjectCount && (
+            <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              This week does not follow the {SUBJECTS_PER_WEEK}-subject rule.
+              Fix it before saving.
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Week no.<span className="text-red-500">*</span>
@@ -179,20 +163,6 @@ const WeekCard = ({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Total marks<span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={week.totalMarks}
-                onChange={(e) =>
-                  onChange(week.key, { totalMarks: e.target.value })
-                }
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
                 Duration (hours)
               </label>
               <input
@@ -208,174 +178,86 @@ const WeekCard = ({
             </div>
           </div>
 
+          {subjectsLoading ? (
+            <p className="text-sm text-gray-500">Loading subjects...</p>
+          ) : subjectOptions.length === 0 ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              No subjects found for this class. Add subjects to the class first.
+            </p>
+          ) : subjectOptions.length < SUBJECTS_PER_WEEK ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              This class has only {subjectOptions.length} subject(s), but a week
+              requires exactly {SUBJECTS_PER_WEEK}. Add more subjects to the
+              class before saving.
+            </p>
+          ) : null}
+
           <div className="space-y-3">
-            {week.subjects.map((subject) => (
-              <div
-                key={subject.key}
-                className="rounded-lg border border-gray-100 bg-gray-50/50 p-3 space-y-3"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                  <div className="md:col-span-5">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Subject<span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={subject.subjectId}
-                      onChange={(e) =>
-                        onSubjectSelect(week.key, subject.key, e.target.value)
-                      }
-                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                    >
-                      <option value="">Select subject</option>
-                      {subjectOptions.map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.subjectName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="md:col-span-4">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Display name
-                    </label>
-                    <input
-                      type="text"
-                      value={subject.displayName}
-                      onChange={(e) =>
-                        onUpdateSubject(week.key, subject.key, {
-                          displayName: e.target.value,
-                          displayNameTouched: true,
-                        })
-                      }
-                      placeholder="Defaults to subject name"
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                      Marks<span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={subject.fullMarks}
-                      onChange={(e) =>
-                        onUpdateSubject(week.key, subject.key, {
-                          fullMarks: e.target.value,
-                        })
-                      }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                    />
-                  </div>
-                  <div className="md:col-span-1 flex items-end gap-1">
-                    <button
-                      type="button"
-                      title="Alternatives"
-                      onClick={() =>
-                        onUpdateSubject(week.key, subject.key, {
-                          expanded: !subject.expanded,
-                        })
-                      }
-                      className={`inline-flex items-center justify-center h-10 w-10 rounded-lg border transition-colors ${
-                        subject.expanded || subject.alternatives.length > 0
-                          ? "border-orange-300 text-orange-600 bg-orange-50"
-                          : "border-gray-200 text-gray-400 hover:text-orange-600"
-                      }`}
-                    >
-                      <Plus
-                        className={`h-4 w-4 transition-transform ${subject.expanded ? "rotate-45" : ""}`}
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      title="Remove subject"
-                      onClick={() => onRemoveSubject(week.key, subject.key)}
-                      className="inline-flex items-center justify-center h-10 w-10 rounded-lg border border-gray-200 text-gray-400 hover:text-red-600 hover:border-red-300 transition-colors"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
+            {week.subjects.map((subject, rowIndex) => {
+              const isUnknown = !!subject.subjectId && !optionById.has(subject.subjectId);
+              return (
+                <div
+                  key={subject.key}
+                  className={`rounded-lg border p-3 space-y-3 ${
+                    isUnknown
+                      ? "border-amber-200 bg-amber-50/50"
+                      : "border-gray-100 bg-gray-50/50"
+                  }`}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                    <div className="md:col-span-9">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Subject {rowIndex + 1}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={subject.subjectId}
+                        disabled={isUnknown}
+                        onChange={(e) =>
+                          onSubjectSelect(week.key, subject.key, e.target.value)
+                        }
+                        className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316] disabled:bg-gray-100 disabled:text-gray-500"
+                      >
+                        {isUnknown && (
+                          <option value={subject.subjectId}>
+                            {subject.storedDisplayName || subject.subjectId}
+                          </option>
+                        )}
+                        <option value="">Select subject</option>
+                        {subjectOptions.map((opt) => {
+                          const takenElsewhere = chosenElsewhere.has(opt.id);
+                          return (
+                            <option
+                              key={opt.id}
+                              value={opt.id}
+                              disabled={takenElsewhere}
+                            >
+                              {opt.subjectName}
+                              {takenElsewhere ? " (already selected)" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {isUnknown && (
+                        <p className="mt-1 text-xs font-medium text-amber-600">
+                          This subject is not in the class subject list. Select a
+                          replacement to continue.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="md:col-span-3">
+                      <span className="block text-xs font-medium text-gray-600 mb-1">
+                        Marks
+                      </span>
+                      <div className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2.5 text-sm text-gray-600">
+                        {MARKS_PER_SUBJECT}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {subject.expanded && (
-                  <div className="rounded-lg bg-white border border-gray-100 p-3 space-y-2">
-                    <p className="text-xs font-medium text-gray-600">
-                      Alternatives{" "}
-                      <span className="font-normal text-gray-400">
-                        (no stream checked = not stream-specific)
-                      </span>
-                    </p>
-                    {subject.alternatives.map((alt, altIndex) => (
-                      <div
-                        key={altIndex}
-                        className="flex flex-col sm:flex-row sm:items-center gap-2"
-                      >
-                        <input
-                          type="text"
-                          value={alt.name}
-                          onChange={(e) =>
-                            onUpdateAlternative(week.key, subject.key, altIndex, {
-                              name: e.target.value,
-                            })
-                          }
-                          placeholder="Alternative name (e.g. Physics)"
-                          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-[#F97316] focus:ring-1 focus:ring-[#F97316]"
-                        />
-                        <div className="flex items-center gap-2">
-                          {STREAM_OPTIONS.map((stream) => (
-                            <label
-                              key={stream}
-                              className="inline-flex items-center gap-1 text-xs text-gray-600 cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={alt.streams.includes(stream)}
-                                onChange={() =>
-                                  onToggleStream(
-                                    week.key,
-                                    subject.key,
-                                    altIndex,
-                                    stream
-                                  )
-                                }
-                                className="h-4 w-4 accent-[#F97316]"
-                              />
-                              {stream}
-                            </label>
-                          ))}
-                          <button
-                            type="button"
-                            title="Remove alternative"
-                            onClick={() =>
-                              onRemoveAlternative(week.key, subject.key, altIndex)
-                            }
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-gray-400 hover:text-red-600 transition-colors"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => onAddAlternative(week.key, subject.key)}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-orange-600 hover:text-orange-700"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add alternative
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => onAddSubject(week.key)}
-              className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700"
-            >
-              <Plus className="h-4 w-4" />
-              Add subject
-            </button>
+              );
+            })}
           </div>
         </div>
       )}
