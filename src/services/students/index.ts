@@ -171,6 +171,8 @@ export const logoutStudent = async () => {
 export const getMeritPosition = async (params: {
   studentId: string;
   classId: string;
+  // "Week 1".."Week 4" for a single-week rank, or "Overall" for the
+  // whole-month rank (all four weeks combined).
   week: string;
   month: string;
   year: string;

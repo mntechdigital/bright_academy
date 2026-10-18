@@ -26,6 +26,9 @@ export default function StudentResultsDashboard() {
     setWeek,
     weeksWithData,
     meritLoading,
+    meritError,
+    overallDisabled,
+    overallDisabledReason,
     months,
     years,
     noData,
@@ -144,6 +147,9 @@ export default function StudentResultsDashboard() {
                 meritWeek={week}
                 onMeritWeekChange={setWeek}
                 weeksWithData={weeksWithData}
+                overallDisabled={overallDisabled}
+                overallDisabledReason={overallDisabledReason}
+                meritError={meritError}
               />
             )}
           </div>

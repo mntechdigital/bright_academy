@@ -1,6 +1,7 @@
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import GradeBadge from "./GradeBadge";
 import WeekSelector from "./WeekSelector";
+import { FILTER_WEEKS, OVERALL_MERIT } from "./useStudentResults";
 import type { WeeklyMark, WeeklySummaryData } from "./types";
 
 // ─── Weekly Tab ───────────────────────────────────────────────────────────────
@@ -12,6 +13,9 @@ function WeeklyResultsTable({
   meritWeek,
   onMeritWeekChange,
   weeksWithData,
+  overallDisabled,
+  overallDisabledReason,
+  meritError,
 }: {
   weeklyRows: WeeklyMark[];
   weeklySummary: WeeklySummaryData;
@@ -19,6 +23,9 @@ function WeeklyResultsTable({
   meritWeek: string;
   onMeritWeekChange: (v: string) => void;
   weeksWithData: string[];
+  overallDisabled?: boolean;
+  overallDisabledReason?: string | null;
+  meritError?: string | null;
 }) {
   return (
     <>
@@ -32,6 +39,19 @@ function WeeklyResultsTable({
             value={meritWeek}
             onChange={onMeritWeekChange}
             weeksWithData={weeksWithData}
+            overallDisabled={overallDisabled}
+            overallDisabledReason={overallDisabledReason}
+            // Overall ranks the whole month; if some weeks still have no
+            // marks the rank is computed from partial data (missing weeks
+            // count as 0), so say so under the button row.
+            notice={
+              meritWeek === OVERALL_MERIT &&
+              weeksWithData.length > 0 &&
+              weeksWithData.length < FILTER_WEEKS.length
+                ? "Some weeks have no marks yet"
+                : null
+            }
+            errorMessage={meritError ?? null}
           />
           <div className="overflow-x-auto">
           <table className="w-full text-sm mt-2">
@@ -174,10 +194,14 @@ function WeeklyResultsTable({
                     <tr>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {`${weeklySummary.totalObtainedMarks} / ${weeklySummary.totalFullMarks}`}
+                        {/* A div (not a span) forces a second line in the print
+                            window too — Tailwind's `block` class does not exist
+                            there, so a span printed inline as "40075.25%".
+                            `.print-subtext` is styled by the print stylesheet. */}
                         {weeklySummary.percentage !== null && (
-                          <span className="block text-xs font-normal text-gray-400 mt-1">
+                          <div className="print-subtext text-xs font-normal text-gray-400 mt-1">
                             {weeklySummary.percentage}%
-                          </span>
+                          </div>
                         )}
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
@@ -192,6 +216,16 @@ function WeeklyResultsTable({
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
                         {displayMeritPosition || "-"}
+                        {/* Scope label is screen-only: the printed sheet shows
+                            just the position number (the print stylesheet
+                            hides `.no-print`, same as the selector row). The
+                            number itself still comes from the selected merit
+                            (overall or weekly) via displayMeritPosition. */}
+                        {meritWeek === OVERALL_MERIT && (
+                          <span className="no-print block text-xs font-normal text-gray-400 mt-1">
+                            (Overall)
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
                         {weeklySummary.present}

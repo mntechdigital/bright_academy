@@ -40,6 +40,17 @@ const MONTH_INDEX: Record<string, number> = Object.fromEntries(
 // week value are left untouched; they simply cannot be selected here.
 export const FILTER_WEEKS = ["Week 1", "Week 2", "Week 3", "Week 4"];
 
+// Sentinel for the "Overall" button: ranks the whole month instead of a
+// single week. It lives in the same `week` state, so the selector keeps
+// exactly one active choice — picking a week clears Overall and vice versa.
+export const OVERALL_MERIT = "Overall";
+
+// Default selection: the latest week that actually has data, else Week 1.
+// ("Overall" is never a default.)
+const defaultWeekFor = (weeksWithData: string[]): string =>
+  [...FILTER_WEEKS].reverse().find((w) => weeksWithData.includes(w)) ??
+  "Week 1";
+
 function createdAtYear(value: string | undefined): string {
   if (!value) return "";
   const time = new Date(value).getTime();
@@ -51,6 +62,9 @@ export function useStudentResults() {
   const [resultData, setResultData] = useState<ApiResponse | null>(null);
   const [meritPosition, setMeritPosition] = useState<string | null>(null);
   const [meritLoading, setMeritLoading] = useState(false);
+  // Set when the merit request itself fails, so the UI can show a friendly
+  // message instead of silently rendering "-".
+  const [meritError, setMeritError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"monthly" | "weekly">("monthly");
@@ -173,13 +187,19 @@ export function useStudentResults() {
   // Keep the selected merit week valid: latest week with data, else Week 1.
   // The early return means manual week picks never get overridden — this
   // only reacts when Month/Year/data change the available weeks.
+  // "Overall" is exempt here; it is only cleared by the Month/Year reset below.
   useEffect(() => {
+    if (week === OVERALL_MERIT) return;
     if (weeksWithData.includes(week)) return;
-    const latest = [...FILTER_WEEKS]
-      .reverse()
-      .find((w) => weeksWithData.includes(w));
-    setWeek(latest ?? "Week 1");
+    setWeek(defaultWeekFor(weeksWithData));
   }, [weeksWithData, week]);
+
+  // Switching Month/Year resets the selection to the default week (latest
+  // with data, else Week 1) and never leaves "Overall" selected. The merit
+  // fetch below depends on [week, month, year], so the position reloads too.
+  useEffect(() => {
+    setWeek(defaultWeekFor(weeksWithData));
+  }, [month, year, weeksWithData]);
 
   // Month/Year options are the union of months/years found in EITHER
   // weeklyMarks or monthlyResults. Building them from only one source caused
@@ -223,13 +243,18 @@ export function useStudentResults() {
   // (week, subject) exams. A class without a routine falls back to the
   // student's own saved marks (see computeExamSummary).
   const [routine, setRoutine] = useState<RoutineForSummary | null>(null);
+  // Tracks whether the routine request is still in flight so the Overall
+  // button can say "loading…" instead of wrongly claiming there is no routine.
+  const [routineLoading, setRoutineLoading] = useState(true);
   useEffect(() => {
     if (!classId || !/^\d{4}$/.test(year)) {
       setRoutine(null);
+      setRoutineLoading(false);
       return;
     }
     let cancelled = false;
     (async () => {
+      setRoutineLoading(true);
       try {
         const res = await getExamRoutines({ classId, year });
         if (cancelled) return;
@@ -238,6 +263,8 @@ export function useStudentResults() {
       } catch (error) {
         console.error("Failed to load exam routine for summary:", error);
         if (!cancelled) setRoutine(null);
+      } finally {
+        if (!cancelled) setRoutineLoading(false);
       }
     })();
     return () => {
@@ -341,8 +368,11 @@ export function useStudentResults() {
       }
       setMeritLoading(true);
       setMeritPosition(null);
+      setMeritError(null);
       try {
-        // Backend accepts the stored "Week N" format (it normalizes "Week 1"/"1").
+        // Backend accepts the stored "Week N" format (it normalizes "Week 1"/"1")
+        // and "Overall" for the whole-month rank — same endpoint either way, so
+        // a selection change costs exactly one request.
         const meritRes = await getMeritPosition({
           studentId,
           classId,
@@ -354,12 +384,25 @@ export function useStudentResults() {
         if (meritRes?.success && meritRes?.data) {
           const position = meritRes.data.position || meritRes.data.meritPosition;
           setMeritPosition(position ? String(position) : null);
+        } else if (meritRes?.success === false) {
+          // The request itself failed — surface a friendly message instead of
+          // silently rendering "-".
+          setMeritPosition(null);
+          setMeritError(
+            meritRes?.message ||
+              "Could not load merit position. Please try again."
+          );
         } else {
+          // Success with no data → the student simply has no rank for this
+          // period (handled the same way the weekly merit always has).
           setMeritPosition(null);
         }
       } catch (error) {
         console.error("Error fetching merit position:", error);
-        if (!cancelled) setMeritPosition(null);
+        if (!cancelled) {
+          setMeritPosition(null);
+          setMeritError("Could not load merit position. Please try again.");
+        }
       } finally {
         if (!cancelled) setMeritLoading(false);
       }
@@ -382,6 +425,19 @@ export function useStudentResults() {
       ? activeMonthly.position
       : meritPosition || null;
 
+  // ── Overall availability ─────────────────────────────────────────────────
+  // "Overall" must never show a wrong number: it needs at least one week of
+  // marks for the month and the exam routine that defines that month's
+  // schedule. When either is missing the button is disabled with a tooltip.
+  const overallDisabledReason =
+    weeksWithData.length === 0
+      ? "No marks entered for this month yet"
+      : routineLoading
+        ? "Loading exam routine…"
+        : !routine
+          ? "No exam routine found for this class yet"
+          : null;
+
   return {
     loading,
     error,
@@ -395,6 +451,9 @@ export function useStudentResults() {
     setWeek,
     weeksWithData,
     meritLoading,
+    meritError,
+    overallDisabled: overallDisabledReason !== null,
+    overallDisabledReason,
     months,
     years,
     noData,
