@@ -1,5 +1,5 @@
 import GradeBadge from "./GradeBadge";
-import type { MonthlyResult, SubjectResult } from "./types";
+import type { MonthlyResult, MonthlySubjectRow } from "./types";
 
 // ─── Monthly Tab ──────────────────────────────────────────────────────────────
 
@@ -11,7 +11,7 @@ function MonthlyResultsTable({
 }: {
   monthlyResults: MonthlyResult[];
   activeMonthly: MonthlyResult | undefined;
-  subjectRows: SubjectResult[];
+  subjectRows: MonthlySubjectRow[];
   displayMonthlyPosition: string | null;
 }) {
   return (
@@ -57,19 +57,23 @@ function MonthlyResultsTable({
                       {row.subjectName}
                     </td>
                     <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
-                      {row.fullMarks}
+                      {row.fullMarks ?? "-"}
                     </td>
                     <td className="py-4 px-4 text-center text-gray-600">
-                      {row.highestMark}
+                      {row.highestMark ?? "-"}
                     </td>
                     <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
-                      {row.marks}
+                      {row.marks ?? "-"}
                     </td>
                     <td className="py-4 px-4 text-center text-gray-600">
-                      {row.point}
+                      {row.point ?? "-"}
                     </td>
                     <td className="py-4 px-4 text-center bg-slate-100">
-                      <GradeBadge grade={row.grade} />
+                      {row.grade ? (
+                        <GradeBadge grade={row.grade} />
+                      ) : (
+                        <span className="text-gray-300"></span>
+                      )}
                     </td>
                   </tr>
                 ))}

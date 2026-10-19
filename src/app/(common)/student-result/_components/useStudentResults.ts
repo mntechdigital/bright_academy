@@ -11,6 +11,8 @@ import {
 } from "@/src/utils/examSummary";
 import {
   ApiResponse,
+  ClassSubject,
+  MonthlySubjectRow,
   SubjectResult,
   SubjectWeeksData,
   WeeklySummaryData,
@@ -60,6 +62,9 @@ function createdAtYear(value: string | undefined): string {
 
 export function useStudentResults() {
   const [resultData, setResultData] = useState<ApiResponse | null>(null);
+  // The class's subject list in canonical order (sortOrder). Every subject of
+  // the class appears in the result tables in this order — even without marks.
+  const [classSubjects, setClassSubjects] = useState<ClassSubject[]>([]);
   const [meritPosition, setMeritPosition] = useState<string | null>(null);
   const [meritLoading, setMeritLoading] = useState(false);
   // Set when the merit request itself fails, so the UI can show a friendly
@@ -86,6 +91,7 @@ export function useStudentResults() {
         const res = await getMyResults();
         if (cancelled) return;
         setResultData(res);
+        setClassSubjects(res?.data?.classSubjects ?? []);
 
         const monthlyResults = res?.data?.monthlyResults ?? [];
         const weeklyMarks = res?.data?.weeklyMarks ?? [];
@@ -294,7 +300,20 @@ export function useStudentResults() {
       });
     });
 
-    const subjectArray = Array.from(subjectMap.values());
+    // Canonical row order: the class subject list first (subjects with no
+    // marks get empty cells), then any leftover mark subjects at the end,
+    // sorted by name.
+    const orderedNames = classSubjects.map((s) => s.subjectName);
+    const subjectArray: SubjectWeeksData[] = orderedNames.map(
+      (name) =>
+        subjectMap.get(name) ?? { subjectName: name, weeks: new Map() }
+    );
+    const leftoverNames = [...subjectMap.keys()]
+      .filter((name) => !orderedNames.includes(name))
+      .sort();
+    for (const name of leftoverNames) {
+      subjectArray.push(subjectMap.get(name)!);
+    }
 
     // The totals come from the routine via one shared function, so the screen
     // and the print view can never disagree.
@@ -350,7 +369,38 @@ export function useStudentResults() {
       present: summary.present,
       absent: summary.absent,
     };
-  }, [weeklyRows, routine, classId, year]);
+  }, [weeklyRows, routine, classId, year, classSubjects]);
+
+  // Monthly tab rows: same canonical order as the weekly tab. Subjects with no
+  // monthly result row appear with empty cells; leftover rows (subjects that
+  // are not in the class list anymore) go last, sorted by name.
+  const monthlySubjectRows = useMemo<MonthlySubjectRow[]>(() => {
+    const rowsByName = new Map<string, SubjectResult>();
+    subjectRows.forEach((row) => rowsByName.set(row.subjectName, row));
+
+    const orderedNames = classSubjects.map((s) => s.subjectName);
+    const merged: MonthlySubjectRow[] = orderedNames.map((name) => {
+      const row = rowsByName.get(name);
+      return row
+        ? { ...row }
+        : {
+            id: null,
+            subjectName: name,
+            marks: null,
+            fullMarks: null,
+            highestMark: null,
+            point: null,
+            grade: null,
+          };
+    });
+    const leftoverNames = [...rowsByName.keys()]
+      .filter((name) => !orderedNames.includes(name))
+      .sort();
+    for (const name of leftoverNames) {
+      merged.push({ ...rowsByName.get(name)! });
+    }
+    return merged;
+  }, [subjectRows, classSubjects]);
 
 
   // ── Merit position (selected Week + Month + Year) ─────────────────────
@@ -461,6 +511,7 @@ export function useStudentResults() {
     weeklyRows,
     activeMonthly,
     subjectRows,
+    monthlySubjectRows,
     weeklySummary,
     studentInfo,
     displayMeritPosition,

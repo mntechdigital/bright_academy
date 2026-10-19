@@ -55,6 +55,20 @@ export const updateSubject = async (id: string, payload: Record<string, any>) =>
   return response;
 };
 
+export const moveSubject = async (id: string, direction: "up" | "down") => {
+  const response = await apiRequest(`subjects/${id}/move`, {
+    method: "POST",
+    body: JSON.stringify({ direction }),
+    authRequired: true,
+  });
+
+  ["/", "/dashboard", "/dashboard/subjects"].forEach((path) => {
+    revalidatePath(path);
+  });
+
+  return response;
+};
+
 export const deleteSubject = async (id: string | undefined) => {
   const response = await apiRequest(`subjects/${id}`, {
     method: "DELETE",

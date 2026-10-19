@@ -37,6 +37,7 @@ export default function StudentResultsDashboard() {
     weeklyRows,
     activeMonthly,
     subjectRows,
+    monthlySubjectRows,
     weeklySummary,
     studentInfo,
     displayMeritPosition,
@@ -133,7 +134,7 @@ export default function StudentResultsDashboard() {
               <MonthlyResultsTable
                 monthlyResults={monthlyResults}
                 activeMonthly={activeMonthly}
-                subjectRows={subjectRows}
+                subjectRows={monthlySubjectRows}
                 displayMonthlyPosition={displayMonthlyPosition}
               />
             )}
