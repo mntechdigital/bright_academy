@@ -4,6 +4,7 @@ import {
   Package, 
   ImagePlus,
   Bell,
+  CalendarDays,
   // HelpCircle
 } from "lucide-react";
 
@@ -41,6 +42,13 @@ export const NAV_ITEMS = [
     icon: Package, 
     label: "Result", 
     href: "/result" 
+  },
+
+  // Routine - exam routines per class and year
+  {
+    icon: CalendarDays,
+    label: "Routine",
+    href: "/routine"
   },
   
   // Batch - index: 16

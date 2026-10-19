@@ -9,6 +9,7 @@ const navLinks = [
   { label: "হোম", href: "/" },
   { label: "আমাদের সম্পর্কে", href: "/about" },
   { label: "কোর্স সমূহ", href: "/courses" },
+  { label: "রুটিন", href: "/routine" },
   { label: "শিক্ষকমণ্ডলী", href: "/faculty" },
   { label: "মতামত", href: "/review" },
   { label: "সংবাদ", href: "/news" },

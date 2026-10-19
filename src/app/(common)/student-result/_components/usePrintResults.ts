@@ -128,6 +128,17 @@ export function usePrintResults({
           /* Week-2 / Week-4 highlighted columns (print override) */
           td.bg-slate-100 { background: #f1f5f9 !important; }
 
+          /* Second line inside a summary cell (e.g. the percentage under
+             "301 / 400") — smaller + gray in print, where the Tailwind
+             classes copied in from the live page carry no styles. */
+          td .print-subtext {
+            display: block !important;
+            font-size: 11px !important;
+            font-weight: 400 !important;
+            color: #6b7280 !important;
+            margin-top: 4px !important;
+          }
+
           span[class*="rounded-full"][class*="inline-flex"] {
             border: none !important; background: transparent !important;
             padding: 0 !important; border-radius: 0 !important;

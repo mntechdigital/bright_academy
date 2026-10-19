@@ -20,16 +20,19 @@ export default function StudentResultsDashboard() {
     setActiveTab,
     month,
     setMonth,
-    week,
-    setWeek,
-    publishedDate,
-    setPublishedDate,
     year,
     setYear,
+    week,
+    setWeek,
+    weeksWithData,
+    meritLoading,
+    meritError,
+    overallDisabled,
+    overallDisabledReason,
     months,
-    weeks,
     years,
     noData,
+    filteredEmpty,
     monthlyResults,
     weeklyRows,
     activeMonthly,
@@ -84,11 +87,6 @@ export default function StudentResultsDashboard() {
         months={months}
         month={month}
         onMonthChange={setMonth}
-        weeks={weeks}
-        week={week}
-        onWeekChange={setWeek}
-        publishedDate={publishedDate}
-        onPublishedDateChange={setPublishedDate}
         years={years}
         year={year}
         onYearChange={setYear}
@@ -96,10 +94,14 @@ export default function StudentResultsDashboard() {
 
       {/* Main content */}
       <div className="flex-1 px-4 py-4 md:px-8 md:py-6 pb-4">
-        {/* Student Info Header */}
+        {/* Student Info Header (weekly merit badge only on the Weekly tab) */}
         <StudentInfoHeader
           studentInfo={studentInfo}
-          displayMeritPosition={displayMeritPosition}
+          displayMeritPosition={
+            activeTab === "weekly" ? displayMeritPosition : null
+          }
+          meritWeek={activeTab === "weekly" ? week : null}
+          meritLoading={activeTab === "weekly" && meritLoading}
         />
 
         {/* Tabs */}
@@ -111,6 +113,15 @@ export default function StudentResultsDashboard() {
               কোনো ফলাফল প্রকাশিত হয়নি
             </h2>
             <p className="text-gray-400 mt-2 text-sm">পরে আবার চেক করুন।</p>
+          </div>
+        ) : filteredEmpty ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+            <h2 className="text-xl font-semibold text-gray-700">
+              No result found for this month
+            </h2>
+            <p className="text-gray-400 mt-2 text-sm">
+              Try a different month or year.
+            </p>
           </div>
         ) : (
           <div
@@ -133,6 +144,12 @@ export default function StudentResultsDashboard() {
                 weeklyRows={weeklyRows}
                 weeklySummary={weeklySummary}
                 displayMeritPosition={displayMeritPosition}
+                meritWeek={week}
+                onMeritWeekChange={setWeek}
+                weeksWithData={weeksWithData}
+                overallDisabled={overallDisabled}
+                overallDisabledReason={overallDisabledReason}
+                meritError={meritError}
               />
             )}
           </div>

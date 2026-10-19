@@ -21,6 +21,9 @@ export interface MonthlyResult {
   present: number;
   absent: number;
   results: SubjectResult[];
+  // Monthly records carry no year column; createdAt is used to prefer the
+  // record matching the selected year.
+  createdAt?: string;
 }
 
 export interface WeeklyMark {
@@ -28,9 +31,11 @@ export interface WeeklyMark {
   month: string;
   week: string;
   year: string;
-  obtainedMarks: number;
+  // Null means the teacher left the cell blank — treated as absent.
+  obtainedMarks: number | null;
   totalMarks: number;
-  subject: { subjectName: string };
+  // The API returns the whole catalog Subject row.
+  subject: { id: string; subjectName: string };
 }
 
 export interface ApiResponse {
@@ -44,7 +49,7 @@ export interface ApiResponse {
 }
 
 export interface WeekData {
-  obtained: number;
+  obtained: number | null;
   total: number;
 }
 
@@ -56,7 +61,13 @@ export interface SubjectWeeksData {
 export interface WeeklySummaryData {
   subjectArray: SubjectWeeksData[];
   totalObtainedMarks: number;
+  // Denominator: sum of the routine's week totals (400 for 4 x 100).
   totalFullMarks: number;
+  // (week, subject) pairs the routine schedules — 16 for a 4 x 4 routine.
+  scheduledExams: number;
+  percentage: number | null;
+  warnings: string[];
+  usedRowFallback: boolean;
   overallGPA: number;
   overallGrade: string;
   present: number;
