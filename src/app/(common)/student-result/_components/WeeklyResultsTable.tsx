@@ -157,13 +157,6 @@ function WeeklyResultsTable({
               <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
                 Exam Summary
               </h3>
-              {weeklySummary.warnings.length > 0 && (
-                <ul className="mb-4 space-y-1 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-700">
-                  {weeklySummary.warnings.map((warning) => (
-                    <li key={warning}>{warning}</li>
-                  ))}
-                </ul>
-              )}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
