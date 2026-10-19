@@ -66,7 +66,6 @@ export interface WeeklySummaryData {
   // (week, subject) pairs the routine schedules — 16 for a 4 x 4 routine.
   scheduledExams: number;
   percentage: number | null;
-  warnings: string[];
   usedRowFallback: boolean;
   overallGPA: number;
   overallGrade: string;

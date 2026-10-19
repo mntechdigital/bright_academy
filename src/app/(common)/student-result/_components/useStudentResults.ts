@@ -344,7 +344,6 @@ export function useStudentResults() {
       totalFullMarks: summary.totalFullMarks,
       scheduledExams: summary.scheduledExams,
       percentage: summary.percentage,
-      warnings: summary.warnings,
       usedRowFallback: summary.usedRowFallback,
       overallGPA,
       overallGrade,
