@@ -24,7 +24,7 @@ function MonthlyResultsTable({
         <>
           {/* Subject table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm result-table">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
                   <th className="py-3 px-4 text-left font-medium text-gray-400">
@@ -82,12 +82,12 @@ function MonthlyResultsTable({
           </div>
 
           {/* Exam Summary */}
-          <div className="px-6 pt-6 pb-8 border-t border-gray-100">
+          <div className="px-6 pt-6 pb-8 border-t border-gray-100 exam-summary-block">
             <h3 className="text-base font-semibold text-gray-800 text-center mb-5">
               Exam Summary
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm result-table">
                 <thead>
                   <tr className="border-b border-gray-100">
                     {(
