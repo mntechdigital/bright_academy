@@ -57,6 +57,33 @@ export function usePrintResults({
     const bannerImg2 = getImgUrl(brightpdf2);
     const bannerImg3 = getImgUrl(brightpdf3);
 
+    // Count subject rows in the printed table to pick an adaptive font tier.
+    const subjectTable = printRef.current.querySelector("table.result-table");
+    const rowCount = subjectTable
+      ? subjectTable.querySelectorAll("tbody tr").length
+      : 0;
+
+    let baseFont = "12px";
+    let rowPad = "4px 6px";
+    let titleFont = "16px";
+    let bannerH = "55px";
+    if (rowCount <= 12) {
+      baseFont = "14px";
+      rowPad = "8px 8px";
+      titleFont = "18px";
+      bannerH = "70px";
+    } else if (rowCount <= 18) {
+      baseFont = "13px";
+      rowPad = "6px 8px";
+      titleFont = "17px";
+      bannerH = "60px";
+    } else if (rowCount >= 22) {
+      baseFont = "11.5px";
+      rowPad = "4px 6px";
+      titleFont = "15px";
+      bannerH = "50px";
+    }
+
     w.document.write(`
       <html>
       <head>
@@ -64,13 +91,22 @@ export function usePrintResults({
         <style>
           @page { size: A4; margin: 10mm; }
           * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          html, body { height: 100%; margin: 0; }
           html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           body {
             font-family: 'Segoe UI', Arial, sans-serif;
             color: #111827;
             margin: 0;
-            font-size: 12.5px;
+            font-size: 11px;
           }
+
+          .page {
+            min-height: calc(297mm - 20mm);
+            display: flex;
+            flex-direction: column;
+          }
+          .page-content { flex: 1; }
+          .signatures { margin-top: auto; }
 
           /* ── Top banner with images ──────────────── */
           .banner {
@@ -78,10 +114,10 @@ export function usePrintResults({
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid #d1d5db;
-            padding: 8px 4px 12px;
+            padding: 4px 4px 6px;
           }
           .banner img {
-            max-height: 90px;
+            max-height: var(--banner-h, 55px);
             width: 100%;
             object-fit: contain;
           }
@@ -91,41 +127,58 @@ export function usePrintResults({
 
           /* ── Exam title bar ───────────────────────── */
           .exam-title {
-            text-align: center; font-size: 20px; font-weight: 700; font-style: initial;
-            padding: 16px 12px 14px;
+            text-align: center; font-size: var(--title-font, 15px); font-weight: 700; font-style: initial;
+            padding: 6px 8px 4px;
             letter-spacing: 0.5px;
           }
 
           /* ── Info grid ────────────────────────────── */
           table.info-grid { width: 100%; border-collapse: collapse; }
-          table.info-grid td { border: 1px solid #000; padding: 10px 16px; }
-          table.info-grid td.label { font-size: 14px; color: #1f2937; width: 14%; }
-          table.info-grid td.value { font-weight: 600; font-size: 15px; }
+          table.info-grid td { border: 1px solid #000; padding: var(--row-pad, 4px 6px); font-size: var(--base-font, 11px); }
+          table.info-grid td.label { color: #1f2937; width: 14%; font-weight: 400; }
+          table.info-grid td.value { font-weight: 600; }
 
           div { overflow: visible !important; }
 
           table {
             width: 100% !important;
             border-collapse: collapse !important;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
           }
-          th, td {
-            padding: 12px 14px !important;
-            font-size: 14px !important;
+          /* Data-table borders scoped to the result tables. The signature table
+             is intentionally excluded — it has no outer box. */
+          table.result-table,
+          table.result-table th,
+          table.result-table td,
+          table.result-table tbody tr {
+            border: 1px solid #000 !important;
+          }
+          table:not(.signature-table) th,
+          table:not(.signature-table) td {
+            padding: var(--row-pad, 4px 6px) !important;
+            font-size: var(--base-font, 11px) !important;
             text-align: center !important;
             white-space: nowrap !important;
           }
-          th {
+          table:not(.signature-table) th {
             background: transparent !important;
             color: #111827 !important;
             font-weight: 700 !important;
-            font-size: 14px !important;
           }
-          th *, td * { color: inherit !important; }
-          td:first-child, th:first-child { text-align: left !important; }
+          table:not(.signature-table) th *, table:not(.signature-table) td * { color: inherit !important; }
+          table:not(.signature-table) td:first-child,
+          table:not(.signature-table) th:first-child { text-align: left !important; }
           tr { background: transparent !important; }
 
-          /* Week-2 / Week-4 highlighted columns (print override) */
+          /* Print pagination rules */
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; break-inside: avoid; }
+
+          /* Keep the summary block and the signature block together
+             (they never get stranded at the top of a new page alone). */
+          .exam-summary-block, .signatures {
+            break-inside: avoid;
+          }
           td.bg-slate-100 { background: #f1f5f9 !important; }
 
           /* Second line inside a summary cell (e.g. the percentage under
@@ -133,7 +186,7 @@ export function usePrintResults({
              classes copied in from the live page carry no styles. */
           td .print-subtext {
             display: block !important;
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-weight: 400 !important;
             color: #6b7280 !important;
             margin-top: 4px !important;
@@ -147,73 +200,126 @@ export function usePrintResults({
           span[class*="w-1.5"][class*="h-1.5"] { display: none !important; }
 
           h3 {
-            text-align: center; font-weight: 700; font-size: 16px;
-            padding: 10px; margin: 0 0 14px;
+            text-align: center; font-weight: 700; font-size: 14px;
+            padding: 4px; margin: 0 0 6px;
             border-bottom: 2px solid #000;
             background: transparent;
           }
 
-          .signatures { display: flex; justify-content: space-between; padding: 60px 4px 20px; }
-          .signature { text-align: left; width: 42%; }
-          .signature .line { border-top: 2px solid #000; margin-bottom: 6px; }
-          .signature .role { font-size: 14px; font-weight: 600; }
-          .signature .date { margin-top: 14px; font-size: 13px; color: #374151; }
+          .signatures {
+            padding: 16px 4px 8px;
+          }
+
+          .signature-table {
+            width: 100%;
+            border-collapse: separate !important;
+            border-spacing: 40px 0;
+            border: none !important;
+            background: transparent;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .signature-table tr {
+            background: transparent !important;
+          }
+          .signature-table td {
+            vertical-align: top !important;
+            width: 50% !important;
+            padding: 0 20px !important;
+            border: none !important;
+          }
+          .signature-cell {
+            border-top: 1px solid #000 !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: none !important;
+            padding-top: 10px;
+            width: 50%;
+          }
+          .signature-cell:first-child {
+            text-align: left;
+          }
+          .signature-cell:last-child {
+            text-align: right;
+          }
+          .signature-cell .role { font-size: 13px; font-weight: 600; }
+          .signature-cell .sig-line { height: 24px; }
+          .signature-cell .signature-date {
+            width: 100%;
+            display: block;
+            margin-top: 10px;
+            font-size: 12px;
+            line-height: 1.8;
+            color: #374151;
+          }
 
           @media print { .no-print { display: none !important; } }
         </style>
       </head>
       <body>
 
-        <div class="sheet">
+        <div class="page" style="--base-font: ${baseFont}; --row-pad: ${rowPad}; --title-font: ${titleFont}; --banner-h: ${bannerH};">
 
-          <div class="banner">
-            <div class="banner-left">
-              <img src="${bannerImg2}" alt="Bright Academy" />
+          <div class="page-content">
+
+            <div class="banner">
+              <div class="banner-left">
+                <img src="${bannerImg2}" alt="Bright Academy" />
+              </div>
+              <div class="banner-middle">
+                <img src="${bannerImg1}" alt="Bright Academy" />
+              </div>
+              <div class="banner-right">
+                <img src="${bannerImg3}" alt="Bright Academy" />
+              </div>
             </div>
-            <div class="banner-middle">
-              <img src="${bannerImg1}" alt="Bright Academy" />
+
+            <div class="exam-title">${examTitle}</div>
+            <div
+              style="text-align: center; font-size: 11px; color: #374151; margin-bottom: 6px;"
+            >
+              Date of Publication: ${today}
             </div>
-            <div class="banner-right">
-              <img src="${bannerImg3}" alt="Bright Academy" />
-            </div>
+            <table class="info-grid">
+              <tr>
+                <th class="label">Class</th>
+                <th class="label">Roll</th>
+                <th class="label">Name</th>
+                <th class="label">Group</th>
+                <th class="label">Month</th>
+                <th class="label">Year</th>
+              </tr>
+              <tr>
+                <td class="value">${studentInfo?.className || "-"}</td>
+                <td class="value">${studentInfo?.stdRegNo || "-"}</td>
+                <td class="value">${studentInfo?.name || "-"}</td>
+                <td class="value">${getStudentGroup(studentInfo?.stdRegNo || "") || "-"}</td>
+                <td class="value">${monthName}</td>
+                <td class="value">${year}</td>
+              </tr>
+            </table>
+
+            ${printContents}
+
           </div>
-
-          <div class="exam-title">${examTitle}</div>
-          <div style="text-align: center; font-size: 13px; color: #374151; margin-bottom: 10px;">
-            Date of Publication: ${today}
-          </div>
-          <table class="info-grid">
-            <tr>
-              <th class="label">Class</th>
-              <th class="label">Roll</th>
-              <th class="label">Name</th>
-              <th class="label">Group</th>
-              <th class="label">Month</th>
-              <th class="label">Year</th>
-            </tr>
-            <tr>
-              <td class="value">${studentInfo?.className || "-"}</td>
-              <td class="value">${studentInfo?.stdRegNo || "-"}</td>
-              <td class="value">${studentInfo?.name || "-"}</td>
-              <td class="value">${getStudentGroup(studentInfo?.stdRegNo || "") || "-"}</td>
-              <td class="value">${monthName}</td>
-              <td class="value">${year}</td>
-            </tr>
-          </table>
-
-          ${printContents}
 
           <div class="signatures">
-            <div class="signature">
-              <div class="line">&nbsp;</div>
-              <div class="role">Guardian's Signature</div>
-              <div class="date">Date: ....................................</div>
-            </div>
-            <div class="signature">
-              <div class="line">&nbsp;</div>
-              <div class="role">Director's Signature</div>
-              <div class="date">Date: ....................................</div>
-            </div>
+            <table class="signature-table">
+              <tbody>
+                <tr>
+                  <td class="signature-cell">
+                    <div class="sig-line">&nbsp;</div>
+                    <div class="role">Guardian's Signature</div>
+                    <div class="signature-date">Date: ....................................</div>
+                  </td>
+                  <td class="signature-cell" style="text-align:right">
+                    <div class="sig-line">&nbsp;</div>
+                    <div class="role">Director's Signature</div>
+                    <div class="signature-date">Date: ....................................</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
         </div>
@@ -224,14 +330,19 @@ export function usePrintResults({
           // style has the highest specificity available.
           (function () {
             document.querySelectorAll('table').forEach(function (t) {
+              // The signature table manages its own borders — no outer box,
+              // no collapse — so leave it out of the generic border forcing.
+              if (t.classList && t.classList.contains('signature-table')) return;
               t.style.setProperty('border-collapse', 'collapse', 'important');
               t.style.setProperty('border', '1.5px solid #000', 'important');
             });
             document.querySelectorAll('table th, table td').forEach(function (cell) {
+              if (cell.closest && cell.closest('.signature-table')) return;
               cell.style.setProperty('border', '1px solid #000', 'important');
               cell.style.setProperty('white-space', 'nowrap', 'important');
             });
             document.querySelectorAll('table th').forEach(function (th) {
+              if (th.closest && th.closest('.signature-table')) return;
               th.style.setProperty('background', '#e5e7eb', 'important');
               th.style.setProperty('font-weight', '700', 'important');
             });
@@ -239,6 +350,20 @@ export function usePrintResults({
             document.querySelectorAll('td.bg-slate-100').forEach(function (el) {
               el.style.setProperty('background', '#CFCFD1', 'important');
             });
+            // Apply adaptive font/padding (CSS vars may be lost when forcing inline).
+            var page = document.querySelector('.page');
+            var baseFont = page ? getComputedStyle(page).getPropertyValue('--base-font').trim() : '';
+            var rowPad = page ? getComputedStyle(page).getPropertyValue('--row-pad').trim() : '';
+            if (baseFont) {
+              document.querySelectorAll('table:not(.signature-table) th, table:not(.signature-table) td').forEach(function (cell) {
+                cell.style.setProperty('font-size', baseFont, 'important');
+              });
+            }
+            if (rowPad) {
+              document.querySelectorAll('table:not(.signature-table) th, table:not(.signature-table) td').forEach(function (cell) {
+                cell.style.setProperty('padding', rowPad, 'important');
+              });
+            }
           })();
         </script>
 

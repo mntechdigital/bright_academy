@@ -1,16 +1,27 @@
 "use client";
 
 import React from "react";
-import { Search, Plus, Edit2, HelpCircle, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Edit2,
+  HelpCircle,
+  X,
+  ChevronUp,
+  ChevronDown,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DeleteSubjectDialog from "./DeleteSubjectDialog";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { moveSubject } from "@/src/services/subjects";
+import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 
 interface Subject {
   id: string;
   subjectName: string;
   classId: string;
+  sortOrder?: number;
   stdClass: {
     id: string;
     className: string;
@@ -31,6 +42,22 @@ interface GroupedClass {
 const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
   const router = useRouter();
   const [hoveredSubject, setHoveredSubject] = useState<string | null>(null);
+  // Reordering is a server action; startTransition keeps the old order visible
+  // (and the buttons in a pending state) until the refreshed data lands.
+  const [isPending, startTransition] = useTransition();
+
+  const handleMove = (subject: Subject, direction: "up" | "down") => {
+    startTransition(async () => {
+      const result = await moveSubject(subject.id, direction);
+      if (result?.statusCode === 200) {
+        showSuccessToast(result.message || "Subject reordered");
+        // Pull the freshly ordered list from the server without a full reload.
+        router.refresh();
+      } else {
+        showErrorToast(result?.message || "Failed to reorder subject");
+      }
+    });
+  };
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -136,12 +163,36 @@ const SubjectsTable = ({ subjectsData = [] }: { subjectsData?: Subject[] }) => {
                     </td>
                     <td className="px-6 py-6 text-gray-600 text-base">
                       <div className="flex flex-wrap gap-2">
-                        {cls?.subjects?.map((subject) => (
+                        {cls?.subjects?.map((subject, subjectIndex) => (
                           <span
                             key={subject.id}
                             className="group inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-sm font-medium"
                           >
                             {subject.subjectName}
+                            {/* Reorder controls — swap this subject with its
+                                neighbour within the same class. Hidden until the
+                                pill is hovered, matching the edit/delete actions. */}
+                            <button
+                              type="button"
+                              aria-label={`Move ${subject.subjectName} up`}
+                              disabled={isPending || subjectIndex === 0}
+                              onClick={() => handleMove(subject, "up")}
+                              className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Move ${subject.subjectName} down`}
+                              disabled={
+                                isPending ||
+                                subjectIndex === cls.subjects.length - 1
+                              }
+                              onClick={() => handleMove(subject, "down")}
+                              className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
                             <Link
                               href={`/dashboard/subjects/edit/${subject.id}`}
                               className="hidden group-hover:inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-orange-200 transition-colors"

@@ -45,7 +45,13 @@ export interface ApiResponse {
   data?: {
     monthlyResults?: MonthlyResult[];
     weeklyMarks?: WeeklyMark[];
+    classSubjects?: ClassSubject[];
   };
+}
+
+export interface ClassSubject {
+  id: string;
+  subjectName: string;
 }
 
 export interface WeekData {
@@ -56,6 +62,16 @@ export interface WeekData {
 export interface SubjectWeeksData {
   subjectName: string;
   weeks: Map<string, WeekData>;
+}
+
+export interface MonthlySubjectRow {
+  id: string | null;
+  subjectName: string;
+  marks: number | null;
+  fullMarks: number | null;
+  highestMark: number | null;
+  point: number | null;
+  grade: string | null;
 }
 
 export interface WeeklySummaryData {

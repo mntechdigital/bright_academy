@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { DashboardWrapper } from "../_components/DashboardWrapper";
 import SubjectsTable from "./_components/SubjectsTable";
 import { getSubjects } from "@/src/services/subjects";
@@ -13,7 +13,7 @@ const SubjectsDashboardPage = async (props: {
   const query: TQuery[] = [
     {
       key: "orderBy",
-      value: JSON.stringify({ createdAt: "asc" }),
+      value: JSON.stringify({ sortOrder: "asc" }),
     },
     {
       key: "searchTerm",
@@ -33,3 +33,4 @@ const SubjectsDashboardPage = async (props: {
 };
 
 export default SubjectsDashboardPage;
+
