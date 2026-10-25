@@ -66,10 +66,15 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
   const [examType, setExamType] = useState<ExamType>("weekly");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [formData, setFormData] = useState<any>(null);
+  // Marks typed in the weekly result table for the current result sheet.
+  // Lifted up so the form can detect/clear them when Class or Year changes.
+  const [marksMap, setMarksMap] = useState<Record<string, string>>({});
 
   const handleWeeklyResultCreated = (data: any) => {
     setFormData(data);
     setRefreshTrigger(prev => prev + 1);
+    // A new result sheet is being created, so there are no typed marks yet.
+    setMarksMap({});
   };
 
   return (
@@ -129,8 +134,19 @@ const GiveResult = ({ classesData = [] }: GiveResultProps) => {
       {/* Render the correct form */}
       {examType === "weekly" ? (
         <>
-          <WeeklyResultForm classesData={classesData} onResultCreated={handleWeeklyResultCreated} />
-          <WeeklyResult searchParams={{ search: "", page: "1" }} refreshTrigger={refreshTrigger} formData={formData} />
+          <WeeklyResultForm
+            classesData={classesData}
+            marksMap={marksMap}
+            onResultCreated={handleWeeklyResultCreated}
+            onMarksClear={() => setMarksMap({})}
+          />
+          <WeeklyResult
+            searchParams={{ search: "", page: "1" }}
+            refreshTrigger={refreshTrigger}
+            formData={formData}
+            marksMap={marksMap}
+            setMarksMap={setMarksMap}
+          />
         </>
       ) : (
         <>

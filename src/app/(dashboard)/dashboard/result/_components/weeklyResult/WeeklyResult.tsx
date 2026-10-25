@@ -34,12 +34,16 @@ interface WeeklyResultProps {
   searchParams: { search: string; page: string };
   refreshTrigger?: number;
   formData?: any;
+  marksMap?: Record<string, string>;
+  setMarksMap?: (value: Record<string, string>) => void;
 }
 
 const WeeklyResult: React.FC<WeeklyResultProps> = ({
   searchParams,
   refreshTrigger = 0,
   formData,
+  marksMap,
+  setMarksMap,
 }) => {
   const [weeklyResultsData, setWeeklyResultsData] = useState<any[]>([]);
   const [studentData, setStudentData] = useState<any[]>([]);
@@ -55,12 +59,13 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
   // Use formData from props instead of localStorage
   const formDataFromStorage = formData;
 
-  // Reset data when formData changes
+  // Reset data when formData changes (a new result sheet was created).
   useEffect(() => {
     setWeeklyResultsData([]);
     setStudentData([]);
     setSelectedResult(null);
-  }, [formData]);
+    setMarksMap?.({});
+  }, [formData, setMarksMap]);
 
   // Use students from formData if available, otherwise fetch them
   const studentsFromForm = formDataFromStorage?.students || [];
@@ -157,7 +162,9 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
       return (
         String(result.stdClass?.id) === String(weeklyResultMeta.stdClass?.id) &&
         String(result.subject?.id) === String(weeklyResultMeta.subject?.id) &&
-        String(result.week) === String(weeklyResultMeta.week) &&
+        // Week is stored as a number (e.g. "1") for newly created results but
+        // older records may carry the label ("Week 1"). Normalize both sides.
+        String(normalizeWeek(result.week)) === String(weeklyResultMeta.week) &&
         String(result.month) === String(weeklyResultMeta.month) &&
         String(result.year) === String(weeklyResultMeta.year) &&
         String(result.batch?.id || result.batchId || "") ===
@@ -289,6 +296,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
           studentsData={studentData}
           weeklyResults={activeWeeklyResults}
           weeklyResultMeta={weeklyResultMeta}
+          marksMap={marksMap ?? {}}
+          setMarksMap={setMarksMap ?? (() => {})}
         />
       )}
 
