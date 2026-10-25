@@ -9,6 +9,7 @@ import {
   calculatePositionsByClass, // 👈 নতুন import
 } from "@/src/services/monthlyResult";
 import { showSuccessToast, showErrorToast } from "@/src/utils/toastMessage";
+import ResultModeSwitch from "../ResultModeSwitch";
 
 const GradeIcon = () => (
   <svg
@@ -354,6 +355,7 @@ export default function ShowMonthlyResultTable({
 
       {/* Card */}
       <div className="bg-white rounded-xl shadow-sm p-6">
+        <ResultModeSwitch />
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
           {/* Search */}
