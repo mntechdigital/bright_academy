@@ -162,14 +162,17 @@ const WeeklyResultTakeTable = ({
   studentsData,
   weeklyResults: initialWeeklyResults,
   weeklyResultMeta,
+  marksMap,
+  setMarksMap,
 }: {
   studentsData: Student[];
   weeklyResults: WeeklyResult[];
   weeklyResultMeta: WeeklyResult | any; // Allow any type for localStorage data
+  marksMap: Record<string, string>;
+  setMarksMap: (value: Record<string, string>) => void;
 }) => {
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [marksMap, setMarksMap] = useState<Record<string, string>>({});
   const [localWeeklyResults, setLocalWeeklyResults] =
     useState<WeeklyResult[]>(initialWeeklyResults);
 
@@ -201,8 +204,8 @@ const WeeklyResultTakeTable = ({
         return;
       }
     }
-    setMarksMap((prev) => ({ ...prev, [studentId]: value }));
-  }, [totalMarks]);
+    setMarksMap({ ...marksMap, [studentId]: value });
+  }, [totalMarks, marksMap, setMarksMap]);
 
   const handleUpdate = useCallback(
     (studentId: string, resultId: string, obtainedMarks: number) => {
@@ -318,13 +321,11 @@ const WeeklyResultTakeTable = ({
       if (newlyCreatedResults.length > 0) {
         setLocalWeeklyResults((prev) => [...prev, ...newlyCreatedResults]);
         // Clear marks for these students
-        setMarksMap((prev) => {
-          const updated = { ...prev };
-          newlyCreatedResults.forEach((r) => {
-            if (r.studentId) delete updated[r.studentId];
-          });
-          return updated;
+        const updated = { ...marksMap };
+        newlyCreatedResults.forEach((r) => {
+          if (r.studentId) delete updated[r.studentId];
         });
+        setMarksMap(updated);
       }
     });
   }, [
