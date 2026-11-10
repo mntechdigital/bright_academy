@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMyResults, getMeritPosition } from "@/src/services/students";
 import { getExamRoutines } from "@/src/services/examRoutines";
-import { getGradeFromMarks } from "@/src/utils/gradeUtils";
+import { getGradeFromMarks, getGradeFromTotal } from "@/src/utils/gradeUtils";
 import {
   computeExamSummary,
   RoutineForSummary,
@@ -359,35 +359,13 @@ export function useStudentResults() {
       });
     }
 
-    // GPA keeps its existing definition: the mean of per-subject mean grade
-    // points, each derived from that week's own full marks. It is deliberately
-    // independent of the routine denominator.
-    const allSubjectPoints: number[] = [];
-    subjectArray.forEach((subjectData) => {
-      const subjPoints: number[] = [];
-      [1, 2, 3, 4].forEach((weekNum) => {
-        const weekData = subjectData.weeks.get(String(weekNum));
-        if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-          const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
-          subjPoints.push(gradeResult.gradePoint);
-        }
-      });
-      if (subjPoints.length > 0) {
-        allSubjectPoints.push(
-          subjPoints.reduce((s, p) => s + p, 0) / subjPoints.length
-        );
-      }
-    });
-
-    const overallGPA = allSubjectPoints.length > 0
-      ? allSubjectPoints.reduce((s, p) => s + p, 0) / allSubjectPoints.length
-      : 0;
-
-    // Reuses the corrected routine denominator, so this now selects the /400
-    // grading table instead of silently falling through to /100.
-    const overallGrade = summary.totalObtainedMarks > 0
-      ? getGradeFromMarks(summary.totalObtainedMarks, summary.totalFullMarks).letterGrade
-      : "F";
+    // Subject-wise Average Point is computed per subject in the UI/table and
+    // must not feed the overall GPA. Overall GPA/Grade/Total come from one
+    // shared source based on ALL scheduled exams (absent/missing = 0).
+    const overallResult = getGradeFromTotal(
+      summary.totalObtainedMarks,
+      summary.totalFullMarks
+    );
 
     return {
       subjectArray,
@@ -396,8 +374,8 @@ export function useStudentResults() {
       scheduledExams: summary.scheduledExams,
       percentage: summary.percentage,
       usedRowFallback: summary.usedRowFallback,
-      overallGPA,
-      overallGrade,
+      overallGPA: overallResult.gradePoint,
+      overallGrade: overallResult.letterGrade,
       present: summary.present,
       absent: summary.absent,
     };

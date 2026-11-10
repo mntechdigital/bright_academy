@@ -34,9 +34,9 @@ export interface WeeklyMarkForSummary {
 export interface ExamSummary {
   /** Sum of obtained marks across every scheduled exam (absent counts as 0). */
   totalObtainedMarks: number;
-  /** Denominator = sum of the routine's week totals. Never derived from rows. */
+  /** Denominator = scheduledCount * marksPerExam (full routine total). */
   totalFullMarks: number;
-  /** Scheduled = number of (week, subject) pairs the routine defines. */
+  /** Scheduled = all exams in the routine, regardless of mark rows. */
   scheduledExams: number;
   present: number;
   absent: number;
@@ -62,9 +62,8 @@ export const weekNumber = (week: string | undefined): number | null => {
  * Both the on-screen card and the print view render from this, so the numbers
  * can never disagree between them.
  *
- * Denominator = sum of the routine's week totals (400 for a 4 x 100 routine).
- * Present/Absent are counted only over the (week, subject) pairs the routine
- * schedules, so a blank cell for an unscheduled subject is never "absent".
+ * totalFullMarks = scheduledCount * marksPerExam (full routine total, e.g. 16*25=400).
+ * scheduledExams = all exams in the routine. Missing mark row counts as absent.
  * Absent exams contribute 0 marks but stay inside the denominator.
  */
 export function computeExamSummary(
@@ -143,7 +142,7 @@ export function computeExamSummary(
     );
   }
 
-  // ── Marks + attendance over the schedule only ──────────────────────────
+  // ── Marks + attendance over the full routine schedule ──────────────────
   let totalObtainedMarks = 0;
   let present = 0;
   const handled = new Set<string>();
@@ -163,6 +162,9 @@ export function computeExamSummary(
 
   const scheduledExams = schedule.size;
   const absent = Math.max(0, scheduledExams - present);
+
+  // Full routine total: every scheduled exam counts (missing/absent = 0).
+  totalFullMarks = scheduledExams * MARKS_PER_SUBJECT;
 
   if (hasRows && handled.size < present) {
     warnings.push(

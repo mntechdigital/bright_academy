@@ -198,13 +198,13 @@ function WeeklyResultsTable({
                         )}
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                        {weeklySummary.overallGPA > 0 ? weeklySummary.overallGPA.toFixed(2) : "-"}
+                        {weeklySummary.scheduledExams > 0 ? weeklySummary.overallGPA.toFixed(2) : "-"}
                       </td>
                       <td className="py-4 px-4 text-center">
-                        {weeklySummary.overallGrade !== "F" ? (
+                        {weeklySummary.scheduledExams > 0 ? (
                           <GradeBadge grade={weeklySummary.overallGrade} />
                         ) : (
-                          <span className="text-gray-300"></span>
+                          <span className="text-gray-300">-</span>
                         )}
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
