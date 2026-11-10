@@ -29,7 +29,7 @@ function WeeklyResultsTable({
 }) {
   return (
     <>
-      {weeklyRows.length === 0 ? (
+      {weeklySummary.subjectArray.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-sm">
           কোনো সাপ্তাহিক মার্ক পাওয়া যায়নি।
         </div>
@@ -81,73 +81,82 @@ function WeeklyResultsTable({
               </tr>
             </thead>
              <tbody>
-               {weeklySummary.subjectArray.map((subjectData, i) => {
-                 // Calculate average point and overall grade for this subject
-                 const points: number[] = [];
-                 [1, 2, 3, 4].forEach((weekNum) => {
-                   const weekData = subjectData.weeks.get(String(weekNum));
-                   if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-                     // Use the actual total marks to determine grading system
-                     const gradeResult = getGradeFromMarks(weekData.obtained, weekData.total);
-                     points.push(gradeResult.gradePoint);
-                   }
-                 });
-
-                // Calculate total marks obtained for this subject across all weeks
-                let subjectTotalObtained = 0;
-                let subjectTotalFull = 0;
-                [1, 2, 3, 4].forEach((weekNum) => {
-                  const weekData = subjectData.weeks.get(String(weekNum));
-                  if (weekData && weekData.obtained !== null && weekData.obtained !== undefined) {
-                    subjectTotalObtained += weekData.obtained;
-                    subjectTotalFull += weekData.total;
-                  }
-                });
-
-                const averagePoint = points.length > 0
-                  ? points.reduce((sum, p) => sum + p, 0) / points.length
-                  : 0;
-
-                return (
-                  <tr
-                    key={i}
-                    className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
-                  >
-                    <td className="py-4 px-6 font-medium text-gray-800">
-                      {subjectData.subjectName}
-                    </td>
-                    {[1, 2, 3, 4].map((weekNum) => {
-                      const weekData = subjectData.weeks.get(String(weekNum));
-                      // Highlight Week-2 and Week-4 columns regardless of
-                      // whether data exists for them (matches the monthly
-                      // table's fixed-column highlight pattern).
-                      const isHighlighted = weekNum === 2 || weekNum === 4;
-                      return (
-                        <td
-                          key={weekNum}
-                          className={`py-4 px-4 text-center ${isHighlighted ? "bg-slate-100" : ""}`}
-                        >
-                          {weekData ? (
-                            <div className="flex flex-col items-center">
-                              <span className="font-semibold text-gray-800">
-                                {weekData.obtained}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-gray-300"></span>
-                          )}
-                        </td>
+                {weeklySummary.subjectArray.map((subjectData, i) => {
+                  // Calculate average point for this subject (missing/absent = 0).
+                  let totalPoint = 0;
+                  let weeksCount = 0;
+                  [1, 2, 3, 4].forEach((weekNum) => {
+                    const weekData = subjectData.weeks.get(String(weekNum));
+                    weeksCount += 1;
+                    if (
+                      weekData &&
+                      weekData.obtained !== null &&
+                      weekData.obtained !== undefined
+                    ) {
+                      const gradeResult = getGradeFromMarks(
+                        weekData.obtained,
+                        weekData.total
                       );
-                    })}
-                    <td className="py-4 px-4 text-center font-bold text-gray-800">
-                      {averagePoint > 0 ? averagePoint.toFixed(1) : "-"}
-                    </td>
-                    <td className="py-4 px-4 text-center font-bold text-gray-800">
-                      {subjectTotalObtained > 0 ? subjectTotalObtained : "-"}
-                    </td>
-                  </tr>
-                );
-              })}
+                      totalPoint += gradeResult.gradePoint;
+                    }
+                  });
+
+                  // Total marks obtained for this subject across all weeks (absent = 0).
+                  let subjectTotalObtained = 0;
+                  [1, 2, 3, 4].forEach((weekNum) => {
+                    const weekData = subjectData.weeks.get(String(weekNum));
+                    if (
+                      weekData &&
+                      weekData.obtained !== null &&
+                      weekData.obtained !== undefined
+                    ) {
+                      subjectTotalObtained += weekData.obtained;
+                    }
+                  });
+
+                  const averagePoint =
+                    weeksCount > 0 ? totalPoint / weeksCount : 0;
+
+                  return (
+                    <tr
+                      key={i}
+                      className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
+                    >
+                      <td className="py-4 px-6 font-medium text-gray-800">
+                        {subjectData.subjectName}
+                      </td>
+                      {[1, 2, 3, 4].map((weekNum) => {
+                        const weekData = subjectData.weeks.get(String(weekNum));
+                        // Highlight Week-2 and Week-4 columns regardless of
+                        // whether data exists for them (matches the monthly
+                        // table's fixed-column highlight pattern).
+                        const isHighlighted = weekNum === 2 || weekNum === 4;
+                        const isAbsent =
+                          !weekData ||
+                          weekData.obtained === null ||
+                          weekData.obtained === undefined;
+                        return (
+                          <td
+                            key={weekNum}
+                            className={`py-4 px-4 text-center ${isHighlighted ? "bg-slate-100" : ""}`}
+                          >
+                            <span
+                              className={`font-semibold ${isAbsent ? "text-gray-400" : "text-gray-800"}`}
+                            >
+                              {isAbsent ? "A" : weekData.obtained}
+                            </span>
+                          </td>
+                        );
+                      })}
+                      <td className="py-4 px-4 text-center font-bold text-gray-800">
+                        {averagePoint.toFixed(1)}
+                      </td>
+                      <td className="py-4 px-4 text-center font-bold text-gray-800">
+                        {subjectTotalObtained}
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
 

@@ -150,44 +150,6 @@ export function useStudentResults() {
   const monthlyResults = resultData?.data?.monthlyResults ?? [];
   const weeklyMarks = resultData?.data?.weeklyMarks ?? [];
 
-  // ── This student's own subjects ───────────────────────────────────────
-  // The Student model has no group or subject-assignment column (group is only
-  // derived from the reg no for display). The most reliable per-student subject
-  // list is every subject the student actually has a mark record for — weekly
-  // marks + monthly results — across all periods. This naturally excludes other
-  // groups' subjects and the combined "A/B/C" group rows, which this student has
-  // no marks under, so those never show up as rows (fixes class-9/10 sheets).
-  const studentSubjectNames = useMemo(() => {
-    const names = new Set<string>();
-    weeklyMarks.forEach((r) => {
-      const name = r.subject?.subjectName;
-      if (name) names.add(name);
-    });
-    monthlyResults.forEach((r) => {
-      (r.results ?? []).forEach((s) => {
-        if (s.subjectName) names.add(s.subjectName);
-      });
-    });
-    return names;
-  }, [weeklyMarks, monthlyResults]);
-
-  // Keep the sort-order feature: order this student's subjects by the class
-  // subject list (sortOrder), then by name for any subject no longer in the
-  // catalog. Used by BOTH tabs so they show the same subject rows.
-  const orderedStudentSubjectNames = useMemo(() => {
-    const orderIndex = new Map(
-      classSubjects.map((s, i) => [s.subjectName, i])
-    );
-    return [...studentSubjectNames].sort((a, b) => {
-      const ia = orderIndex.get(a);
-      const ib = orderIndex.get(b);
-      if (ia !== undefined && ib !== undefined) return ia - ib;
-      if (ia !== undefined) return -1;
-      if (ib !== undefined) return 1;
-      return a.localeCompare(b);
-    });
-  }, [studentSubjectNames, classSubjects]);
-
   // ── Filtered by shared Month + Year ───────────────────────────────────
   const filteredWeekly = useMemo(
     () => weeklyMarks.filter((r) => r.month === month && r.year === year),
@@ -316,6 +278,58 @@ export function useStudentResults() {
     };
   }, [classId, year]);
 
+  // ── Subjects for result rows ──────────────────────────────────────────
+  // Weekly table rows must come from the routine/schedule for the class+year
+  // so every scheduled subject appears even when this student has no mark row
+  // (absent/newly added exam). Marks are left-joined onto these subjects.
+  // Fallback (no routine): use the class subject catalog plus any subjects the
+  // student has marks for. Monthly tab reuses the same ordered list and merges
+  // its own mark rows onto it (subjects with no monthly row get empty cells).
+  const scheduledSubjectNames = useMemo(() => {
+    if (routine?.weeks?.length) {
+      const names: string[] = [];
+      const seen = new Set<string>();
+      [...routine.weeks]
+        .sort((a, b) => a.weekNo - b.weekNo)
+        .forEach((week) => {
+          (week.subjects ?? []).forEach((s) => {
+            const name = s.subject?.subjectName;
+            if (name && !seen.has(name)) {
+              seen.add(name);
+              names.push(name);
+            }
+          });
+        });
+      if (names.length) return names;
+    }
+
+    const names = new Set<string>();
+    classSubjects.forEach((s) => {
+      if (s.subjectName) names.add(s.subjectName);
+    });
+    weeklyMarks.forEach((r) => {
+      const name = r.subject?.subjectName;
+      if (name) names.add(name);
+    });
+    monthlyResults.forEach((r) => {
+      (r.results ?? []).forEach((s) => {
+        if (s.subjectName) names.add(s.subjectName);
+      });
+    });
+
+    const orderIndex = new Map(
+      classSubjects.map((s, i) => [s.subjectName, i])
+    );
+    return [...names].sort((a, b) => {
+      const ia = orderIndex.get(a);
+      const ib = orderIndex.get(b);
+      if (ia !== undefined && ib !== undefined) return ia - ib;
+      if (ia !== undefined) return -1;
+      if (ib !== undefined) return 1;
+      return a.localeCompare(b);
+    });
+  }, [routine, classSubjects, weeklyMarks, monthlyResults]);
+
   // ── Weekly computed data (selected Month + Year) ──────────────────────
   const weeklySummary = useMemo<WeeklySummaryData>(() => {
     const subjectMap = new Map<string, SubjectWeeksData>();
@@ -338,11 +352,10 @@ export function useStudentResults() {
       });
     });
 
-    // Show only THIS student's own subjects, in the shared student-subject
-    // order (class list order, then name). A subject with no marks this month
-    // gets empty cells. Other groups' subjects and the combined "A/B/C" rows
-    // never appear because the student has no marks under those names.
-    const subjectArray: SubjectWeeksData[] = orderedStudentSubjectNames.map(
+    // Show every subject from the routine/schedule (or class fallback) in order.
+    // A subject with no marks for this student/month gets empty cells so missing
+    // exams appear as absent in the row and contribute 0 to subject totals/avg.
+    const subjectArray: SubjectWeeksData[] = scheduledSubjectNames.map(
       (name) =>
         subjectMap.get(name) ?? { subjectName: name, weeks: new Map() }
     );
@@ -379,35 +392,31 @@ export function useStudentResults() {
       present: summary.present,
       absent: summary.absent,
     };
-  }, [weeklyRows, routine, classId, year, orderedStudentSubjectNames]);
+  }, [weeklyRows, routine, classId, year, scheduledSubjectNames]);
 
-  // Monthly tab rows: only THIS student's own subjects, in the shared
-  // student-subject order (class list order, then name). A subject with no
-  // monthly result this month gets empty cells. Other groups' subjects and the
-  // combined "A/B/C" rows never appear because the student has no results under
-  // those names.
+  // Monthly tab rows: all scheduled/class subjects in order, with this
+  // student's monthly result left-joined. Subjects without a result row get
+  // empty cells (no marks) so newly added/scheduled subjects still appear.
   const monthlySubjectRows = useMemo<MonthlySubjectRow[]>(() => {
     const rowsByName = new Map<string, SubjectResult>();
     subjectRows.forEach((row) => rowsByName.set(row.subjectName, row));
 
-    const merged: MonthlySubjectRow[] = orderedStudentSubjectNames.map(
-      (name) => {
-        const row = rowsByName.get(name);
-        return row
-          ? { ...row }
-          : {
-              id: null,
-              subjectName: name,
-              marks: null,
-              fullMarks: null,
-              highestMark: null,
-              point: null,
-              grade: null,
-            };
-      }
-    );
+    const merged: MonthlySubjectRow[] = scheduledSubjectNames.map((name) => {
+      const row = rowsByName.get(name);
+      return row
+        ? { ...row }
+        : {
+            id: null,
+            subjectName: name,
+            marks: null,
+            fullMarks: null,
+            highestMark: null,
+            point: null,
+            grade: null,
+          };
+    });
     return merged;
-  }, [subjectRows, orderedStudentSubjectNames]);
+  }, [subjectRows, scheduledSubjectNames]);
 
 
   // ── Merit position (selected Week + Month + Year) ─────────────────────
