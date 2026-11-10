@@ -57,11 +57,18 @@ export function Navbar({ adminData }: NavbarProps) {
       }
     }
 
-    const res = await logout();
-    console.log("logout res==>", res);
-
-    router.push(redirectPath);
-    router.refresh();
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      document.cookie =
+        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie =
+        "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      router.push(redirectPath);
+      router.refresh();
+    }
   };
 
   return (

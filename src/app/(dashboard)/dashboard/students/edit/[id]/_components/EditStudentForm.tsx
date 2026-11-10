@@ -102,24 +102,27 @@ const EditStudentForm = ({ studentId, classesData = [] }: EditStudentFormProps) 
   };
 
   const onSubmit: SubmitHandler<EditStudentFormValues> = async (data) => {
-    startTransition(async () => {
-      const payload = {
-        name: data.name,
-        stdRegNo: data.stdRegNo || undefined,
-        classId: data.classId,
-        batchId: data.batchId || undefined,
-        parentPhone: data.parentPhone,
-        address: data.address,
-        gender: data.gender || undefined,
-      };
+    const payload = {
+      name: data.name,
+      stdRegNo: data.stdRegNo || undefined,
+      classId: data.classId,
+      batchId: data.batchId || undefined,
+      parentPhone: data.parentPhone,
+      address: data.address,
+      gender: data.gender || undefined,
+    };
 
-      const res = await updateStudent(studentId, payload);
-      if (res.statusCode === 200) {
-        showSuccessToast(res.message || "Student updated successfully!");
-        form.reset();
-        router.push(backToStudentsHref);
-      } else {
-        showErrorToast(res.message || "Failed to update student.");
+    startTransition(async () => {
+      try {
+        const res = await updateStudent(studentId, payload);
+        if (res?.statusCode === 200) {
+          showSuccessToast(res.message || "Student updated successfully!");
+          router.push(backToStudentsHref);
+        } else {
+          showErrorToast(res?.message || "Failed to update student.");
+        }
+      } catch {
+        showErrorToast("Failed to update student.");
       }
     });
   };
