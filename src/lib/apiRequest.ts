@@ -70,14 +70,26 @@ export const apiRequest = async (
   // Handle token expiration only if auth was required
   if (response.status === 401 && options.authRequired) {
     const redirectPath = await getLoginRedirectPath();
-    
+
     if (typeof window !== "undefined") {
+      document.cookie =
+        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie =
+        "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       window.location.href = redirectPath;
+    } else {
+      try {
+        const cookieStore = await cookies();
+        cookieStore.delete("accessToken");
+        cookieStore.delete("refreshToken");
+      } catch {
+        // ignore in edge/server contexts where cookie mutation may be unavailable
+      }
     }
-    
-    return { 
-      statusCode: 401, 
-      message: "Unauthorized access. Please log in again." 
+
+    return {
+      statusCode: 401,
+      message: "Unauthorized access. Please log in again.",
     };
   }
 

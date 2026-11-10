@@ -49,38 +49,58 @@ export const login = async (data: FieldValues) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
+        credentials: "include",
       }
     );
 
     const result = await response.json();
 
-
     if (result.statusCode === 200) {
       const cookie = await cookies();
+      const isProd = process.env.NODE_ENV === "production";
 
       cookie.set("accessToken", result.data.accessToken, {
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        httpOnly: false,
+        sameSite: "lax",
+        secure: isProd,
+        path: "/",
+        maxAge: 24 * 60 * 60,
       });
       cookie.set("refreshToken", result.data.refreshToken, {
-        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        httpOnly: false,
+        sameSite: "lax",
+        secure: isProd,
+        path: "/",
+        maxAge: 30 * 24 * 60 * 60,
       });
     }
 
     return result;
   } catch (error) {
     console.error("Login error:", error);
+    return { statusCode: 500, message: "Login failed. Please try again." };
   }
 };
 
 export const logout = async () => {
   try {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (error) {
+    console.error("Logout API error:", error);
+  }
+
+  try {
     const cookie = await cookies();
     cookie.delete("accessToken");
     cookie.delete("refreshToken");
   } catch (error) {
-    console.error("Logout error:", error);
-    throw new Error("Logout failed. Please try again.");
+    console.error("Logout cookie clear error:", error);
   }
+
+  return { success: true };
 };
 
 export const forgetPassword = async (data: FieldValues) => {

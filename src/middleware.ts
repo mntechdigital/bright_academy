@@ -45,7 +45,7 @@ export const middleware = async (req: NextRequest) => {
 
   // ---------------- Admin routes ----------------
   const loggedAdmin = getUserFromRequest(req);
-  if (false) {
+  if (!loggedAdmin) {
     if (pathname.startsWith("/dashboard")) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
