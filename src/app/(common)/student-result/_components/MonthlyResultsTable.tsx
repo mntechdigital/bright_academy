@@ -118,11 +118,10 @@ function MonthlyResultsTable({
                       {activeMonthly?.gpa ?? "-"}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      {activeMonthly?.grade?.toUpperCase() === "F" ? (
-                        <span className="text-gray-300">-</span>
-                      ) : (
-                        <GradeBadge grade={activeMonthly?.grade} />
-                      )}
+                      {activeMonthly?.grade &&
+                      activeMonthly.grade.toUpperCase() !== "F" ? (
+                        <GradeBadge grade={activeMonthly.grade} />
+                      ) : null}
                     </td>
                     <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
                       {displayMonthlyPosition || "-"}

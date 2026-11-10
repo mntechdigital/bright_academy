@@ -140,11 +140,11 @@ function WeeklyResultsTable({
                             key={weekNum}
                             className={`py-4 px-4 text-center ${isHighlighted ? "bg-slate-100" : ""}`}
                           >
-                            <span
-                              className={`font-semibold ${isAbsent ? "text-gray-400" : "text-gray-800"}`}
-                            >
-                              {isAbsent ? "A" : weekData.obtained}
-                            </span>
+                            {isAbsent ? null : (
+                              <span className="font-semibold text-gray-800">
+                                {weekData.obtained}
+                              </span>
+                            )}
                           </td>
                         );
                       })}
@@ -210,11 +210,10 @@ function WeeklyResultsTable({
                         {weeklySummary.scheduledExams > 0 ? weeklySummary.overallGPA.toFixed(2) : "-"}
                       </td>
                       <td className="py-4 px-4 text-center">
-                        {weeklySummary.scheduledExams > 0 ? (
+                        {weeklySummary.scheduledExams > 0 &&
+                        weeklySummary.overallGrade?.toUpperCase() !== "F" ? (
                           <GradeBadge grade={weeklySummary.overallGrade} />
-                        ) : (
-                          <span className="text-gray-300">-</span>
-                        )}
+                        ) : null}
                       </td>
                       <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">
                         {displayMeritPosition || "-"}
