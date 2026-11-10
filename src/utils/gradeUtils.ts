@@ -53,6 +53,20 @@ export const GRADE_SYSTEM_400 = [
   { minMark: 0, maxMark: 128, grade: "F", gradePoint: 0 },
 ];
 
+export function getGradeFromTotal(
+  totalObtained: number,
+  totalFull: number,
+): { gradePoint: number; letterGrade: string } {
+  const safeObtained = Number.isFinite(totalObtained) ? Math.max(0, totalObtained) : 0;
+  const safeFull = Number.isFinite(totalFull) && totalFull > 0 ? totalFull : 0;
+  const scaled = safeFull > 0 ? (safeObtained / safeFull) * 400 : 0;
+  const sorted = [...GRADE_SYSTEM_400].sort((a, b) => b.minMark - a.minMark);
+  const match = sorted.find((grade) => scaled >= grade.minMark);
+  const fallback = sorted.find((grade) => grade.grade === "F") ?? sorted[sorted.length - 1];
+  const result = match ?? fallback;
+  return { gradePoint: result.gradePoint, letterGrade: result.grade };
+}
+
 /**
  * Get grade based on marks and full marks.
  * @param marks - Marks obtained

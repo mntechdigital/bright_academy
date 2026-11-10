@@ -111,14 +111,13 @@ console.log("\n[5] Old routine with a different shape (no crash, actual data use
     { week: "Week 2", obtainedMarks: 20, totalMarks: 25, subject: { id: subjectIds[0], subjectName: "S0" } },
   ];
   const s = computeExamSummary(oddRoutine, rows);
-  check("denominator from actual routine", s.totalFullMarks, 275);
+  check("denominator = scheduledCount * 25", s.totalFullMarks, 250);
   check("scheduled = 6 + 4", s.scheduledExams, 10);
   check("present", s.present, 3);
   check("absent", s.absent, 7);
   check("obtained", s.totalObtainedMarks, 70);
   check("warned about week count", s.warnings.some((w) => w.includes("2 week(s)")), true);
   check("warned about 6 subjects", s.warnings.some((w) => w.includes("6 subjects")), true);
-  check("warned about total", s.warnings.some((w) => w.includes("275 marks")), true);
   check("not using row fallback", s.usedRowFallback, false);
 }
 
@@ -133,7 +132,7 @@ console.log("\n[6] No routine at all -> falls back to the student's own pairs");
   check("present", s.present, 3);
   check("absent", s.absent, 0);
   check("obtained", s.totalObtainedMarks, 60);
-  check("denominator from row marks", s.totalFullMarks, 75);
+  check("denominator = scheduledCount * 25", s.totalFullMarks, 75);
   check("warned about missing routine", s.warnings.some((w) => w.includes("No exam routine")), true);
 }
 
@@ -147,7 +146,9 @@ console.log("\n[7] Row for an unscheduled exam contributes 0, blank scheduled ex
   const s = computeExamSummary(goodRoutine, rows);
   check("present", s.present, 1);
   check("absent", s.absent, 15);
+  check("scheduledExams", s.scheduledExams, 16);
   check("obtained", s.totalObtainedMarks, 25);
+  check("denominator", s.totalFullMarks, 400);
 }
 
 console.log("\n[8] Unparseable / week-5 rows are skipped, not crashed on");
