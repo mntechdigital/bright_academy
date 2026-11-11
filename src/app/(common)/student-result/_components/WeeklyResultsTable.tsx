@@ -82,12 +82,11 @@ function WeeklyResultsTable({
             </thead>
              <tbody>
                 {weeklySummary.subjectArray.map((subjectData, i) => {
-                  // Calculate average point for this subject (missing/absent = 0).
+                  // Calculate average point for this subject (divided by attended/present exams only).
                   let totalPoint = 0;
-                  let weeksCount = 0;
+                  let presentWeeksCount = 0;
                   [1, 2, 3, 4].forEach((weekNum) => {
                     const weekData = subjectData.weeks.get(String(weekNum));
-                    weeksCount += 1;
                     if (
                       weekData &&
                       weekData.obtained !== null &&
@@ -98,6 +97,7 @@ function WeeklyResultsTable({
                         weekData.total
                       );
                       totalPoint += gradeResult.gradePoint;
+                      presentWeeksCount += 1;
                     }
                   });
 
@@ -115,7 +115,7 @@ function WeeklyResultsTable({
                   });
 
                   const averagePoint =
-                    weeksCount > 0 ? totalPoint / weeksCount : 0;
+                    presentWeeksCount > 0 ? totalPoint / presentWeeksCount : 0;
 
                   return (
                     <tr
