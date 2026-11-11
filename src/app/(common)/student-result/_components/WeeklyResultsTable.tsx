@@ -82,27 +82,11 @@ function WeeklyResultsTable({
             </thead>
              <tbody>
                 {weeklySummary.subjectArray.map((subjectData, i) => {
-                  // Calculate average point for this subject (divided by attended/present exams only).
-                  let totalPoint = 0;
-                  let presentWeeksCount = 0;
-                  [1, 2, 3, 4].forEach((weekNum) => {
-                    const weekData = subjectData.weeks.get(String(weekNum));
-                    if (
-                      weekData &&
-                      weekData.obtained !== null &&
-                      weekData.obtained !== undefined
-                    ) {
-                      const gradeResult = getGradeFromMarks(
-                        weekData.obtained,
-                        weekData.total
-                      );
-                      totalPoint += gradeResult.gradePoint;
-                      presentWeeksCount += 1;
-                    }
-                  });
-
-                  // Total marks obtained for this subject across all weeks (absent = 0).
+                  // Calculate total marks and full marks across attended exams only
                   let subjectTotalObtained = 0;
+                  let subjectTotalFull = 0;
+                  let presentWeeksCount = 0;
+
                   [1, 2, 3, 4].forEach((weekNum) => {
                     const weekData = subjectData.weeks.get(String(weekNum));
                     if (
@@ -111,11 +95,16 @@ function WeeklyResultsTable({
                       weekData.obtained !== undefined
                     ) {
                       subjectTotalObtained += weekData.obtained;
+                      subjectTotalFull += (weekData.total || 25);
+                      presentWeeksCount += 1;
                     }
                   });
 
+                  // Grade point evaluated from actual marks scored in attended exams
                   const averagePoint =
-                    presentWeeksCount > 0 ? totalPoint / presentWeeksCount : 0;
+                    presentWeeksCount > 0
+                      ? getGradeFromMarks(subjectTotalObtained, subjectTotalFull).gradePoint
+                      : 0;
 
                   return (
                     <tr
