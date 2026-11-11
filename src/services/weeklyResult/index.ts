@@ -5,6 +5,57 @@
 import { apiRequest } from "@/src/lib/apiRequest";
 import { TQuery } from "@/src/types/query.types";
 import { revalidatePath } from "next/cache";
+import { getExamRoutines } from "@/src/services/examRoutines";
+import { DEFAULT_EXAM_NAME } from "@/src/constant/routine.constant";
+
+const parseWeekNo = (week: unknown): number | null => {
+  if (week == null) return null;
+  const cleaned = String(week).trim().replace(/Week[- ]?/i, "").trim();
+  if (!/^\d+$/.test(cleaned)) return null;
+  return parseInt(cleaned, 10);
+};
+
+const validateWeekSubjectInRoutine = async (params: {
+  stdClassId?: string;
+  year?: string | number;
+  week?: unknown;
+  subjectId?: string;
+}) => {
+  const { stdClassId, year, week, subjectId } = params;
+  if (!stdClassId || year == null || year === "" || !subjectId || week == null || week === "") {
+    return null;
+  }
+  const weekNo = parseWeekNo(week);
+  if (weekNo == null) {
+    return { statusCode: 400, success: false, message: "Invalid week." };
+  }
+  try {
+    const res = await getExamRoutines({ year: String(year), classId: String(stdClassId) });
+    const routines = Array.isArray(res?.data) ? res.data : [];
+    const weeklyRoutine = routines.find((r: any) => r.examName === DEFAULT_EXAM_NAME);
+    if (!weeklyRoutine) {
+      return {
+        statusCode: 400,
+        success: false,
+        message: "No weekly routine found for this class and year. Create it in Routine first.",
+      };
+    }
+    const weekRow = (weeklyRoutine.weeks || []).find((w: any) => Number(w.weekNo) === weekNo);
+    const scheduled = (weekRow?.subjects || []).some(
+      (s: any) => String(s?.subject?.id ?? s?.subjectId) === String(subjectId)
+    );
+    if (!scheduled) {
+      return {
+        statusCode: 400,
+        success: false,
+        message: `This subject is not scheduled in Week ${weekNo} for this class.`,
+      };
+    }
+  } catch {
+    return { statusCode: 400, success: false, message: "Failed to validate exam routine." };
+  }
+  return null;
+};
 
 export const createWeeklyResult = async (payload: Record<string, any>) => {
   
@@ -161,6 +212,14 @@ export const deleteWeeklyResultByClassAndSection = async (
 export const createWeeklyResultForSingleStd = async (
   payload: Record<string, any>,
 ) => {
+  const validationError = await validateWeekSubjectInRoutine({
+    stdClassId: payload?.stdClassId,
+    year: payload?.year,
+    week: payload?.week,
+    subjectId: payload?.subjectId,
+  });
+  if (validationError) return validationError;
+
   const response = await apiRequest("weekly-marks-sheets/obtained-marks", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -178,6 +237,14 @@ export const updateWeeklyResultForSingleStd = async (
   id: string,
   payload: Record<string, any>,
 ) => {
+  const validationError = await validateWeekSubjectInRoutine({
+    stdClassId: payload?.stdClassId,
+    year: payload?.year,
+    week: payload?.week,
+    subjectId: payload?.subjectId,
+  });
+  if (validationError) return validationError;
+
   const response = await apiRequest(
     `weekly-marks-sheets/${id}`,
     {
@@ -195,6 +262,17 @@ export const updateWeeklyResultForSingleStd = async (
 };
 
 export const bulkUpsertStudentMarks = async (payload: { marks: Record<string, any>[] }) => {
+  const first = payload?.marks?.[0];
+  if (first) {
+    const validationError = await validateWeekSubjectInRoutine({
+      stdClassId: first.stdClassId,
+      year: first.year,
+      week: first.week,
+      subjectId: first.subjectId,
+    });
+    if (validationError) return validationError;
+  }
+
   const response = await apiRequest("weekly-marks-sheets/bulk-obtained-marks", {
     method: "POST",
     body: JSON.stringify(payload),
