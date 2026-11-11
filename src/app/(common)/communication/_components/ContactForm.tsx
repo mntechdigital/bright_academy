@@ -29,7 +29,6 @@ const ContactForm = () => {
   };
 
   const onSubmit = (data: any) => {
-    console.log("Form submitted:", data);
     reset();
   };
 
