@@ -9,6 +9,27 @@ import type { MonthlyResult, StudentInfo } from "./types";
 
 // ─── Print handler ─────────────────────────────────────────────────────────
 
+function classNumberToWord(value: string): string {
+  const match = value.match(/\d+/);
+  if (!match) return value;
+  const words: Record<number, string> = {
+    1: "One",
+    2: "Two",
+    3: "Three",
+    4: "Four",
+    5: "Five",
+    6: "Six",
+    7: "Seven",
+    8: "Eight",
+    9: "Nine",
+    10: "Ten",
+    11: "Eleven",
+    12: "Twelve",
+  };
+  const word = words[Number(match[0])];
+  return word ?? value;
+}
+
 export function usePrintResults({
   printRef,
   activeTab,
@@ -286,7 +307,7 @@ export function usePrintResults({
                 <th class="label">Year</th>
               </tr>
               <tr>
-                <td class="value">${studentInfo?.className || "-"}</td>
+                <td class="value">${classNumberToWord(studentInfo?.className || "-")}</td>
                 <td class="value">${studentInfo?.stdRegNo || "-"}</td>
                 <td class="value">${studentInfo?.name || "-"}</td>
                 <td class="value">${getStudentGroup(studentInfo?.stdRegNo || "") || "-"}</td>
