@@ -286,48 +286,78 @@ export function useStudentResults() {
   // student has marks for. Monthly tab reuses the same ordered list and merges
   // its own mark rows onto it (subjects with no monthly row get empty cells).
   const scheduledSubjectNames = useMemo(() => {
+    const normalizeName = (name: string) => name.trim().toLowerCase();
+    const catalogIdIndex = new Map(classSubjects.map((s, i) => [s.id, i]));
+    const catalogNameIndex = new Map(
+      classSubjects.map((s, i) => [normalizeName(s.subjectName), i])
+    );
+    const getCatalogIndex = (id: string | undefined, name: string) => {
+      if (id && catalogIdIndex.has(id)) return catalogIdIndex.get(id)!;
+      return catalogNameIndex.get(normalizeName(name));
+    };
+
     if (routine?.weeks?.length) {
-      const names: string[] = [];
+      const entries: { id?: string; name: string; routineIndex: number }[] = [];
       const seen = new Set<string>();
+      let routineIndex = 0;
       [...routine.weeks]
         .sort((a, b) => a.weekNo - b.weekNo)
         .forEach((week) => {
           (week.subjects ?? []).forEach((s) => {
-            const name = s.subject?.subjectName;
-            if (name && !seen.has(name)) {
-              seen.add(name);
-              names.push(name);
-            }
+            const subject = s.subject as
+              | { id?: string; subjectId?: string; subjectName?: string }
+              | undefined;
+            const rawName = subject?.subjectName;
+            if (!rawName) return;
+            const id = subject?.id ?? subject?.subjectId;
+            const key = id || normalizeName(rawName);
+            if (seen.has(key)) return;
+            seen.add(key);
+            entries.push({
+              id,
+              name: rawName.trim(),
+              routineIndex: routineIndex++,
+            });
           });
         });
-      if (names.length) return names;
+      if (entries.length) {
+        entries.sort((a, b) => {
+          const ia = getCatalogIndex(a.id, a.name);
+          const ib = getCatalogIndex(b.id, b.name);
+          if (ia !== undefined && ib !== undefined) return ia - ib;
+          if (ia !== undefined) return -1;
+          if (ib !== undefined) return 1;
+          return a.routineIndex - b.routineIndex;
+        });
+        return entries.map((e) => e.name);
+      }
     }
 
-    const names = new Set<string>();
-    classSubjects.forEach((s) => {
-      if (s.subjectName) names.add(s.subjectName);
-    });
-    weeklyMarks.forEach((r) => {
-      const name = r.subject?.subjectName;
-      if (name) names.add(name);
-    });
+    const entries: { id?: string; name: string }[] = [];
+    const seen = new Set<string>();
+    const add = (id: string | undefined, rawName: string | undefined) => {
+      if (!rawName) return;
+      const key = id || normalizeName(rawName);
+      if (seen.has(key)) return;
+      seen.add(key);
+      entries.push({ id, name: rawName.trim() });
+    };
+    classSubjects.forEach((s) => add(s.id, s.subjectName));
+    weeklyMarks.forEach((r) => add(r.subject?.id, r.subject?.subjectName));
     monthlyResults.forEach((r) => {
-      (r.results ?? []).forEach((s) => {
-        if (s.subjectName) names.add(s.subjectName);
-      });
+      (r.results ?? []).forEach((s) => add(undefined, s.subjectName));
     });
 
-    const orderIndex = new Map(
-      classSubjects.map((s, i) => [s.subjectName, i])
-    );
-    return [...names].sort((a, b) => {
-      const ia = orderIndex.get(a);
-      const ib = orderIndex.get(b);
-      if (ia !== undefined && ib !== undefined) return ia - ib;
-      if (ia !== undefined) return -1;
-      if (ib !== undefined) return 1;
-      return a.localeCompare(b);
-    });
+    return entries
+      .sort((a, b) => {
+        const ia = getCatalogIndex(a.id, a.name);
+        const ib = getCatalogIndex(b.id, b.name);
+        if (ia !== undefined && ib !== undefined) return ia - ib;
+        if (ia !== undefined) return -1;
+        if (ib !== undefined) return 1;
+        return a.name.localeCompare(b.name);
+      })
+      .map((e) => e.name);
   }, [routine, classSubjects, weeklyMarks, monthlyResults]);
 
   // ── Weekly computed data (selected Month + Year) ──────────────────────
