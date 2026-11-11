@@ -185,11 +185,7 @@ export function usePrintResults({
              "301 / 400") — smaller + gray in print, where the Tailwind
              classes copied in from the live page carry no styles. */
           td .print-subtext {
-            display: block !important;
-            font-size: 10px !important;
-            font-weight: 400 !important;
-            color: #6b7280 !important;
-            margin-top: 4px !important;
+            display: none !important;
           }
 
           span[class*="rounded-full"][class*="inline-flex"] {

@@ -195,13 +195,14 @@ function WeeklyResultsTable({
                   <tbody>
                     <tr>
                       <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                        {`${weeklySummary.totalObtainedMarks} / ${weeklySummary.totalFullMarks}`}
+                        {weeklySummary.totalObtainedMarks}
+                        <span className="no-print">{` / ${weeklySummary.totalFullMarks}`}</span>
                         {/* A div (not a span) forces a second line in the print
                             window too — Tailwind's `block` class does not exist
                             there, so a span printed inline as "40075.25%".
                             `.print-subtext` is styled by the print stylesheet. */}
                         {weeklySummary.percentage !== null && (
-                          <div className="print-subtext text-xs font-normal text-gray-400 mt-1">
+                          <div className="no-print print-subtext text-xs font-normal text-gray-400 mt-1">
                             {weeklySummary.percentage}%
                           </div>
                         )}
