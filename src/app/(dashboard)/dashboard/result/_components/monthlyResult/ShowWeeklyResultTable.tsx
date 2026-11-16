@@ -184,15 +184,18 @@ export default function ShowWeeklyResultTable({
       "Student's Name","Student's ID","Batch","Total Mark","Achieved Mark","Grade","GPA","Position",
     ];
     const rows = weeklyResultsData.map((row) => {
-      const grade = row.totalMark > 0 ? getGradeFromMarks(row.achievedMark, row.totalMark).letterGrade : "F";
+      const { gradePoint, letterGrade } =
+        row.totalMark > 0
+          ? getGradeFromMarks(row.achievedMark, row.totalMark)
+          : { gradePoint: 0, letterGrade: "F" };
       return [
         row.student?.name || "",
         row.student?.stdRegNo || "",
         row.student?.batch?.name || "",
         row.totalMark,
         row.achievedMark,
-        grade,
-        row.gpa > 0 ? row.gpa.toFixed(2) : "0.00",
+        letterGrade,
+        gradePoint > 0 ? gradePoint.toFixed(2) : "0.00",
         row.position !== null ? "#" + ordinal(row.position) : "-",
       ];
     });
@@ -383,9 +386,10 @@ export default function ShowWeeklyResultTable({
                   </tr>
                 ) : (
                   results.map((row) => {
-                    const grade = row.totalMark > 0
-                      ? getGradeFromMarks(row.achievedMark, row.totalMark).letterGrade
-                      : "F";
+                    const { gradePoint, letterGrade } =
+                      row.totalMark > 0
+                        ? getGradeFromMarks(row.achievedMark, row.totalMark)
+                        : { gradePoint: 0, letterGrade: "F" };
                     return (
                       <tr key={row.studentId} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td className="px-3 py-3.5">
@@ -410,10 +414,12 @@ export default function ShowWeeklyResultTable({
                         <td className="px-3 py-3.5 text-gray-700 font-medium">{row.achievedMark}</td>
                         <td className="px-3 py-3.5">
                           <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                            {grade}
+                            {letterGrade}
                           </span>
                         </td>
-                        <td className="px-3 py-3.5 text-gray-700 font-medium">{row.gpa > 0 ? row.gpa.toFixed(2) : "-"}</td>
+                        <td className="px-3 py-3.5 text-gray-700 font-medium">
+                          {gradePoint > 0 ? gradePoint.toFixed(2) : "-"}
+                        </td>
                         <td className="px-3 py-3.5 text-gray-700 font-medium">
                           {row.position !== null ? "#" + ordinal(row.position) : "-"}
                         </td>
