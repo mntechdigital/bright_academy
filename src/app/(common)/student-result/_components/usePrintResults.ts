@@ -60,14 +60,6 @@ export function usePrintResults({
     const studentGroup = getStudentGroup(studentInfo?.stdRegNo || "");
     const studentClass = studentInfo?.className;
     const source = printRef.current.cloneNode(true) as HTMLDivElement;
-    Array.from(
-      source.querySelectorAll("table.result-table tbody tr td:first-child")
-    ).forEach((cell) => {
-      const label = (cell.textContent || "").trim();
-      if (label.toLowerCase().includes("chem")) {
-        console.log(JSON.stringify({ rowLabel: label, group: studentGroup, classNumber: studentClass }));
-      }
-    });
     source
       .querySelectorAll("table.result-table tbody tr td:first-child")
       .forEach((cell) => {
