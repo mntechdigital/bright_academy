@@ -9,6 +9,14 @@ import {
   RoutineForSummary,
   weekNumber,
 } from "@/src/utils/examSummary";
+import { getStudentGroup } from "@/src/utils/studentGroup";
+import {
+  getCanonicalCombinedName,
+  hasMeaningfulMarks,
+  isCrossGroupLeftover,
+  isGroupClass,
+  normalizeSubjectName,
+} from "@/src/utils/groupSubjects";
 import {
   ApiResponse,
   ClassSubject,
@@ -278,6 +286,24 @@ export function useStudentResults() {
     };
   }, [classId, year]);
 
+  const studentGroup = getStudentGroup(studentInfo?.stdRegNo || "");
+  const studentClassNumber = studentInfo?.className;
+  const isGroupAware = isGroupClass(studentClassNumber) && !!studentGroup;
+
+  const resolveResultRowName = (rawName: string | undefined) => {
+    const name = (rawName ?? "").trim();
+    if (!name) return "";
+    if (isGroupAware) {
+      const canonical = getCanonicalCombinedName(
+        name,
+        studentGroup,
+        studentClassNumber
+      );
+      if (canonical) return canonical;
+    }
+    return name;
+  };
+
   // ── Subjects for result rows ──────────────────────────────────────────
   // Weekly table rows must come from the routine/schedule for the class+year
   // so every scheduled subject appears even when this student has no mark row
@@ -286,14 +312,14 @@ export function useStudentResults() {
   // student has marks for. Monthly tab reuses the same ordered list and merges
   // its own mark rows onto it (subjects with no monthly row get empty cells).
   const scheduledSubjectNames = useMemo(() => {
-    const normalizeName = (name: string) => name.trim().toLowerCase();
+    const normName = (name: string) => normalizeSubjectName(name);
     const catalogIdIndex = new Map(classSubjects.map((s, i) => [s.id, i]));
     const catalogNameIndex = new Map(
-      classSubjects.map((s, i) => [normalizeName(s.subjectName), i])
+      classSubjects.map((s, i) => [normName(s.subjectName), i])
     );
     const getCatalogIndex = (id: string | undefined, name: string) => {
       if (id && catalogIdIndex.has(id)) return catalogIdIndex.get(id)!;
-      return catalogNameIndex.get(normalizeName(name));
+      return catalogNameIndex.get(normName(name));
     };
 
     if (routine?.weeks?.length) {
@@ -310,12 +336,15 @@ export function useStudentResults() {
             const rawName = subject?.subjectName;
             if (!rawName) return;
             const id = subject?.id ?? subject?.subjectId;
-            const key = id || normalizeName(rawName);
+            const name = rawName.trim();
+            const resolvedName = resolveResultRowName(name);
+            // Dedupe by normalized display/result name so catalog+result aliases collapse.
+            const key = normName(resolvedName || name);
             if (seen.has(key)) return;
             seen.add(key);
             entries.push({
               id,
-              name: rawName.trim(),
+              name: resolvedName || name,
               routineIndex: routineIndex++,
             });
           });
@@ -333,14 +362,19 @@ export function useStudentResults() {
       }
     }
 
-    const entries: { id?: string; name: string }[] = [];
+    const entries: { id?: string; name: string; order: number }[] = [];
     const seen = new Set<string>();
+    let order = 0;
     const add = (id: string | undefined, rawName: string | undefined) => {
-      if (!rawName) return;
-      const key = id || normalizeName(rawName);
+      const original = (rawName ?? "").trim();
+      if (!original) return;
+      const resolvedName = resolveResultRowName(original);
+      // Single normalized-name key (lowercase, NBSP/whitespace collapsed, trimmed)
+      // so catalog id and result-name forms of the same subject do not duplicate.
+      const key = normName(resolvedName || original);
       if (seen.has(key)) return;
       seen.add(key);
-      entries.push({ id, name: rawName.trim() });
+      entries.push({ id, name: resolvedName || original, order: order++ });
     };
     classSubjects.forEach((s) => add(s.id, s.subjectName));
     weeklyMarks.forEach((r) => add(r.subject?.id, r.subject?.subjectName));
@@ -352,20 +386,30 @@ export function useStudentResults() {
       .sort((a, b) => {
         const ia = getCatalogIndex(a.id, a.name);
         const ib = getCatalogIndex(b.id, b.name);
+        // Keep catalog order for catalog-known subjects.
         if (ia !== undefined && ib !== undefined) return ia - ib;
         if (ia !== undefined) return -1;
         if (ib !== undefined) return 1;
-        return a.name.localeCompare(b.name);
+        return a.order - b.order;
       })
       .map((e) => e.name);
-  }, [routine, classSubjects, weeklyMarks, monthlyResults]);
+  }, [
+    routine,
+    classSubjects,
+    weeklyMarks,
+    monthlyResults,
+    studentGroup,
+    studentClassNumber,
+    isGroupAware,
+  ]);
 
   // ── Weekly computed data (selected Month + Year) ──────────────────────
   const weeklySummary = useMemo<WeeklySummaryData>(() => {
     const subjectMap = new Map<string, SubjectWeeksData>();
 
     weeklyRows.forEach((row) => {
-      const subjectName = row.subject?.subjectName || "Unknown";
+      const rawSubjectName = row.subject?.subjectName || "Unknown";
+      const subjectName = resolveResultRowName(rawSubjectName) || rawSubjectName;
       const weekNum = weekNumber(row.week);
 
       if (!subjectMap.has(subjectName)) {
@@ -376,19 +420,77 @@ export function useStudentResults() {
       }
 
       if (weekNum === null) return;
-      subjectMap.get(subjectName)!.weeks.set(String(weekNum), {
-        obtained: row.obtainedMarks,
-        total: row.totalMarks,
-      });
+      // Do not overwrite an existing (subject, week) entry to avoid altering display/totals.
+      const weekKey = String(weekNum);
+      const weeks = subjectMap.get(subjectName)!.weeks;
+      if (!weeks.has(weekKey)) {
+        weeks.set(weekKey, {
+          obtained: row.obtainedMarks,
+          total: row.totalMarks,
+        });
+      }
     });
 
     // Show every subject from the routine/schedule (or class fallback) in order.
     // A subject with no marks for this student/month gets empty cells so missing
     // exams appear as absent in the row and contribute 0 to subject totals/avg.
-    const subjectArray: SubjectWeeksData[] = scheduledSubjectNames.map(
-      (name) =>
-        subjectMap.get(name) ?? { subjectName: name, weeks: new Map() }
-    );
+    const subjectArray: SubjectWeeksData[] = [];
+    scheduledSubjectNames.forEach((name) => {
+      const rowData = subjectMap.get(name);
+      if (
+        isGroupAware &&
+        isCrossGroupLeftover(name, studentGroup, studentClassNumber)
+      ) {
+        const rawGroupKey = normalizeSubjectName(name);
+        const hasAnyMeaningful = weeklyRows.some((r) => {
+          const rawName = r.subject?.subjectName || "Unknown";
+          return (
+            normalizeSubjectName(resolveResultRowName(rawName) || rawName) ===
+              rawGroupKey && hasMeaningfulMarks(r)
+          ) || (normalizeSubjectName(rawName) === rawGroupKey && hasMeaningfulMarks(r));
+        });
+        if (!hasAnyMeaningful && !(rowData && Array.from(rowData.weeks.values()).some((w) => w.obtained != null && w.obtained !== 0))) {
+          return;
+        }
+      }
+      subjectArray.push(rowData ?? { subjectName: name, weeks: new Map() });
+    });
+
+    // Cross-group leftovers (Class 9/10): hide if no meaningful marks; keep if any
+    // non-zero/meaningful marks exist so marks are never hidden.
+    if (isGroupAware) {
+      const leftoverGroups = new Map<
+        string,
+        { subjectName: string; rows: typeof weeklyRows }
+      >();
+      weeklyRows.forEach((row) => {
+        const rawName = row.subject?.subjectName || "Unknown";
+        if (!isCrossGroupLeftover(rawName, studentGroup, studentClassNumber)) return;
+        const key = normalizeSubjectName(rawName);
+        if (!leftoverGroups.has(key)) {
+          leftoverGroups.set(key, { subjectName: rawName, rows: [] as any });
+        }
+        leftoverGroups.get(key)!.rows.push(row);
+      });
+      leftoverGroups.forEach(({ subjectName: rawName, rows }) => {
+        const hasAnyMeaningful = rows.some((r) => hasMeaningfulMarks(r));
+        if (!hasAnyMeaningful) return;
+        const exists = subjectArray.some(
+          (s) => normalizeSubjectName(s.subjectName) === normalizeSubjectName(rawName)
+        );
+        if (exists) return;
+        const extraWeeks = new Map<string, { obtained: number | null; total: number }>();
+        rows.forEach((r) => {
+          const wn = weekNumber(r.week);
+          if (wn === null) return;
+          const wk = String(wn);
+          if (!extraWeeks.has(wk)) {
+            extraWeeks.set(wk, { obtained: r.obtainedMarks, total: r.totalMarks });
+          }
+        });
+        subjectArray.push({ subjectName: rawName, weeks: extraWeeks });
+      });
+    }
 
     // The totals come from the routine via one shared function, so the screen
     // and the print view can never disagree.
@@ -422,31 +524,81 @@ export function useStudentResults() {
       present: summary.present,
       absent: summary.absent,
     };
-  }, [weeklyRows, routine, classId, year, scheduledSubjectNames]);
+  }, [
+    weeklyRows,
+    routine,
+    classId,
+    year,
+    scheduledSubjectNames,
+    studentGroup,
+    studentClassNumber,
+    isGroupAware,
+  ]);
 
   // Monthly tab rows: all scheduled/class subjects in order, with this
   // student's monthly result left-joined. Subjects without a result row get
   // empty cells (no marks) so newly added/scheduled subjects still appear.
   const monthlySubjectRows = useMemo<MonthlySubjectRow[]>(() => {
-    const rowsByName = new Map<string, SubjectResult>();
-    subjectRows.forEach((row) => rowsByName.set(row.subjectName, row));
-
-    const merged: MonthlySubjectRow[] = scheduledSubjectNames.map((name) => {
-      const row = rowsByName.get(name);
-      return row
-        ? { ...row }
-        : {
-            id: null,
-            subjectName: name,
-            marks: null,
-            fullMarks: null,
-            highestMark: null,
-            point: null,
-            grade: null,
-          };
+    const rowsByNormName = new Map<string, SubjectResult>();
+    subjectRows.forEach((row) => {
+      const rawName = row.subjectName;
+      const mappedName = resolveResultRowName(rawName) || rawName;
+      const key = normalizeSubjectName(mappedName);
+      // Keep first match for a target slot to avoid changing stored totals/aggregation.
+      if (!rowsByNormName.has(key)) {
+        rowsByNormName.set(key, row);
+      }
     });
+
+    const merged: MonthlySubjectRow[] = [];
+    scheduledSubjectNames.forEach((name) => {
+      const row = rowsByNormName.get(normalizeSubjectName(name));
+      if (
+        isGroupAware &&
+        isCrossGroupLeftover(name, studentGroup, studentClassNumber) &&
+        !hasMeaningfulMarks(row)
+      ) {
+        return;
+      }
+      merged.push(
+        row
+          ? { ...row, subjectName: name }
+          : {
+              id: null,
+              subjectName: name,
+              marks: null,
+              fullMarks: null,
+              highestMark: null,
+              point: null,
+              grade: null,
+            }
+      );
+    });
+
+    // Cross-group leftovers (Class 9/10): hide if no meaningful marks; keep if any
+    // non-zero/meaningful marks exist so marks are never hidden.
+    if (isGroupAware) {
+      subjectRows.forEach((row) => {
+        const rawName = row.subjectName;
+        if (!isCrossGroupLeftover(rawName, studentGroup, studentClassNumber)) return;
+        if (!hasMeaningfulMarks(row)) return;
+        const exists = merged.some(
+          (m) => normalizeSubjectName(m.subjectName) === normalizeSubjectName(rawName)
+        );
+        if (!exists) {
+          merged.push({ ...row, subjectName: rawName });
+        }
+      });
+    }
+
     return merged;
-  }, [subjectRows, scheduledSubjectNames]);
+  }, [
+    subjectRows,
+    scheduledSubjectNames,
+    studentGroup,
+    studentClassNumber,
+    isGroupAware,
+  ]);
 
 
   // ── Merit position (selected Week + Month + Year) ─────────────────────
