@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import MonthlyResultTable from "./MonthlyResultTable";
 import { compareByRegNoAsc } from "@/src/utils/sortStudents";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface Batch  { id: string; name: string; startTime: string; endTime: string }
 interface Subject  { id: string; subjectName: string }
@@ -49,7 +49,7 @@ interface MonthlyResultFormProps {
   classesData?: ClassData[];
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -67,12 +67,12 @@ const formatTime = (time: string) => {
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
-// ─── Shared select style ──────────────────────────────────────────────────────
+// â”€â”€â”€ Shared select style â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const selectClass =
   "w-full appearance-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-orange-400 focus:ring-1 focus:ring-orange-400 disabled:bg-gray-100 disabled:cursor-not-allowed";
 
-// ─── Field wrapper ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Field wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
@@ -84,7 +84,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
   );
 }
 
-// ─── Select with chevron ──────────────────────────────────────────────────────
+// â”€â”€â”€ Select with chevron â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SelectField({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
@@ -97,8 +97,8 @@ function SelectField({ children, ...props }: React.SelectHTMLAttributes<HTMLSele
   );
 }
 
-// ─── Student Combobox (searchable, shows reg no) ───────────────────────────────
-// Uses existing shadcn/ui Popover (Radix) — no new dependency (cmdk not in package.json)
+// â”€â”€â”€ Student Combobox (searchable, shows reg no) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Uses existing shadcn/ui Popover (Radix) â€” no new dependency (cmdk not in package.json)
 // Pattern: Popover + input + filtered list, keyboard: ArrowUp/Down, Enter, Escape
 function StudentCombobox({
   students,
@@ -175,7 +175,7 @@ function StudentCombobox({
         >
           <span className="truncate text-left">
             {selected
-              ? `${selected.name} — #${selected.stdRegNo || selected.id.slice(0, 6)}`
+              ? `${selected.name} â€” #${selected.stdRegNo || selected.id.slice(0, 6)}`
               : placeholder}
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-gray-400 opacity-70" />
@@ -219,7 +219,7 @@ function StudentCombobox({
                         {s.name}
                       </span>
                       <span className="shrink-0 text-xs text-gray-600">
-                        {s.stdRegNo || "—"}
+                        {s.stdRegNo || "â€”"}
                       </span>
                     </span>
                     {isSelected && <Check className="ml-2 h-4 w-4 shrink-0 text-orange-500" />}
@@ -234,12 +234,12 @@ function StudentCombobox({
   );
 }
 
-// ─── Input base style ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Input base style â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const inputBase =
   "w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-orange-400 focus:ring-1 focus:ring-orange-400";
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFormProps) {
   const [tableData, setTableData] = useState<{
@@ -247,6 +247,8 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     subjects: Subject[];
     studentId: string;
     subjectHighestMarks: Record<string, string>;
+    studentRegNo?: string;
+    className?: string;
   } | null>(null);
 
   // State for per-subject highest marks entered in the form
@@ -277,7 +279,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     setValue("batchId", "");
     setValue("studentId", "");
     // Keep existing highest marks for the new class subjects (so they persist)
-    // We don't reset here — user can keep what they entered
+    // We don't reset here â€” user can keep what they entered
   };
 
   // If no batch selected -> show all students of class (class-wide result)
@@ -308,6 +310,8 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
       subjects: subjects,
       studentId: data.studentId,
       subjectHighestMarks: { ...subjectHighestMarks },
+      studentRegNo: student?.stdRegNo,
+      className: selectedClass?.className,
     });
   };
 
@@ -319,7 +323,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
 
-        {/* Row 1 — Exam Name */}
+        {/* Row 1 â€” Exam Name */}
         <div className="grid grid-cols-1 gap-6">
           <Field label="Exam Name" error={errors.monthlyExamName?.message}>
             <Controller name="monthlyExamName" control={control} rules={{ required: "Exam name is required" }}
@@ -335,7 +339,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </Field>
         </div>
 
-        {/* Row 2 — Month & Published Date */}
+        {/* Row 2 â€” Month & Published Date */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label="Month" error={errors.month?.message}>
             <Controller name="month" control={control} rules={{ required: "Month is required" }}
@@ -371,7 +375,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </Field>
         </div>
 
-        {/* Row 3 — Year & Class */}
+        {/* Row 3 â€” Year & Class */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label="Year" error={errors.year?.message}>
             <Controller name="year" control={control} rules={{ required: "Year is required" }}
@@ -401,7 +405,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </Field>
         </div>
 
-        {/* Subject Highest Marks Section — shown when class is selected */}
+        {/* Subject Highest Marks Section â€” shown when class is selected */}
         {selectedClassId && subjects.length > 0 && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
@@ -438,7 +442,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
           </div>
         )}
 
-        {/* Row 4 — Batch & Student - Batch optional for class-wide result */}
+        {/* Row 4 â€” Batch & Student - Batch optional for class-wide result */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label="Batch (Optional - leave empty for whole class)" error={errors.batchId?.message}>
             <Controller name="batchId" control={control}
@@ -469,7 +473,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
         <Button type="submit" className="w-full">Submit</Button>
       </form>
 
-      {/* Result table — shown after submit */}
+      {/* Result table â€” shown after submit */}
       {tableData && (
         <div className="mt-10">
           <MonthlyResultTable
@@ -479,6 +483,8 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
             month={watch("month")}
             monthlyExamName={watch("monthlyExamName")}
             subjectHighestMarks={tableData.subjectHighestMarks}
+            studentRegNo={tableData.studentRegNo}
+            classNumber={tableData.className}
           />
         </div>
       )}

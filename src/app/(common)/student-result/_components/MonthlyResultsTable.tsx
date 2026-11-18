@@ -1,24 +1,29 @@
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import GradeBadge from "./GradeBadge";
 import type { MonthlyResult, MonthlySubjectRow } from "./types";
 
-// ─── Monthly Tab ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Monthly Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function MonthlyResultsTable({
   monthlyResults,
   activeMonthly,
   subjectRows,
   displayMonthlyPosition,
+  group = "",
+  classNumber,
 }: {
   monthlyResults: MonthlyResult[];
   activeMonthly: MonthlyResult | undefined;
   subjectRows: MonthlySubjectRow[];
   displayMonthlyPosition: string | null;
+  group?: string;
+  classNumber?: string | number | null;
 }) {
   return (
     <>
       {monthlyResults.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-sm">
-          কোনো মাসিক ফলাফল পাওয়া যায়নি।
+          No Result Found
         </div>
       ) : (
         <>
@@ -54,7 +59,9 @@ function MonthlyResultsTable({
                     className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
                   >
                     <td className="py-4 px-4 font-medium text-gray-800">
-                      {row.subjectName}
+
+                      {getGroupSubjectLabel(row.subjectName, group, classNumber)}
+
                     </td>
                     <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
                       {row.fullMarks ?? "-"}

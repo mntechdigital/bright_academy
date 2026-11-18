@@ -1,10 +1,11 @@
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import GradeBadge from "./GradeBadge";
 import WeekSelector from "./WeekSelector";
 import { FILTER_WEEKS, OVERALL_MERIT } from "./useStudentResults";
 import type { WeeklyMark, WeeklySummaryData } from "./types";
 
-// ─── Weekly Tab ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Weekly Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function WeeklyResultsTable({
   weeklyRows,
@@ -16,6 +17,8 @@ function WeeklyResultsTable({
   overallDisabled,
   overallDisabledReason,
   meritError,
+  group = "",
+  classNumber,
 }: {
   weeklyRows: WeeklyMark[];
   weeklySummary: WeeklySummaryData;
@@ -26,12 +29,14 @@ function WeeklyResultsTable({
   overallDisabled?: boolean;
   overallDisabledReason?: string | null;
   meritError?: string | null;
+  group?: string;
+  classNumber?: string | number | null;
 }) {
   return (
     <>
       {weeklySummary.subjectArray.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-sm">
-          কোনো সাপ্তাহিক মার্ক পাওয়া যায়নি।
+          No Result Found
         </div>
       ) : (
         <>
@@ -112,7 +117,9 @@ function WeeklyResultsTable({
                       className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors"
                     >
                       <td className="py-4 px-6 font-medium text-gray-800">
-                        {subjectData.subjectName}
+
+                        {getGroupSubjectLabel(subjectData.subjectName, group, classNumber)}
+
                       </td>
                       {[1, 2, 3, 4].map((weekNum) => {
                         const weekData = subjectData.weeks.get(String(weekNum));
@@ -187,7 +194,7 @@ function WeeklyResultsTable({
                         {weeklySummary.totalObtainedMarks}
                         <span className="no-print">{` / ${weeklySummary.totalFullMarks}`}</span>
                         {/* A div (not a span) forces a second line in the print
-                            window too — Tailwind's `block` class does not exist
+                            window too â€” Tailwind's `block` class does not exist
                             there, so a span printed inline as "40075.25%".
                             `.print-subtext` is styled by the print stylesheet. */}
                         {weeklySummary.percentage !== null && (

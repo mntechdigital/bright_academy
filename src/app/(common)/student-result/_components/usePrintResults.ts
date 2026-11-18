@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import brightpdf1 from "../../../../../public/brightpdf-1.jpeg";
 import brightpdf2 from "../../../../../public/brightpdf-2.jpeg";
@@ -47,7 +48,6 @@ export function usePrintResults({
 }) {
   const handlePrint = () => {
     if (!printRef.current) return;
-    const printContents = printRef.current.innerHTML;
     const w = window.open("", "_blank");
     if (!w) return;
 
@@ -56,6 +56,28 @@ export function usePrintResults({
       month: "short",
       year: "numeric",
     });
+
+    const studentGroup = getStudentGroup(studentInfo?.stdRegNo || "");
+    const studentClass = studentInfo?.className;
+    const source = printRef.current.cloneNode(true) as HTMLDivElement;
+    Array.from(
+      source.querySelectorAll("table.result-table tbody tr td:first-child")
+    ).forEach((cell) => {
+      const label = (cell.textContent || "").trim();
+      if (label.toLowerCase().includes("chem")) {
+        console.log(JSON.stringify({ rowLabel: label, group: studentGroup, classNumber: studentClass }));
+      }
+    });
+    source
+      .querySelectorAll("table.result-table tbody tr td:first-child")
+      .forEach((cell) => {
+        const label = (cell.textContent || "").trim();
+        const mapped = getGroupSubjectLabel(label, studentGroup, studentClass);
+        if (mapped !== label) {
+          cell.textContent = mapped;
+        }
+      });
+    const printContents = source.innerHTML;
 
     const monthName = activeMonthly?.month || month;
     const examTitle =
@@ -310,7 +332,7 @@ export function usePrintResults({
                 <td class="value">${classNumberToWord(studentInfo?.className || "-")}</td>
                 <td class="value">${studentInfo?.stdRegNo || "-"}</td>
                 <td class="value">${studentInfo?.name || "-"}</td>
-                <td class="value">${getStudentGroup(studentInfo?.stdRegNo || "") || "-"}</td>
+                <td class="value">${studentGroup || "-"}</td>
                 <td class="value">${monthName}</td>
                 <td class="value">${year}</td>
               </tr>
