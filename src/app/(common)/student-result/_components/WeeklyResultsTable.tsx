@@ -1,4 +1,4 @@
-﻿import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import GradeBadge from "./GradeBadge";
 import WeekSelector from "./WeekSelector";
@@ -36,7 +36,7 @@ function WeeklyResultsTable({
     <>
       {weeklySummary.subjectArray.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-sm">
-          à¦•à§‹à¦¨à§‹ à¦¸à¦¾à¦ªà§à¦¤à¦¾à¦¹à¦¿à¦• à¦®à¦¾à¦°à§à¦• à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤
+          No Result Found
         </div>
       ) : (
         <>

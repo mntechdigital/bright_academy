@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef } from "react";
 import { getStudentGroup } from "@/src/utils/studentGroup";
@@ -113,18 +113,14 @@ export default function StudentResultsDashboard() {
         {noData ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
             <h2 className="text-xl font-semibold text-gray-700">
-              à¦•à§‹à¦¨à§‹ à¦«à¦²à¦¾à¦«à¦² à¦ªà§à¦°à¦•à¦¾à¦¶à¦¿à¦¤ à¦¹à¦¯à¦¼à¦¨à¦¿
+              No Result Found
             </h2>
-            <p className="text-gray-400 mt-2 text-sm">à¦ªà¦°à§‡ à¦†à¦¬à¦¾à¦° à¦šà§‡à¦• à¦•à¦°à§à¦¨à¥¤</p>
           </div>
         ) : filteredEmpty ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
             <h2 className="text-xl font-semibold text-gray-700">
-              No result found for this month
+              No Result Found
             </h2>
-            <p className="text-gray-400 mt-2 text-sm">
-              Try a different month or year.
-            </p>
           </div>
         ) : (
           <div

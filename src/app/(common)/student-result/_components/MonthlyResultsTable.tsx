@@ -1,4 +1,4 @@
-﻿import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import GradeBadge from "./GradeBadge";
 import type { MonthlyResult, MonthlySubjectRow } from "./types";
 
@@ -23,7 +23,7 @@ function MonthlyResultsTable({
     <>
       {monthlyResults.length === 0 ? (
         <div className="py-16 text-center text-gray-400 text-sm">
-          à¦•à§‹à¦¨à§‹ à¦®à¦¾à¦¸à¦¿à¦• à¦«à¦²à¦¾à¦«à¦² à¦ªà¦¾à¦“à¦¯à¦¼à¦¾ à¦¯à¦¾à¦¯à¦¼à¦¨à¦¿à¥¤
+          No Result Found
         </div>
       ) : (
         <>
