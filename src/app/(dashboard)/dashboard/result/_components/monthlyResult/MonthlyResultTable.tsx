@@ -1,11 +1,13 @@
-"use client";
+﻿"use client";
 
 import { createMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type SubjectRow = {
   name: string;
@@ -25,7 +27,7 @@ type Summary = {
   absent: string;
 };
 
-// ─── Initial data ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Initial data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const INITIAL_ROWS: SubjectRow[] = [
   "Bangla First Paper",
@@ -51,12 +53,12 @@ const INITIAL_SUMMARY: Summary = {
   absent: "",
 };
 
-// ─── Shared input styles ──────────────────────────────────────────────────────
+// â”€â”€â”€ Shared input styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const inputBase =
   "rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-center text-sm text-gray-800 placeholder:text-gray-300 outline-none tabular-nums transition-all duration-150 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100";
 
-// ─── Reusable inputs ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Reusable inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type TextInputProps = {
   value: string;
@@ -92,7 +94,7 @@ function TextInput({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface MonthlyResultTableProps {
   studentName: string;
@@ -101,6 +103,8 @@ interface MonthlyResultTableProps {
   month: string;
   monthlyExamName?: string;
   subjectHighestMarks?: Record<string, string>;
+  studentRegNo?: string;
+  classNumber?: string | number | null;
 }
 
 export default function MonthlyResultTable({
@@ -109,8 +113,11 @@ export default function MonthlyResultTable({
   subjects,
   month,
   monthlyExamName,
-  subjectHighestMarks = {}
+  subjectHighestMarks = {},
+  studentRegNo,
+  classNumber,
 }: MonthlyResultTableProps) {
+  const studentGroup = studentRegNo ? getStudentGroup(studentRegNo) : "";
   const subjectNames =
     subjects && subjects.length > 0
       ? subjects.map((s) => s.subjectName || s.name || "")
@@ -255,7 +262,7 @@ const handleSubmit = async () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full space-y-4">
-        {/* ── Main Card ── */}
+        {/* â”€â”€ Main Card â”€â”€ */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -289,7 +296,9 @@ const handleSubmit = async () => {
                     className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100"
                   >
                     <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-                      {row.name}
+
+                      {getGroupSubjectLabel(row.name, studentGroup, classNumber)}
+
                     </td>
                     <td className="px-3 py-3">
                       <input
@@ -361,7 +370,7 @@ const handleSubmit = async () => {
             </table>
           </div>
 
-          {/* ── Exam Summary ── */}
+          {/* â”€â”€ Exam Summary â”€â”€ */}
           <div className="border-t border-gray-100">
             <div className="py-3 text-center border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 tracking-wide">
@@ -455,7 +464,7 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        {/* ── Submit Button ── */}
+        {/* â”€â”€ Submit Button â”€â”€ */}
         <button
           onClick={handleSubmit}
           className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white tracking-wide transition-all duration-150 hover:bg-orange-600 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"

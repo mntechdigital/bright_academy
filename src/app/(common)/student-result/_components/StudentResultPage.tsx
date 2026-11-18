@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useRef } from "react";
+import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useStudentResults } from "./useStudentResults";
 import { usePrintResults } from "./usePrintResults";
 import FilterBar from "./FilterBar";
@@ -10,7 +11,7 @@ import MonthlyResultsTable from "./MonthlyResultsTable";
 import WeeklyResultsTable from "./WeeklyResultsTable";
 import PrintButton from "./PrintButton";
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function StudentResultsDashboard() {
   const {
@@ -44,9 +45,10 @@ export default function StudentResultsDashboard() {
     displayMonthlyPosition,
   } = useStudentResults();
 
+  const studentGroup = getStudentGroup(studentInfo?.stdRegNo || "");
   const printRef = useRef<HTMLDivElement>(null);
 
-  // ── Print handler ─────────────────────────────────────────────────────────
+  // â”€â”€ Print handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { handlePrint } = usePrintResults({
     printRef,
     activeTab,
@@ -56,14 +58,14 @@ export default function StudentResultsDashboard() {
     studentInfo,
   });
 
-  // ── Loading / Error ───────────────────────────────────────────────────────
+  // â”€â”€ Loading / Error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">ফলাফল লোড হচ্ছে...</p>
+          <p className="text-gray-500 text-sm">à¦«à¦²à¦¾à¦«à¦² à¦²à§‹à¦¡ à¦¹à¦šà§à¦›à§‡...</p>
         </div>
       </div>
     );
@@ -79,7 +81,7 @@ export default function StudentResultsDashboard() {
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -111,9 +113,9 @@ export default function StudentResultsDashboard() {
         {noData ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
             <h2 className="text-xl font-semibold text-gray-700">
-              কোনো ফলাফল প্রকাশিত হয়নি
+              à¦•à§‹à¦¨à§‹ à¦«à¦²à¦¾à¦«à¦² à¦ªà§à¦°à¦•à¦¾à¦¶à¦¿à¦¤ à¦¹à¦¯à¦¼à¦¨à¦¿
             </h2>
-            <p className="text-gray-400 mt-2 text-sm">পরে আবার চেক করুন।</p>
+            <p className="text-gray-400 mt-2 text-sm">à¦ªà¦°à§‡ à¦†à¦¬à¦¾à¦° à¦šà§‡à¦• à¦•à¦°à§à¦¨à¥¤</p>
           </div>
         ) : filteredEmpty ? (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
@@ -129,17 +131,19 @@ export default function StudentResultsDashboard() {
             ref={printRef}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
           >
-            {/* ── MONTHLY TAB ──────────────────────────────────────────── */}
+            {/* â”€â”€ MONTHLY TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {activeTab === "monthly" && (
               <MonthlyResultsTable
                 monthlyResults={monthlyResults}
                 activeMonthly={activeMonthly}
                 subjectRows={monthlySubjectRows}
                 displayMonthlyPosition={displayMonthlyPosition}
+                group={studentGroup}
+                classNumber={studentInfo?.className}
               />
             )}
 
-            {/* ── WEEKLY TAB ───────────────────────────────────────────── */}
+            {/* â”€â”€ WEEKLY TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             {activeTab === "weekly" && (
               <WeeklyResultsTable
                 weeklyRows={weeklyRows}
@@ -151,6 +155,8 @@ export default function StudentResultsDashboard() {
                 overallDisabled={overallDisabled}
                 overallDisabledReason={overallDisabledReason}
                 meritError={meritError}
+                group={studentGroup}
+                classNumber={studentInfo?.className}
               />
             )}
           </div>
