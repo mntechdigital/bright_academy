@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { createMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
@@ -118,15 +118,18 @@ export default function MonthlyResultTable({
   classNumber,
 }: MonthlyResultTableProps) {
   const studentGroup = studentRegNo ? getStudentGroup(studentRegNo) : "";
-  const subjectNames =
+  const subjectItems =
     subjects && subjects.length > 0
-      ? subjects.map((s) => s.subjectName || s.name || "")
-      : INITIAL_ROWS.map((r) => r.name);
+      ? subjects.map((s) => ({
+          id: s.id || "",
+          name: s.subjectName || s.name || "",
+        }))
+      : INITIAL_ROWS.map((r) => ({ id: "", name: r.name }));
   const [rows, setRows] = useState<SubjectRow[]>(
-    subjectNames.map((name) => ({
+    subjectItems.map(({ id, name }) => ({
       name,
       fullMarks: "100",
-      highestMark: subjectHighestMarks[name] ?? "",
+      highestMark: subjectHighestMarks[id] ?? subjectHighestMarks[name] ?? "",
       marksObtained: "",
       point: "",
       grade: "",
