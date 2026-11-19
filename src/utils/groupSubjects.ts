@@ -118,7 +118,7 @@ export const COMBINED_SUBJECT_ROWS: CombinedRowDef[] = [
     key: "h. math/agriculture/h. science",
     displayKey: "h. math/agriculture/h. science",
     map: {
-      Science: "Higher Mathematics",
+      Science: "H. math/Agriculture/H. science",
       Humanity: "Agriculture / Home Science",
       Business: "Agriculture / Home Science",
     },
