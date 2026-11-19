@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -251,7 +251,7 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     className?: string;
   } | null>(null);
 
-  // State for per-subject highest marks entered in the form
+  // State for per-subject highest marks entered in the form (keyed by subject id)
   const [subjectHighestMarks, setSubjectHighestMarks] = useState<Record<string, string>>({});
 
   const { control, watch, setValue, handleSubmit, formState: { errors } } = useForm<FormValues>({
@@ -273,13 +273,13 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
   const batches = selectedClass?.batches ?? [];
   const subjects = selectedClass?.subjects ?? [];
 
-  // Reset highest marks when class changes
+  // Reset dependent state when class changes
   const handleClassChange = (classId: string) => {
     setValue("classId", classId);
     setValue("batchId", "");
     setValue("studentId", "");
-    // Keep existing highest marks for the new class subjects (so they persist)
-    // We don't reset here â€” user can keep what they entered
+    setSubjectHighestMarks({});
+    setTableData(null);
   };
 
   // If no batch selected -> show all students of class (class-wide result)
@@ -315,8 +315,8 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
     });
   };
 
-  const handleHighestMarkChange = (subjectName: string, value: string) => {
-    setSubjectHighestMarks((prev) => ({ ...prev, [subjectName]: value }));
+  const handleHighestMarkChange = (subjectId: string, value: string) => {
+    setSubjectHighestMarks((prev) => ({ ...prev, [subjectId]: value }));
   };
 
   return (
@@ -427,10 +427,10 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={subjectHighestMarks[subjectName] ?? ""}
+                      value={subjectHighestMarks[subject.id] ?? ""}
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9.]/g, "");
-                        handleHighestMarkChange(subjectName, val);
+                        handleHighestMarkChange(subject.id, val);
                       }}
                       placeholder="Enter highest mark"
                       className={inputBase + " max-w-50"}
