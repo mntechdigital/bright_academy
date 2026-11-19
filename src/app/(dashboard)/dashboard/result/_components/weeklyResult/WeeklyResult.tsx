@@ -58,6 +58,13 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
 
   // Use formData from props instead of localStorage
   const formDataFromStorage = formData;
+  const formStudents = formData?.students;
+  const formClassId = formData?.stdClassId;
+  const formSubjectId = formData?.subjectId;
+  const formBatchId = formData?.batchId;
+  const formWeek = formData?.week;
+  const formMonth = formData?.month;
+  const formYear = formData?.year;
 
   // Reset data when formData changes (a new result sheet was created).
   useEffect(() => {
@@ -67,35 +74,27 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
     setMarksMap?.({});
   }, [formData, setMarksMap]);
 
-  // Use students from formData if available, otherwise fetch them
-  const studentsFromForm = formDataFromStorage?.students || [];
-
   // Fetch weekly results
   useEffect(() => {
+    let ignore = false;
+
     const fetchWeeklyResults = async () => {
       let data: any[] = [];
 
       try {
-        if (formDataFromStorage?.stdClassId && formDataFromStorage?.subjectId) {
-          const weekValue = normalizeWeek(formDataFromStorage.week);
+        if (formClassId && formSubjectId) {
+          const weekValue = normalizeWeek(formWeek);
 
           const payload = {
-            stdClassId: String(formDataFromStorage.stdClassId),
-            batchId: formDataFromStorage.batchId
-              ? String(formDataFromStorage.batchId)
-              : undefined,
-            subjectId: String(formDataFromStorage.subjectId),
+            stdClassId: String(formClassId),
+            batchId: formBatchId ? String(formBatchId) : undefined,
+            subjectId: String(formSubjectId),
             week: weekValue,
-            month: String(formDataFromStorage.month),
-            year: String(formDataFromStorage.year),
+            month: String(formMonth),
+            year: String(formYear),
           };
 
-          console.log("FILTER PAYLOAD =>", payload);
-
           const res = await getWeeklyResultsByFilters(payload);
-
-          console.log("FILTER RESPONSE =>", res);
-
           data = res?.data?.data || [];
         } else {
           // Fetch all weekly results when no formData (page load/refresh)
@@ -103,7 +102,7 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
           data = res?.data?.data || [];
         }
 
-        console.log("FINAL WEEKLY DATA =>", data);
+        if (ignore) return;
 
         setWeeklyResultsData(data);
 
@@ -115,12 +114,25 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
           return prevSelected;
         });
       } catch (error) {
-        console.error("Error fetching weekly results", error);
+        if (!ignore) {
+          console.error("Error fetching weekly results", error);
+        }
       }
     };
 
     fetchWeeklyResults();
-  }, [refreshTrigger, formDataFromStorage]);
+    return () => {
+      ignore = true;
+    };
+  }, [
+    refreshTrigger,
+    formClassId,
+    formSubjectId,
+    formBatchId,
+    formWeek,
+    formMonth,
+    formYear,
+  ]);
 
   // Selected result metadata
   const weeklyResultMeta = useMemo(() => {
@@ -173,15 +185,20 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
     });
   }, [weeklyResultsData, weeklyResultMeta]);
 
-  // Fetch students when weeklyResultMeta changes
-  useEffect(() => {
-    const classId = weeklyResultMeta?.stdClass?.id;
+  const classId = weeklyResultMeta?.stdClass?.id || "";
+  const batchId = weeklyResultMeta?.batch?.id || weeklyResultMeta?.batchId || "";
 
+  // Fetch students when class/batch selection actually changes
+  useEffect(() => {
     if (!classId) return;
 
-    // If students are already provided from form, use them (ensure numeric asc order by stdRegNo)
-    if (studentsFromForm.length > 0) {
-      const sortedFromForm = sortStudentsByRegNoAsc(studentsFromForm);
+    // If students are already provided from form for this class, use them (ensure numeric asc order by stdRegNo)
+    if (
+      Array.isArray(formStudents) &&
+      formStudents.length > 0 &&
+      String(formClassId || "") === String(classId)
+    ) {
+      const sortedFromForm = sortStudentsByRegNoAsc(formStudents);
       setStudentData(sortedFromForm);
       setStudentMeta({
         totalPages: 1,
@@ -190,7 +207,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
       return;
     }
 
-    // Otherwise fetch from API — sorted at DB level by registration number (asc) so pagination stays consistent
+    let ignore = false;
+
     const fetchStudents = async () => {
       try {
         const query: TQuery[] = [
@@ -205,10 +223,8 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
         ];
 
         const studentRes = await getStudents(query);
+        if (ignore) return;
         const allStudents = studentRes?.data?.data || [];
-
-        const batchId =
-          weeklyResultMeta?.batch?.id || weeklyResultMeta?.batchId;
 
         let filteredStudents = batchId
           ? allStudents.filter((student: any) => {
@@ -217,23 +233,26 @@ const WeeklyResult: React.FC<WeeklyResultProps> = ({
             })
           : [...allStudents];
 
-        // Defensive client-side sort — numeric asc by Student's ID even if backend order changes
+        // Defensive client-side sort �?" numeric asc by Student's ID even if backend order changes
         filteredStudents.sort(compareByRegNoAsc);
 
-        console.log("STUDENTS FETCHED IN WEEKLYRESULT:", filteredStudents);
-        
         setStudentData(filteredStudents);
         setStudentMeta({
           totalPages: 1,
           totalItems: filteredStudents.length,
         });
       } catch (error) {
-        console.error("Error fetching students", error);
+        if (!ignore) {
+          console.error("Error fetching students", error);
+        }
       }
     };
 
     fetchStudents();
-  }, [weeklyResultMeta, search, studentsFromForm]);
+    return () => {
+      ignore = true;
+    };
+  }, [classId, batchId, search, formStudents, formClassId]);
 
   // Dropdown selection
   const handleCardClick = useCallback((result: any) => {
