@@ -72,6 +72,7 @@ export interface MonthlySubjectRow {
   highestMark: number | null;
   point: number | null;
   grade: string | null;
+  displayLabel?: string;
 }
 
 export interface WeeklySummaryData {

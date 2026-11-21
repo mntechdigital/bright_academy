@@ -6,6 +6,7 @@ import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
+import { computeMonthlyResultSummary, getDefaultFullMarksForSubject } from "@/src/utils/monthlyResultSummary";
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -204,25 +205,25 @@ export default function MonthlyResultTable({
     setSummary((prev) => ({ ...prev, [field]: value }));
 
   // Auto-recalculate summary whenever subject rows change
+  // Auto-recalculate summary: obtained/full over ALL student subjects; GPA/Grade by percentage (GRADE_SYSTEM_100)
   useEffect(() => {
-    const allMarks = rows.map((r) => parseFloat(r.marksObtained)).filter((v) => !isNaN(v));
-    const totalMarks = allMarks.reduce((sum, m) => sum + m, 0);
-    const points = rows.map((r) => parseFloat(r.point)).filter((v) => !isNaN(v));
-    const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
-
+    const resultSummary = computeMonthlyResultSummary({
+      resultSubjects: rows.map((r) => ({ subjectName: r.name, marks: r.marksObtained === "" ? null : Number(r.marksObtained), fullMarks: r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name) : Number(r.fullMarks) })),
+      classSubjects: subjects || [],
+      group: studentGroup,
+      classNumber,
+    });
     const present = rows.filter((r) => r.marksObtained.trim() !== "").length;
-    const absent = rows.length - present;
-
+    const absent = Math.max(0, resultSummary.subjectCount - present);
     setSummary((prev) => ({
       ...prev,
-      totalMarks: totalMarks > 0 ? totalMarks.toString() : "",
-      gpa: gpa > 0 ? gpa.toFixed(2) : "",
-      grade: gpa > 0 ? getGradeFromGPA(gpa) : "",
-      present: present > 0 ? present.toString() : "",
-      absent: absent > 0 ? absent.toString() : "",
+      totalMarks: String(resultSummary.obtained),
+      gpa: String(resultSummary.gpa),
+      grade: resultSummary.grade,
+      present: String(present),
+      absent: String(absent),
     }));
-  }, [rows]);
-
+  }, [rows, subjects, studentGroup, classNumber]);
 const handleSubmit = async () => {
   const payload = {
     studentId,

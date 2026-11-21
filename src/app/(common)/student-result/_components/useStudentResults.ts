@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getMyResults, getMeritPosition } from "@/src/services/students";
 import { getExamRoutines } from "@/src/services/examRoutines";
 import { getGradeFromMarks, getGradeFromTotal } from "@/src/utils/gradeUtils";
+import { computeMonthlyResultSummary } from "@/src/utils/monthlyResultSummary";
 import {
   computeExamSummary,
   RoutineForSummary,
@@ -538,68 +539,26 @@ export function useStudentResults() {
   // Monthly tab rows: all scheduled/class subjects in order, with this
   // student's monthly result left-joined. Subjects without a result row get
   // empty cells (no marks) so newly added/scheduled subjects still appear.
+  const monthlyComputed = useMemo(() => computeMonthlyResultSummary({
+    resultSubjects: subjectRows as any,
+    classSubjects: classSubjects as any,
+    group: studentGroup,
+    classNumber: studentClassNumber,
+    fallbackTotalMarks: activeMonthly?.totalMarks,
+  }), [subjectRows, classSubjects, studentGroup, studentClassNumber, activeMonthly?.totalMarks]);
+
   const monthlySubjectRows = useMemo<MonthlySubjectRow[]>(() => {
-    const rowsByNormName = new Map<string, SubjectResult>();
-    subjectRows.forEach((row) => {
-      const rawName = row.subjectName;
-      const mappedName = resolveResultRowName(rawName) || rawName;
-      const key = normalizeSubjectName(mappedName);
-      // Keep first match for a target slot to avoid changing stored totals/aggregation.
-      if (!rowsByNormName.has(key)) {
-        rowsByNormName.set(key, row);
-      }
-    });
-
-    const merged: MonthlySubjectRow[] = [];
-    scheduledSubjectNames.forEach((name) => {
-      const row = rowsByNormName.get(normalizeSubjectName(name));
-      if (
-        isGroupAware &&
-        isCrossGroupLeftover(name, studentGroup, studentClassNumber) &&
-        !hasMeaningfulMarks(row)
-      ) {
-        return;
-      }
-      merged.push(
-        row
-          ? { ...row, subjectName: name }
-          : {
-              id: null,
-              subjectName: name,
-              marks: null,
-              fullMarks: null,
-              highestMark: null,
-              point: null,
-              grade: null,
-            }
-      );
-    });
-
-    // Cross-group leftovers (Class 9/10): hide if no meaningful marks; keep if any
-    // non-zero/meaningful marks exist so marks are never hidden.
-    if (isGroupAware) {
-      subjectRows.forEach((row) => {
-        const rawName = row.subjectName;
-        if (!isCrossGroupLeftover(rawName, studentGroup, studentClassNumber)) return;
-        if (!hasMeaningfulMarks(row)) return;
-        const exists = merged.some(
-          (m) => normalizeSubjectName(m.subjectName) === normalizeSubjectName(rawName)
-        );
-        if (!exists) {
-          merged.push({ ...row, subjectName: rawName });
-        }
-      });
-    }
-
-    return merged;
-  }, [
-    subjectRows,
-    scheduledSubjectNames,
-    studentGroup,
-    studentClassNumber,
-    isGroupAware,
-  ]);
-
+    return monthlyComputed.rows.map((r) => ({
+      id: r.id,
+      subjectName: r.subjectName,
+      marks: r.marks,
+      fullMarks: r.fullMarks,
+      highestMark: r.highestMark,
+      point: r.point,
+      grade: r.grade,
+      displayLabel: r.displayLabel,
+    }));
+  }, [monthlyComputed]);
 
   // ── Merit position (selected Week + Month + Year) ─────────────────────
   // Refetched whenever the selection changes; the previous value is cleared
@@ -710,6 +669,7 @@ export function useStudentResults() {
     activeMonthly,
     subjectRows,
     monthlySubjectRows,
+    monthlySummary: { obtained: monthlyComputed.obtained, full: monthlyComputed.full, gpa: monthlyComputed.gpa, grade: monthlyComputed.grade },
     weeklySummary,
     studentInfo,
     displayMeritPosition,

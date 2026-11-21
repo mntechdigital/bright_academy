@@ -39,6 +39,7 @@ export default function StudentResultsDashboard() {
     activeMonthly,
     subjectRows,
     monthlySubjectRows,
+    monthlySummary,
     weeklySummary,
     studentInfo,
     displayMeritPosition,
@@ -136,6 +137,7 @@ export default function StudentResultsDashboard() {
                 displayMonthlyPosition={displayMonthlyPosition}
                 group={studentGroup}
                 classNumber={studentInfo?.className}
+                summary={monthlySummary}
               />
             )}
 

@@ -1,15 +1,14 @@
 "use client";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
 import { downloadCSV } from "@/src/utils/downloadCSV";
-import {
-  updateMonthlyResult,
-  calculatePositionsByClass, // 👈 নতুন import
-} from "@/src/services/monthlyResult";
+import { calculatePositionsByClass } from "@/src/services/monthlyResult";
 import { showSuccessToast, showErrorToast } from "@/src/utils/toastMessage";
 import ResultModeSwitch from "../ResultModeSwitch";
+import { getStudentGroup } from "@/src/utils/studentGroup";
+import { computeMonthlyResultSummary } from "@/src/utils/monthlyResultSummary";
 
 const GradeIcon = () => (
   <svg
@@ -197,40 +196,36 @@ export default function ShowMonthlyResultTable({
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const getAchievedMarks = (results: ResultSubject[]) =>
-    results.reduce((sum, r) => sum + r.marks, 0);
-
-  // 👇 পুরনো client-side loop বাদ দিয়ে নতুন class-wise backend calculation
-  const calculatePositions = async () => {
-    if (!selectedClassId) {
-      showErrorToast("Position calculate করার আগে একটা Class সিলেক্ট করুন।");
-      return;
+  const summaryById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof computeMonthlyResultSummary>>();
+    for (const result of monthlyResultsData) {
+      const classId = (result.student as any)?.classId || (result as any).classId;
+      const classData = classesData.find((c) => c.id === classId);
+      const classSubjects = classData?.subjects || [];
+      const group = getStudentGroup((result.student as any)?.stdRegNo || "");
+      const classNumber = classData?.className || (result.student as any)?.stdClass?.className;
+      map.set(result.id, computeMonthlyResultSummary({ resultSubjects: result.results || [], classSubjects, group, classNumber, fallbackTotalMarks: result.totalMarks }));
     }
+    return map;
+  }, [monthlyResultsData, classesData]);
+  const getResultSummary = (result: MonthlyResult) => summaryById.get(result.id) || computeMonthlyResultSummary({ resultSubjects: result.results || [], fallbackTotalMarks: result.totalMarks });
+  const getAchievedMarks = (result: MonthlyResult) => getResultSummary(result).obtained;
+  const getFullMarks = (result: MonthlyResult) => getResultSummary(result).full;
 
+  const calculatePositions = async () => {
+    if (!selectedClassId) { showErrorToast("Select a class first"); return; }
     setIsCalculating(true);
     try {
       const res = await calculatePositionsByClass(selectedClassId);
-
-      if (!res || res?.statusCode >= 400) {
-        showErrorToast(res?.message || "Failed to calculate positions");
-        return;
-      }
-
-      showSuccessToast(
-        `Positions calculated for ${res.data.totalStudents} students.`,
-      );
+      if (!res || res?.statusCode >= 400) { showErrorToast(res?.message || "Failed to calculate positions"); return; }
+      showSuccessToast(`Positions calculated for ${res.data.totalStudents} students.`);
       router.refresh();
-    } catch (error) {
+    } catch {
       showErrorToast("Something went wrong while calculating positions");
     } finally {
       setIsCalculating(false);
     }
   };
-
-  const getFullMarks = (results: ResultSubject[], fallback: number) =>
-    results.length > 0
-      ? results.reduce((sum, r) => sum + r.fullMarks, 0)
-      : fallback;
 
   // Batches for the selected class
   const availableBatches =
@@ -322,8 +317,9 @@ export default function ShowMonthlyResultTable({
     ];
 
     const rows = results.map((result) => {
-      const achievedMarks = getAchievedMarks(result.results);
-      const fullMarks = getFullMarks(result.results, result.totalMarks);
+      const s = getResultSummary(result);
+      const achievedMarks = s.obtained;
+      const fullMarks = s.full;
       const batchName = getBatchName(result);
       return [
         result.student?.name || "",
@@ -331,8 +327,8 @@ export default function ShowMonthlyResultTable({
         batchName,
         fullMarks,
         achievedMarks,
-        result.grade,
-        result.gpa,
+        s.grade,
+        s.gpa,
         result.position,
       ];
     });
@@ -605,11 +601,9 @@ export default function ShowMonthlyResultTable({
                 </tr>
               ) : (
                 results.map((result) => {
-                  const achievedMarks = getAchievedMarks(result.results);
-                  const fullMarks = getFullMarks(
-                    result.results,
-                    result.totalMarks,
-                  );
+                  const s = getResultSummary(result);
+                  const achievedMarks = s.obtained;
+                  const fullMarks = s.full;
                   const batchName = getBatchName(result);
 
                   return (
@@ -658,7 +652,12 @@ export default function ShowMonthlyResultTable({
                       </td>
 
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
-                        {fullMarks}
+                        <div className="inline-flex items-center gap-1.5">
+                          <span>{fullMarks}</span>
+                          {s.excludedRows?.length ? (
+                            <span title={`${s.excludedRows.length} subject(s) outside this student's group were ignored`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold cursor-help">!</span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
                         {achievedMarks}
@@ -667,12 +666,12 @@ export default function ShowMonthlyResultTable({
                       {/* Grade */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                          {result.grade}
+                          {s.grade}
                         </span>
                       </td>
 
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
-                        {result.gpa}
+                        {s.gpa}
                       </td>
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
                         #{result.position}

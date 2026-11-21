@@ -1,8 +1,11 @@
 "use client";
 import { updateMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
-import React, { useEffect, useCallback } from "react";
+import { getGradeFromMarks } from "@/src/utils/gradeUtils";
+import { getStudentGroup } from "@/src/utils/studentGroup";
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
+import { computeMonthlyResultSummary, getDefaultFullMarksForSubject } from "@/src/utils/monthlyResultSummary";
+import React, { useEffect, useCallback, useMemo } from "react";
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -68,11 +71,10 @@ interface FormValues {
 
 interface Props {
   result: MonthlyResult;
+  classSubjects?: { id?: string; subjectName?: string; name?: string; fullMarks?: number }[];
 }
 
-const gradeOptions = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "D", "F"];
-
-export default function UpdateResultForm({ result }: Props) {
+export default function UpdateResultForm({ result, classSubjects = [] }: Props) {
   const router = useRouter();
 
   const { control, handleSubmit, watch, setValue } = useForm<FormValues>({
@@ -86,7 +88,7 @@ export default function UpdateResultForm({ result }: Props) {
       results: result.results.map((r) => ({
         id: r.id,
         subjectName: r.subjectName,
-        fullMarks: r.fullMarks,
+        fullMarks: getDefaultFullMarksForSubject(r.subjectName) !== 100 ? getDefaultFullMarksForSubject(r.subjectName) : r.fullMarks,
         marks: r.marks,
         highestMark: r.highestMark,
         grade: r.grade ?? "",
@@ -97,12 +99,12 @@ export default function UpdateResultForm({ result }: Props) {
 
   const { fields } = useFieldArray({ control, name: "results" });
 
-  // useWatch ব্যবহার করা হচ্ছে watch() এর বদলে — useFieldArray এর সাথে
-  // watch() এক রেন্ডার সাইকেল পিছিয়ে থাকে, useWatch সবসময় সিঙ্ক্রোনাসলি আপডেটেড থাকে
   const watchedResults = useWatch({ control, name: "results" });
-  const totalAchieved =
-    watchedResults?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
-
+  const studentGroup = getStudentGroup((result.student as any)?.stdRegNo || "");
+  const studentClassName = result.student?.stdClass?.className || result.className || "";
+  const summary = useMemo(() => computeMonthlyResultSummary({ resultSubjects: (watchedResults || []) as any, classSubjects, group: studentGroup, classNumber: studentClassName, fallbackTotalMarks: result.totalMarks }), [watchedResults, classSubjects, studentGroup, studentClassName, result.totalMarks]);
+  const totalAchieved = summary.obtained;
+  const totalFull = summary.full;
   // Auto-calculate subject grade & point when marks or fullMarks change
   const handleMarksChange = useCallback(
     (index: number, marks: number, fullMarks: number) => {
@@ -120,44 +122,16 @@ export default function UpdateResultForm({ result }: Props) {
   );
 
   // Auto-calculate overall GPA & grade whenever results change
+  // Overall GPA/Grade: percentage-based monthly rule over all student's subjects.
   useEffect(() => {
     if (!watchedResults) return;
-
-    // grade set হয়েছে মানেই ঐ সাবজেক্টে marks entry হয়েছে (F সহ)
-    const validResults = watchedResults.filter(
-      (r) => r.grade && r.grade.trim() !== ""
-    );
-
-    let gpa = 0;
-    let letterGrade = "";
-
-    if (validResults.length > 0) {
-      // কোনো একটা সাবজেক্টেও F থাকলে overall result F, GPA = 0
-      const hasFail = validResults.some(
-        (r) => r.grade.trim().toUpperCase() === "F"
-      );
-
-      if (hasFail) {
-        gpa = 0;
-        letterGrade = "F";
-      } else {
-        const points = validResults.map((r) => Number(r.point));
-        gpa = calculateGPAFromPoints(points);
-        letterGrade = getGradeFromGPA(gpa);
-      }
-    }
-
-    setValue("gpa", gpa);
-    setValue("grade", letterGrade);
-
-    // Auto-calculate present/absent
-    const present = watchedResults.filter(
-      (r) => String(r.marks).trim() !== ""
-    ).length;
-    const absent = watchedResults.length - present;
+    setValue("gpa", summary.gpa);
+    setValue("grade", summary.grade);
+    const present = watchedResults.filter((r) => String(r.marks).trim() !== "").length;
+    const absent = Math.max(0, summary.subjectCount - present);
     setValue("present", present);
     setValue("absent", absent);
-  }, [watchedResults, setValue]);
+  }, [watchedResults, summary, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     const payload = {
@@ -261,12 +235,17 @@ export default function UpdateResultForm({ result }: Props) {
               </div>
               <div>
                 <p className="text-xs text-gray-400">Total Marks</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {totalAchieved}
-                  <span className="text-sm font-normal text-gray-400">
-                    /{result.totalMarks}
-                  </span>
-                </p>
+                <div className="flex items-center justify-end gap-1.5">
+                  <p className="text-2xl font-bold text-gray-900">
+                    {totalAchieved}
+                    <span className="text-sm font-normal text-gray-400">
+                      /{totalFull}
+                    </span>
+                  </p>
+                  {summary.excludedRows?.length ? (
+                    <span title={`${summary.excludedRows.length} subject(s) outside this student's group were ignored`} className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold cursor-help">!</span>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -285,7 +264,7 @@ export default function UpdateResultForm({ result }: Props) {
               >
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-800">
-                    {field.subjectName}
+                    {getGroupSubjectLabel(field.subjectName, studentGroup, studentClassName)}
                   </p>
                 </div>
 

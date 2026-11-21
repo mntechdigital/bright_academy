@@ -68,6 +68,23 @@ export function getGradeFromTotal(
 }
 
 /**
+ * Monthly overall GPA/Grade rule:
+ * percentage = floor(obtained / full * 100), mapped via GRADE_SYSTEM_100.
+ * full <= 0 => GPA 0, grade F.
+ */
+export function getMonthlyGpaGradeFromTotals(
+  totalObtained: number,
+  totalFull: number,
+): { gpa: number; grade: string; percentage: number } {
+  const safeObtained = Number.isFinite(totalObtained) ? Math.max(0, totalObtained) : 0;
+  const safeFull = Number.isFinite(totalFull) && totalFull > 0 ? totalFull : 0;
+  if (safeFull <= 0) return { gpa: 0, grade: "F", percentage: 0 };
+  const percentage = Math.floor((safeObtained / safeFull) * 100);
+  const { gradePoint, letterGrade } = getGradeFromMarks(percentage, 100);
+  return { gpa: gradePoint, grade: letterGrade, percentage };
+}
+
+/**
  * Get grade based on marks and full marks.
  * @param marks - Marks obtained
  * @param fullMarks - Full marks (default 100)
