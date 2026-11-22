@@ -109,6 +109,8 @@ export interface MonthlyResult {
   absent: number;
   subjectId: string | null;
   month?: string | null;
+  year?: number | null;
+  publishedDate?: string | null;
   monthlyExamName?: string | null;
   classId?: string;
   createdAt: string;
@@ -499,7 +501,7 @@ export default function ShowMonthlyResultTable({
               <option key={y} value={y}>{y === "all" ? "All years" : y}</option>
             ))}
           </select>
-          <span className="text-[11px] text-gray-400">Year filter: based on saved date (temporary)</span>
+          
 
           <select
             value={selectedBatchId}

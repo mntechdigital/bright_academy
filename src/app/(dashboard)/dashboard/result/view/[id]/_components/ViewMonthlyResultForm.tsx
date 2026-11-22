@@ -28,6 +28,9 @@ interface Student {
 }
 
 export interface MonthlyResult {
+  month?: string | null;
+  year?: number | null;
+  publishedDate?: string | null;
   id: string;
   studentId: string;
   student: Student;
@@ -91,17 +94,15 @@ export default function ViewMonthlyResultForm({ result, classSubjects = [] }: Pr
         format: "a4",
       });
 
-      const generatedOn = new Date(result.createdAt).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
       pdf.setFontSize(16);
       pdf.text(result.monthlyExamName || "Monthly Result Report", 14, 16);
 
       pdf.setFontSize(10);
-      pdf.text(`Generated on: ${generatedOn}`, 14, 22);
+      pdf.text(`${result.month || ""}${result.year ? ` ${result.year}` : ""}`.trim(), 14, 22);
+      if (result.publishedDate) {
+        const pd = new Date(result.publishedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        pdf.text(`Published: ${pd}`, 14, 27);
+      }
 
       pdf.text(`Student: ${result.student?.name || "N/A"}`, 14, 30);
       pdf.text(`Class: ${studentClassName}`, 14, 36);
@@ -181,14 +182,10 @@ export default function ViewMonthlyResultForm({ result, classSubjects = [] }: Pr
           <h1 className="text-lg font-bold text-gray-800">
             {result.monthlyExamName || "Monthly Result Report"}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Generated on{" "}
-            {new Date(result.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
+          <p className="text-xs text-gray-500 mt-0.5">{result.month}{result.year ? ` ${result.year}` : ""}</p>
+          {result.publishedDate && (
+            <p className="text-xs text-gray-400 mt-0.5">Published: {new Date(result.publishedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
+          )}
         </div>
 
         {/* Student Info Card */}
