@@ -545,7 +545,8 @@ export function useStudentResults() {
     group: studentGroup,
     classNumber: studentClassNumber,
     fallbackTotalMarks: activeMonthly?.totalMarks,
-  }), [subjectRows, classSubjects, studentGroup, studentClassNumber, activeMonthly?.totalMarks]);
+    createdAt: activeMonthly?.createdAt,
+  }), [subjectRows, classSubjects, studentGroup, studentClassNumber, activeMonthly?.totalMarks, activeMonthly?.createdAt]);
 
   const monthlySubjectRows = useMemo<MonthlySubjectRow[]>(() => {
     return monthlyComputed.rows.map((r) => ({

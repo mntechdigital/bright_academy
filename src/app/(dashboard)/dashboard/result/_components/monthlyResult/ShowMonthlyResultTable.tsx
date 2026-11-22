@@ -78,6 +78,7 @@ interface ResultSubject {
   marks: number;
   fullMarks: number;
   highestMark: number;
+  isAbsent?: boolean;
 }
 
 interface Student {
@@ -204,11 +205,11 @@ export default function ShowMonthlyResultTable({
       const classSubjects = classData?.subjects || [];
       const group = getStudentGroup((result.student as any)?.stdRegNo || "");
       const classNumber = classData?.className || (result.student as any)?.stdClass?.className;
-      map.set(result.id, computeMonthlyResultSummary({ resultSubjects: result.results || [], classSubjects, group, classNumber, fallbackTotalMarks: result.totalMarks }));
+      map.set(result.id, computeMonthlyResultSummary({ resultSubjects: result.results || [], classSubjects, group, classNumber, fallbackTotalMarks: result.totalMarks, createdAt: (result as any).createdAt }));
     }
     return map;
   }, [monthlyResultsData, classesData]);
-  const getResultSummary = (result: MonthlyResult) => summaryById.get(result.id) || computeMonthlyResultSummary({ resultSubjects: result.results || [], fallbackTotalMarks: result.totalMarks });
+  const getResultSummary = (result: MonthlyResult) => summaryById.get(result.id) || computeMonthlyResultSummary({ resultSubjects: result.results || [], fallbackTotalMarks: result.totalMarks, createdAt: (result as any).createdAt });
   const getAchievedMarks = (result: MonthlyResult) => getResultSummary(result).obtained;
   const getFullMarks = (result: MonthlyResult) => getResultSummary(result).full;
 

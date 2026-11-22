@@ -69,8 +69,9 @@ export default function ViewMonthlyResultForm({ result, classSubjects = [] }: Pr
         group: studentGroup,
         classNumber: studentClassName,
         fallbackTotalMarks: result.totalMarks,
+        createdAt: result.createdAt,
       }),
-    [result.results, result.totalMarks, classSubjects, studentGroup, studentClassName],
+    [result.results, result.totalMarks, classSubjects, studentGroup, studentClassName, result.createdAt],
   );
 
   const totalAchieved = summary.obtained;

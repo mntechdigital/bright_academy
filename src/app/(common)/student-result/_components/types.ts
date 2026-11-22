@@ -8,6 +8,7 @@ export interface SubjectResult {
   marks: number;
   point: number;
   grade: string;
+  isAbsent?: boolean;
 }
 
 export interface MonthlyResult {
