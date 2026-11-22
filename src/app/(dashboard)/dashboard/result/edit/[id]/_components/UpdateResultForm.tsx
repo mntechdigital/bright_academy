@@ -5,14 +5,19 @@ import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import {
-  computeIct,
   computeMonthlyResultSummary,
+  computePractical,
   getDefaultFullMarksForSubject,
-  getIctExamFromStoredTotal,
+  getPracticalExamFromStoredTotal,
+  getPracticalSubjectSlot,
   ICT_EXAM_MAX,
   ICT_EXAM_PASS_MARK,
-  isIctPracticalApplicable,
-  isIctSubject,
+  ICT_FULL_MARKS,
+  isPracticalApplicable,
+  SCIENCE_EXAM_MAX,
+  SCIENCE_EXAM_PASS_MARK,
+  SCIENCE_FULL_MARKS,
+  SCIENCE_PRACTICAL_ADDED,
 } from "@/src/utils/monthlyResultSummary";
 import React, { useEffect, useCallback, useMemo, useState } from "react";
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
@@ -89,17 +94,15 @@ interface Props {
 export default function UpdateResultForm({ result, classSubjects = [] }: Props) {
   const router = useRouter();
 
-  const ictApplicable = isIctPracticalApplicable(
-    result.student?.stdClass?.className || result.className,
-    result.createdAt,
-  );
-  const isClass910 = /(9|10)/.test(String(result.student?.stdClass?.className || result.className || ""));
-  const isOldClass910Result = isClass910 && !isIctPracticalApplicable(result.student?.stdClass?.className || result.className, result.createdAt) && new Date(result.createdAt).getTime() < new Date("2026-11-22T00:00:00+06:00").getTime();
+  const studentGroup = getStudentGroup((result.student as any)?.stdRegNo || "");
+  const studentClassName = result.student?.stdClass?.className || result.className || "";
+  const isClass910 = /(9|10)/.test(String(studentClassName));
+  const isOldClass910Result = isClass910 && new Date(result.createdAt).getTime() < new Date("2026-11-22T00:00:00+06:00").getTime();
   const [ictPracticalAdded, setIctPracticalAdded] = useState(!!result.ictPracticalAdded);
   const [ictPracticalJustAdded, setIctPracticalJustAdded] = useState(false);
-  const ictOriginalById = useMemo(() => {
+  const originalMarksById = useMemo(() => {
     const map = new Map<string, number>();
-    (result.results || []).forEach((r) => { if (isIctSubject(r.subjectName)) map.set(r.id, r.isAbsent ? 0 : Number(r.marks) || 0); });
+    (result.results || []).forEach((r) => { map.set(r.id, r.isAbsent ? 0 : Number(r.marks) || 0); });
     return map;
   }, [result.results]);
 
@@ -112,14 +115,18 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
       present: result.present,
       absent: result.absent,
       results: result.results.map((r) => {
-        const ict = isIctSubject(r.subjectName);
-        const ictNew = ict && ictApplicable;
+        const slot = getPracticalSubjectSlot(r.subjectName, studentGroup, studentClassName);
+        const applicable = !!slot && isPracticalApplicable(r.subjectName, studentGroup, studentClassName, result.createdAt);
         const absent = !!r.isAbsent;
-        // Contract: NEW class 9/10 ICT form shows exam mark. Old results are ambiguous:
-        // pass totals are even 18..50 => exam=total/2; other totals treated as failed exam mark.
-        const marks = ictNew ? (getIctExamFromStoredTotal(r.marks, absent) ?? 0) : (absent ? 0 : r.marks);
-        const fullMarks = ict ? 50 : (getDefaultFullMarksForSubject(r.subjectName) !== 100 ? getDefaultFullMarksForSubject(r.subjectName) : r.fullMarks);
-        const storedMarks = ictNew ? computeIct(marks, absent).total : (absent ? 0 : marks);
+        // NEW practical rows show exam mark; old rows infer exam mark from stored total (ambiguous, commented in util).
+        const marks = applicable
+          ? (getPracticalExamFromStoredTotal(r.subjectName, studentGroup, studentClassName, r.marks, absent) ?? 0)
+          : (absent ? 0 : r.marks);
+        const fullMarks =
+          slot === "ict" ? ICT_FULL_MARKS :
+          slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+          (getDefaultFullMarksForSubject(r.subjectName) !== 100 ? getDefaultFullMarksForSubject(r.subjectName) : r.fullMarks);
+        const storedMarks = applicable ? computePractical(slot, studentGroup, studentClassName, marks, absent).total : (absent ? 0 : marks);
         const gradeInfo = (!absent && storedMarks >= 0 && fullMarks > 0) ? getGradeFromMarks(storedMarks, fullMarks) : { gradePoint: 0, letterGrade: "F" };
         return {
           id: r.id,
@@ -138,28 +145,27 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
   const { fields } = useFieldArray({ control, name: "results" });
 
   const watchedResults = useWatch({ control, name: "results" });
-  const studentGroup = getStudentGroup((result.student as any)?.stdRegNo || "");
-  const studentClassName = result.student?.stdClass?.className || result.className || "";
   const summary = useMemo(() => computeMonthlyResultSummary({
     resultSubjects: (watchedResults || []).map((r: any) => {
-      const ict = isIctSubject(r.subjectName);
-      const ictNew = ict && ictApplicable;
-      const storedMarks = r.isAbsent ? 0 : (ictNew ? computeIct(Number(r.marks), false).total : Number(r.marks));
-      return { ...r, marks: storedMarks, fullMarks: ict ? 50 : Number(r.fullMarks), isAbsent: !!r.isAbsent };
+      const slot = getPracticalSubjectSlot(r.subjectName, studentGroup, studentClassName);
+      const applicable = !!slot && isPracticalApplicable(r.subjectName, studentGroup, studentClassName, result.createdAt);
+      const storedMarks = r.isAbsent ? 0 : (applicable ? computePractical(slot, studentGroup, studentClassName, Number(r.marks), false).total : Number(r.marks));
+      const fullMarks = slot === "ict" ? ICT_FULL_MARKS : slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS : Number(r.fullMarks);
+      return { ...r, marks: storedMarks, fullMarks, isAbsent: !!r.isAbsent };
     }) as any,
     classSubjects, group: studentGroup, classNumber: studentClassName, fallbackTotalMarks: result.totalMarks, createdAt: result.createdAt,
-  }), [watchedResults, classSubjects, studentGroup, studentClassName, result.totalMarks, result.createdAt, ictApplicable]);
+  }), [watchedResults, classSubjects, studentGroup, studentClassName, result.totalMarks, result.createdAt]);
   const totalAchieved = summary.obtained;
   const totalFull = summary.full;
 
   const recomputeRow = useCallback((index: number, override?: Partial<FormValues["results"][number]>) => {
     const row = { ...(getValues(`results.${index}`) as any), ...(override || {}) };
-    const ict = isIctSubject(row.subjectName);
-    const ictNew = ict && ictApplicable;
-    const fullMarks = ict ? 50 : (Number(row.fullMarks) || 100);
+    const slot = getPracticalSubjectSlot(row.subjectName, studentGroup, studentClassName);
+    const applicable = !!slot && isPracticalApplicable(row.subjectName, studentGroup, studentClassName, result.createdAt);
+    const fullMarks = slot === "ict" ? ICT_FULL_MARKS : slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS : (Number(row.fullMarks) || 100);
     const absent = !!row.isAbsent;
     const entered = Number(row.marks);
-    const storedMarks = absent ? 0 : (ictNew ? computeIct(entered, false).total : entered);
+    const storedMarks = absent ? 0 : (applicable ? computePractical(slot, studentGroup, studentClassName, entered, false).total : entered);
     if (absent || !Number.isFinite(storedMarks)) {
       setValue(`results.${index}.grade`, absent ? "F" : "", { shouldDirty: true });
       setValue(`results.${index}.point`, absent ? 0 : 0, { shouldDirty: true });
@@ -168,7 +174,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
     const { gradePoint, letterGrade } = getGradeFromMarks(Math.max(0, storedMarks), fullMarks);
     setValue(`results.${index}.grade`, letterGrade, { shouldDirty: true });
     setValue(`results.${index}.point`, gradePoint, { shouldDirty: true });
-  }, [getValues, ictApplicable, setValue]);
+  }, [getValues, result.createdAt, setValue, studentClassName, studentGroup]);
 
   const handleMarksChange = useCallback(
     (index: number, marks: number, fullMarks: number, isAbsent = false) => {
@@ -196,7 +202,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
   }, [watchedResults, summary, setValue]);
 
   const onSubmit = async (data: FormValues) => {
-    // Contract: for NEW class 9/10 ICT, client sends EXAM mark (max 25); server computes total.
+    // Contract: for NEW class 9/10 practical subjects, client sends EXAM mark; server computes total once.
     const payload = {
       id: result.id,
       studentId: result.studentId,
@@ -208,14 +214,15 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
       absent: data.absent,
       ictPracticalAdded: ictPracticalAdded || !!result.ictPracticalAdded,
       results: data.results.map((r) => {
-        const ict = isIctSubject(r.subjectName);
-        const ictNew = ict && ictApplicable;
+        const slot = getPracticalSubjectSlot(r.subjectName, studentGroup, studentClassName);
+        const applicable = !!slot && isPracticalApplicable(r.subjectName, studentGroup, studentClassName, result.createdAt);
         const exam = r.isAbsent ? 0 : Number(r.marks);
+        const fullMarks = slot === "ict" ? ICT_FULL_MARKS : slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS : Number(r.fullMarks);
         return {
           id: r.id,
-          fullMarks: ict ? 50 : Number(r.fullMarks),
-          marks: ictNew ? exam : (r.isAbsent ? 0 : exam),
-          ...(ictNew ? { ictExamMark: exam } : {}),
+          fullMarks,
+          marks: applicable ? exam : (r.isAbsent ? 0 : exam),
+          ...(applicable ? { examMark: exam, ...(slot === "ict" ? { ictExamMark: exam } : {}) } : {}),
           highestMark: Number(r.highestMark),
           grade: r.grade,
           point: Number(r.point),
@@ -336,32 +343,30 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-800">
                     {getGroupSubjectLabel(field.subjectName, studentGroup, studentClassName)}
-                    {isIctSubject(field.subjectName) && ictApplicable ? (
-                      <span className="ml-1 text-[10px] text-orange-600" title={`Exam 0-25. ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.`}>
-                        (exam/practical)
-                      </span>
-                    ) : null}
+                    {(() => {
+                      const slot = getPracticalSubjectSlot(field.subjectName, studentGroup, studentClassName);
+                      const applicable = !!slot && isPracticalApplicable(field.subjectName, studentGroup, studentClassName, result.createdAt);
+                      if (!applicable) return null;
+                      const conf = computePractical(slot, studentGroup, studentClassName, 0, false);
+                      return (
+                        <span className="ml-1 text-[10px] text-orange-600" title={`Exam 0-${conf.examMax}. Pass ${conf.passMark}+: +${conf.practicalAdded} practical; below ${conf.passMark}: no practical.`}>
+                          (exam/practical)
+                        </span>
+                      );
+                    })()}
                   </p>
-                  {isIctSubject(field.subjectName) && isOldClass910Result ? (() => {
+                  {(() => {
+                    const slot = getPracticalSubjectSlot(field.subjectName, studentGroup, studentClassName);
+                    if (!slot || !isOldClass910Result) return null;
+                    if (slot.startsWith("science-") && studentGroup !== "Science") return null;
                     const row = watchedResults?.[index];
-                    const original = ictOriginalById.get(field.id) ?? 0;
+                    const original = originalMarksById.get(field.id) ?? 0;
                     const current = Number(row?.marks ?? 0);
                     const absent = !!row?.isAbsent;
-                    // Old-result ICT: add practical = current exam marks. Allowed only for 9-25.
-                    const canAdd =
-                      !ictPracticalAdded &&
-                      !absent &&
-                      current >= ICT_EXAM_PASS_MARK &&
-                      current <= ICT_EXAM_MAX;
-                    const title = ictPracticalAdded
-                      ? "Practical already added"
-                      : absent
-                        ? "Cannot add practical for absent ICT"
-                        : current < ICT_EXAM_PASS_MARK
-                          ? "Below pass mark; no practical"
-                          : current > ICT_EXAM_MAX
-                            ? "marks already above 25, practical may be included"
-                            : "Add practical marks equal to exam marks";
+                    const conf = computePractical(slot, studentGroup, studentClassName, 0, false);
+                    const canAdd = !ictPracticalAdded && !absent && current >= conf.passMark && current <= conf.examMax;
+                    const nextTotal = slot === "ict" ? current * 2 : current + conf.practicalAdded;
+                    const title = ictPracticalAdded ? "Practical already added" : absent ? "Cannot add practical for absent subject" : current < conf.passMark ? "Below pass mark; no practical" : current > conf.examMax ? "marks already above exam max, practical may be included" : `Add +${slot === "ict" ? current : conf.practicalAdded} practical`;
                     return (
                       <div className="mt-1 flex items-center gap-2">
                         <button
@@ -370,9 +375,8 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                           title={title}
                           onClick={() => {
                             if (!canAdd) return;
-                            const next = Math.min(50, current * 2);
-                            setValue(`results.${index}.marks`, next, { shouldDirty: true });
-                            recomputeRow(index, { marks: next });
+                            setValue(`results.${index}.marks`, Math.min(conf.fullMarks, nextTotal), { shouldDirty: true });
+                            recomputeRow(index, { marks: Math.min(conf.fullMarks, nextTotal) });
                             setIctPracticalAdded(true);
                             setIctPracticalJustAdded(true);
                           }}
@@ -381,22 +385,13 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                           {ictPracticalAdded ? "Practical added" : "Add practical"}
                         </button>
                         {ictPracticalJustAdded ? (
-                          <button
-                            type="button"
-                            className="text-[11px] text-blue-600 underline"
-                            onClick={() => {
-                              setValue(`results.${index}.marks`, original, { shouldDirty: true });
-                              recomputeRow(index, { marks: original });
-                              setIctPracticalAdded(!!result.ictPracticalAdded);
-                              setIctPracticalJustAdded(false);
-                            }}
-                          >
+                          <button type="button" className="text-[11px] text-blue-600 underline" onClick={() => { setValue(`results.${index}.marks`, original, { shouldDirty: true }); recomputeRow(index, { marks: original }); setIctPracticalAdded(!!result.ictPracticalAdded); setIctPracticalJustAdded(false); }}>
                             Undo
                           </button>
                         ) : null}
                       </div>
                     );
-                  })() : null}
+                  })()}
                 </div>
 
                 <div className="col-span-2">
@@ -428,36 +423,43 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs text-gray-500 mb-1 block">
-                    {isIctSubject(field.subjectName) && ictApplicable ? "ICT Exam (0-25)" : "Marks"}
-                  </label>
-                  {isIctSubject(field.subjectName) && ictApplicable ? (
-                    <p className="text-[10px] text-gray-400 -mt-1 mb-1">{`Pass ${ICT_EXAM_PASS_MARK}+: practical=exam; fail: no practical`}</p>
-                  ) : null}
-                  <Controller
-                    control={control}
-                    name={`results.${index}.marks`}
-                    render={({ field: f }) => (
-                      <input
-                        {...f}
-                        type="text"
-                        inputMode="numeric"
-                        disabled={!!watchedResults?.[index]?.isAbsent}
-                        onChange={(e) => {
-                          const ict = isIctSubject(field.subjectName);
-                          const ictNew = ict && ictApplicable;
-                          const max = ictNew ? 25 : (ict ? 50 : parseFloat(String(watchedResults?.[index]?.fullMarks ?? 100)));
-                          const raw = e.target.value.replace(/\D/g, "");
-                          const val = raw === "" ? "" : String(Math.min(max, Number(raw)));
-                          f.onChange(val === "" ? 0 : Number(val));
-                          const numericMarks = parseFloat(val || "0");
-                          const fullMarks = ict ? 50 : parseFloat(String(watchedResults?.[index]?.fullMarks ?? 0));
-                          handleMarksChange(index, numericMarks, fullMarks, !!watchedResults?.[index]?.isAbsent);
-                        }}
-                        className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition ${watchedResults?.[index]?.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
-                      />
-                    )}
-                  />
+                  {(() => {
+                    const slot = getPracticalSubjectSlot(field.subjectName, studentGroup, studentClassName);
+                    const applicable = !!slot && isPracticalApplicable(field.subjectName, studentGroup, studentClassName, result.createdAt);
+                    const conf = applicable ? computePractical(slot, studentGroup, studentClassName, 0, false) : null;
+                    const max = conf ? conf.examMax : parseFloat(String(watchedResults?.[index]?.fullMarks ?? 100));
+                    return (
+                      <>
+                        <label className="text-xs text-gray-500 mb-1 block">
+                          {conf ? `${slot === "ict" ? "ICT" : "Exam"} (0-${conf.examMax})` : "Marks"}
+                        </label>
+                        {conf ? (
+                          <p className="text-[10px] text-gray-400 -mt-1 mb-1">{`Pass ${conf.passMark}+: +${conf.practicalAdded} practical; fail: no practical`}</p>
+                        ) : null}
+                        <Controller
+                          control={control}
+                          name={`results.${index}.marks`}
+                          render={({ field: f }) => (
+                            <input
+                              {...f}
+                              type="text"
+                              inputMode="numeric"
+                              disabled={!!watchedResults?.[index]?.isAbsent}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, "");
+                                const val = raw === "" ? "" : String(Math.min(max, Number(raw)));
+                                f.onChange(val === "" ? 0 : Number(val));
+                                const numericMarks = parseFloat(val || "0");
+                                const fullMarks = conf ? conf.fullMarks : parseFloat(String(watchedResults?.[index]?.fullMarks ?? 0));
+                                handleMarksChange(index, numericMarks, fullMarks, !!watchedResults?.[index]?.isAbsent);
+                              }}
+                              className={`w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-100 transition ${watchedResults?.[index]?.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
+                            />
+                          )}
+                        />
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="col-span-1">

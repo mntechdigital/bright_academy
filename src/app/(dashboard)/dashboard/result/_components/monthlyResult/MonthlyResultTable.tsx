@@ -7,12 +7,15 @@ import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
 import {
-  computeIct,
   computeMonthlyResultSummary,
+  computePractical,
   getDefaultFullMarksForSubject,
+  getPracticalSubjectSlot,
   ICT_EXAM_PASS_MARK,
-  isIctPracticalApplicable,
-  isIctSubject,
+  ICT_FULL_MARKS,
+  isPracticalApplicable,
+  SCIENCE_EXAM_PASS_MARK,
+  SCIENCE_FULL_MARKS,
 } from "@/src/utils/monthlyResultSummary";
 
 // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -140,11 +143,13 @@ export default function MonthlyResultTable({
         }))
       : INITIAL_ROWS.map((r) => ({ id: "", name: r.name }));
   const ictCutoff = undefined; // use default shared constant
-  const ictApplicableForNewClass910 = isIctPracticalApplicable(classNumber, new Date(), ictCutoff);
   const [rows, setRows] = useState<SubjectRow[]>(
     subjectItems.map(({ id, name }) => {
-      const ict = isIctSubject(name);
-      const full = ict ? "50" : String(getDefaultFullMarksForSubject(name));
+      const slot = getPracticalSubjectSlot(name, studentGroup, classNumber);
+      const full =
+        slot === "ict" ? String(ICT_FULL_MARKS) :
+        slot && slot.startsWith("science-") ? String(SCIENCE_FULL_MARKS) :
+        String(getDefaultFullMarksForSubject(name));
       return {
         name,
         fullMarks: full,
@@ -174,21 +179,25 @@ export default function MonthlyResultTable({
   }, [studentId]);
 
   const getRowStoredMarks = useCallback((row: SubjectRow) => {
-    const ict = isIctSubject(row.name);
     if (row.isAbsent) return 0;
     const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
     if (Number.isNaN(entered)) return NaN;
-    if (ict && ictApplicableForNewClass910) return computeIct(entered, false).total;
+    const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
+    const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
+    if (applicable) return computePractical(slot, studentGroup, classNumber, entered, false).total;
     return entered;
-  }, [ictApplicableForNewClass910]);
+  }, [classNumber, ictCutoff, studentGroup]);
 
   const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string | boolean) => {
     setRows((prev) => {
       const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value as any } : row));
       const row = newRows[idx];
-      const ict = isIctSubject(row.name);
-      const ictNew = ict && ictApplicableForNewClass910;
-      const fullMarksNum = ict ? 50 : (parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name));
+      const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
+      const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
+      const fullMarksNum =
+        slot === "ict" ? ICT_FULL_MARKS :
+        slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+        (parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name));
       row.fullMarks = String(fullMarksNum);
 
       if (field === "isAbsent" && value === true) {
@@ -217,11 +226,11 @@ export default function MonthlyResultTable({
           return newRows;
         }
         const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
-        const maxInput = ictNew ? 25 : fullMarksNum;
+        const maxInput = applicable ? computePractical(slot, studentGroup, classNumber, 0, false).examMax : fullMarksNum;
         if (!Number.isNaN(entered)) {
           const clamped = Math.max(0, Math.min(maxInput, entered));
           row.marksObtained = String(clamped);
-          const storedMarks = ictNew ? computeIct(clamped, false).total : clamped;
+          const storedMarks = applicable ? computePractical(slot, studentGroup, classNumber, clamped, false).total : clamped;
           const { gradePoint, letterGrade } = getGradeFromMarks(storedMarks, fullMarksNum);
           row.point = gradePoint.toFixed(2);
           row.grade = letterGrade;
@@ -232,7 +241,7 @@ export default function MonthlyResultTable({
       }
       return newRows;
     });
-  }, [ictApplicableForNewClass910]);
+  }, [classNumber, ictCutoff, studentGroup]);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
@@ -241,14 +250,18 @@ export default function MonthlyResultTable({
   useEffect(() => {
     const resultSummary = computeMonthlyResultSummary({
       resultSubjects: rows.map((r) => {
-        const ict = isIctSubject(r.name);
-        const ictNew = ict && ictApplicableForNewClass910;
+        const slot = getPracticalSubjectSlot(r.name, studentGroup, classNumber);
+        const applicable = !!slot && isPracticalApplicable(r.name, studentGroup, classNumber, new Date(), ictCutoff);
         const entered = r.marksObtained === "" ? null : Number(r.marksObtained);
-        const storedMarks = r.isAbsent ? 0 : (ictNew ? computeIct(entered, false).total : entered);
+        const storedMarks = r.isAbsent ? 0 : (applicable ? computePractical(slot, studentGroup, classNumber, entered, false).total : (entered ?? 0));
+        const fullMarks =
+          slot === "ict" ? ICT_FULL_MARKS :
+          slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+          (r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name) : Number(r.fullMarks));
         return {
           subjectName: r.name,
           marks: storedMarks,
-          fullMarks: ict ? 50 : (r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name) : Number(r.fullMarks)),
+          fullMarks,
           isAbsent: r.isAbsent,
         };
       }),
@@ -267,10 +280,10 @@ export default function MonthlyResultTable({
       present: String(present),
       absent: String(absent),
     }));
-  }, [rows, subjects, studentGroup, classNumber, ictApplicableForNewClass910]);
+  }, [rows, subjects, studentGroup, classNumber, ictCutoff]);
 const handleSubmit = async () => {
-  // Contract: for NEW class 9/10 ICT, client sends EXAM mark (0-25) in marks/ictExamMark;
-  // server computes practical/total via computeIct exactly once. Old/non-ICT send stored marks.
+  // Contract: for NEW class 9/10 practical subjects, client sends EXAM mark (ICT 0-25, Science 0-75)
+  // in marks/examMark; server computes practical/total via computePractical exactly once.
   const yearNum = year === undefined || year === null || String(year).trim() === "" ? undefined : Number(year);
   const payload = {
     studentId,
@@ -285,15 +298,19 @@ const handleSubmit = async () => {
     ...(Number.isInteger(yearNum) ? { year: yearNum } : {}),
     ...(publishedDate ? { publishedDate: new Date(publishedDate).toISOString() } : {}),
     results: rows.map((r) => {
-      const ict = isIctSubject(r.name);
-      const ictNew = ict && ictApplicableForNewClass910;
+      const slot = getPracticalSubjectSlot(r.name, studentGroup, classNumber);
+      const applicable = !!slot && isPracticalApplicable(r.name, studentGroup, classNumber, new Date(), ictCutoff);
       const entered = r.marksObtained === "" ? 0 : Number(r.marksObtained);
-      const exam = ictNew ? (r.isAbsent ? 0 : entered) : (r.isAbsent ? 0 : entered);
+      const exam = r.isAbsent ? 0 : entered;
+      const fullMarks =
+        slot === "ict" ? ICT_FULL_MARKS :
+        slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+        Number(r.fullMarks);
       return {
         subjectName: r.name,
-        marks: ictNew ? exam : exam,
-        ...(ictNew ? { ictExamMark: exam } : {}),
-        fullMarks: ict ? 50 : Number(r.fullMarks),
+        marks: applicable ? exam : exam,
+        ...(applicable ? { examMark: exam, ...(slot === "ict" ? { ictExamMark: exam } : {}) } : {}),
+        fullMarks,
         highestMark: r.highestMark === "" ? 0 : Number(r.highestMark),
         point: r.point === "" ? 0 : Number(r.point),
         grade: r.grade || "F",
@@ -385,24 +402,42 @@ const handleSubmit = async () => {
                     </td>
                     <td className="px-3 py-3">
                       {(() => {
-                        const ict = isIctSubject(row.name);
-                        const ictNew = ict && ictApplicableForNewClass910;
-                        const max = ictNew ? 25 : (ict ? 50 : (parseFloat(row.fullMarks) || 100));
+                        const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
+                        const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
+                        const conf = applicable ? computePractical(slot, studentGroup, classNumber, 0, false) : null;
+                        const max = conf ? conf.examMax : (parseFloat(row.fullMarks) || 100);
+                        const title = conf
+                          ? (slot === "ict"
+                            ? `ICT exam (max 25). ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.`
+                            : `Exam (max 75). ${SCIENCE_EXAM_PASS_MARK}+ pass: exam+20 practical; below ${SCIENCE_EXAM_PASS_MARK}: no practical.`)
+                          : undefined;
                         return (
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={row.isAbsent ? "" : row.marksObtained}
-                            disabled={row.isAbsent}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9.]/g, "");
-                              const n = val === "" ? "" : String(Math.min(max, Number(val)));
-                              updateRow(idx, "marksObtained", n);
-                            }}
-                            placeholder={ictNew ? "0-25" : "0"}
-                            title={ictNew ? `ICT exam (max 25). ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.` : undefined}
-                            className={`w-full min-w-16 ${inputBase} ${row.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
-                          />
+                          <div>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={row.isAbsent ? "" : row.marksObtained}
+                              disabled={row.isAbsent}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9.]/g, "");
+                                const n = val === "" ? "" : String(Math.min(max, Number(val)));
+                                updateRow(idx, "marksObtained", n);
+                              }}
+                              placeholder={conf ? `0-${conf.examMax}` : "0"}
+                              title={title}
+                              className={`w-full min-w-16 ${inputBase} ${row.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
+                            />
+                            {conf ? (
+                              <div className="text-[10px] text-gray-400 mt-0.5 text-center">
+                                {row.isAbsent ? "absent" : (() => {
+                                  const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
+                                  if (Number.isNaN(entered)) return `max ${conf.examMax}`;
+                                  const c = computePractical(slot, studentGroup, classNumber, entered, false);
+                                  return c.practical > 0 ? `exam ${c.exam} + practical ${c.practical}` : (entered >= conf.passMark ? `exam ${c.exam}` : "failed: no practical");
+                                })()}
+                              </div>
+                            ) : null}
+                          </div>
                         );
                       })()}
                     </td>

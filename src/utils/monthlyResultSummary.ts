@@ -12,30 +12,116 @@ import {
 
 // ICT practical rule cutoff (Asia/Dhaka, UTC+6). Keep in sync with server.
 export const ICT_PRACTICAL_CUTOFF: Date = new Date("2026-11-22T00:00:00+06:00");
+// ICT rule (class 9/10): exam max 25, pass >= 9 => practical mirrors exam; fail/absent no practical.
 export const ICT_FULL_MARKS = 50;
 export const ICT_EXAM_MAX = 25;
-export const ICT_EXAM_PASS_MARK = 9; // exam >= 9: practical mirrors exam; below: no practical
+export const ICT_EXAM_PASS_MARK = 9;
+// Science practical rule (class 9/10, Science group only): exam max 75, pass >= 25 => +20 practical; fail/absent no practical.
+export const SCIENCE_FULL_MARKS = 100;
+export const SCIENCE_EXAM_MAX = 75;
+export const SCIENCE_EXAM_PASS_MARK = 25;
+export const SCIENCE_PRACTICAL_ADDED = 20; // out of 25, only 20 added
 
-export interface IctComputedMarks {
+export interface PracticalComputedMarks {
   exam: number;
   practical: number;
   total: number;
+  examMax: number;
+  fullMarks: number;
+  passMark: number;
+  practicalAdded: number;
+  applicable: boolean;
 }
 
-/**
- * ICT rule for class 9/10 monthly exams (max 25).
- * - absent: 0/0/0
- * - exam >= ICT_EXAM_PASS_MARK: practical = exam, total = exam*2
- * - exam < ICT_EXAM_PASS_MARK: practical = 0, total = exam
- */
-export function computeIct(
+export type PracticalSubjectSlot = "ict" | "science-physics" | "science-chemistry" | "science-biology" | "science-higher-math" | null;
+
+const SCIENCE_PRACTICAL_SUBJECT_KEYS = new Set(["physics", "chemistry", "biology"]);
+
+export function getGroupResolvedSubjectName(
+  subjectName: string | null | undefined,
+  group: string | null | undefined,
+  classNumber?: string | number | null,
+): string {
+  const original = String(subjectName ?? "").trim();
+  if (!isGroupClass(classNumber) || !group) return original;
+  if (group !== "Science" && group !== "Business" && group !== "Humanity") return original;
+  const canonical = getCanonicalCombinedName(original, group, classNumber);
+  if (!canonical) return original;
+  const def = COMBINED_SUBJECT_ROWS.find((d) => d.displayKey === canonical);
+  if (!def) return original;
+  return def.map[group as StudentGroup] || original;
+}
+
+export function getPracticalSubjectSlot(
+  subjectName: string | null | undefined,
+  group: string | null | undefined,
+  classNumber?: string | number | null,
+): PracticalSubjectSlot {
+  if (!isGroupClass(classNumber)) return null;
+  const resolved = getGroupResolvedSubjectName(subjectName, group, classNumber);
+  const key = normalizeSubjectName(resolved);
+  if (key === "ict") return "ict";
+  if (group === "Science") {
+    if (SCIENCE_PRACTICAL_SUBJECT_KEYS.has(key)) return `science-${key}` as PracticalSubjectSlot;
+    if (key === "h. math/agriculture/h. science" || key === "higher mathematics" || key === "higher math" || key === "h. math") {
+      return "science-higher-math";
+    }
+  }
+  return null;
+}
+
+export function isSciencePracticalSubject(subjectName: string | null | undefined, group: string | null | undefined, classNumber?: string | number | null): boolean {
+  const slot = getPracticalSubjectSlot(subjectName, group, classNumber);
+  return !!slot && slot !== "ict";
+}
+
+export function isMonthlyResultNewForPractical(createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
+  if (!createdAt) return false;
+  const t = createdAt instanceof Date ? createdAt.getTime() : new Date(createdAt).getTime();
+  return Number.isFinite(t) && t >= cutoff.getTime();
+}
+
+export function isIctPracticalApplicable(classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
+  return isGroupClass(classNumber) && isMonthlyResultNewForPractical(createdAt, cutoff);
+}
+
+export function isSciencePracticalApplicable(subjectName: string | null | undefined, group: string | null | undefined, classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
+  return isSciencePracticalSubject(subjectName, group, classNumber) && isMonthlyResultNewForPractical(createdAt, cutoff);
+}
+
+export function isPracticalApplicable(subjectName: string | null | undefined, group: string | null | undefined, classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
+  const slot = getPracticalSubjectSlot(subjectName, group, classNumber);
+  if (!slot) return false;
+  if (slot === "ict") return isIctPracticalApplicable(classNumber, createdAt, cutoff);
+  return isSciencePracticalApplicable(subjectName, group, classNumber, createdAt, cutoff);
+}
+
+export function computeIct(examMark: number | null | undefined, isAbsent: boolean): PracticalComputedMarks {
+  if (isAbsent) return { exam: 0, practical: 0, total: 0, examMax: ICT_EXAM_MAX, fullMarks: ICT_FULL_MARKS, passMark: ICT_EXAM_PASS_MARK, practicalAdded: ICT_EXAM_MAX, applicable: true };
+  const exam = Math.max(0, Math.min(ICT_EXAM_MAX, Number(examMark) || 0));
+  if (exam >= ICT_EXAM_PASS_MARK) return { exam, practical: exam, total: exam * 2, examMax: ICT_EXAM_MAX, fullMarks: ICT_FULL_MARKS, passMark: ICT_EXAM_PASS_MARK, practicalAdded: ICT_EXAM_MAX, applicable: true };
+  return { exam, practical: 0, total: exam, examMax: ICT_EXAM_MAX, fullMarks: ICT_FULL_MARKS, passMark: ICT_EXAM_PASS_MARK, practicalAdded: ICT_EXAM_MAX, applicable: true };
+}
+
+export function computeSciencePractical(examMark: number | null | undefined, isAbsent: boolean): PracticalComputedMarks {
+  if (isAbsent) return { exam: 0, practical: 0, total: 0, examMax: SCIENCE_EXAM_MAX, fullMarks: SCIENCE_FULL_MARKS, passMark: SCIENCE_EXAM_PASS_MARK, practicalAdded: SCIENCE_PRACTICAL_ADDED, applicable: true };
+  const exam = Math.max(0, Math.min(SCIENCE_EXAM_MAX, Number(examMark) || 0));
+  if (exam >= SCIENCE_EXAM_PASS_MARK) return { exam, practical: SCIENCE_PRACTICAL_ADDED, total: exam + SCIENCE_PRACTICAL_ADDED, examMax: SCIENCE_EXAM_MAX, fullMarks: SCIENCE_FULL_MARKS, passMark: SCIENCE_EXAM_PASS_MARK, practicalAdded: SCIENCE_PRACTICAL_ADDED, applicable: true };
+  return { exam, practical: 0, total: exam, examMax: SCIENCE_EXAM_MAX, fullMarks: SCIENCE_FULL_MARKS, passMark: SCIENCE_EXAM_PASS_MARK, practicalAdded: SCIENCE_PRACTICAL_ADDED, applicable: true };
+}
+
+export function computePractical(
+  subjectSlot: PracticalSubjectSlot | string | null | undefined,
+  group: string | null | undefined,
+  classNumber: string | number | null | undefined,
   examMark: number | null | undefined,
   isAbsent: boolean,
-): IctComputedMarks {
-  if (isAbsent) return { exam: 0, practical: 0, total: 0 };
-  const exam = Math.max(0, Math.min(ICT_EXAM_MAX, Number(examMark) || 0));
-  if (exam >= ICT_EXAM_PASS_MARK) return { exam, practical: exam, total: exam * 2 };
-  return { exam, practical: 0, total: exam };
+): PracticalComputedMarks {
+  void group; void classNumber;
+  if (subjectSlot === "ict") return computeIct(examMark, isAbsent);
+  if (typeof subjectSlot === "string" && subjectSlot.startsWith("science-")) return computeSciencePractical(examMark, isAbsent);
+  const exam = isAbsent ? 0 : Math.max(0, Number(examMark) || 0);
+  return { exam, practical: 0, total: exam, examMax: exam, fullMarks: exam, passMark: 0, practicalAdded: 0, applicable: false };
 }
 
 export interface MonthlyResultSubjectLike {
@@ -118,21 +204,8 @@ export function isIctSubject(subjectName?: string | null): boolean {
   return normalizeSubjectName(String(subjectName ?? "")) === "ict";
 }
 
-export function isMonthlyResultNewForIct(
-  createdAt?: string | Date | null,
-  cutoff: Date = ICT_PRACTICAL_CUTOFF,
-): boolean {
-  if (!createdAt) return false;
-  const t = createdAt instanceof Date ? createdAt.getTime() : new Date(createdAt).getTime();
-  return Number.isFinite(t) && t >= cutoff.getTime();
-}
-
-export function isIctPracticalApplicable(
-  classNumber?: string | number | null,
-  createdAt?: string | Date | null,
-  cutoff: Date = ICT_PRACTICAL_CUTOFF,
-): boolean {
-  return isGroupClass(classNumber) && isMonthlyResultNewForIct(createdAt, cutoff);
+export function isMonthlyResultNewForIct(createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
+  return isMonthlyResultNewForPractical(createdAt, cutoff);
 }
 
 export function isSubjectAbsent(row: any): boolean {
@@ -142,42 +215,50 @@ export function isSubjectAbsent(row: any): boolean {
   return false;
 }
 
-export function getIctStoredTotalFromExam(
-  examMark: number | null | undefined,
-  isAbsent: boolean,
-): number {
+export function getIctStoredTotalFromExam(examMark: number | null | undefined, isAbsent: boolean): number {
   return computeIct(examMark, isAbsent).total;
 }
 
-/**
- * Infer ICT exam mark from stored total. Ambiguous because old "+25" totals and
- * new failed totals can overlap (e.g. old 30 => exam 5, new 30 impossible as fail
- * but possible as pass? pass totals are even 18..50; 30 not possible). Rule:
- * - absent/0 => null/0
- * - if total is an even number in [2*PASS, 2*MAX], treat as pass (exam=total/2)
- * - otherwise treat stored total as exam mark (failed/no-practical case), clamped
- */
-export function getIctExamFromStoredTotal(
-  storedTotal: number | null | undefined,
-  isAbsent: boolean,
-): number | null {
+export function getIctExamFromStoredTotal(storedTotal: number | null | undefined, isAbsent: boolean): number | null {
   if (isAbsent) return null;
   const total = Number(storedTotal);
   if (!Number.isFinite(total) || total <= 0) return null;
   const normalized = Math.max(0, Math.min(ICT_FULL_MARKS, total));
-  const isPassTotal =
-    normalized % 2 === 0 &&
-    normalized >= ICT_EXAM_PASS_MARK * 2 &&
-    normalized <= ICT_EXAM_MAX * 2;
+  const isPassTotal = normalized % 2 === 0 && normalized >= ICT_EXAM_PASS_MARK * 2 && normalized <= ICT_EXAM_MAX * 2;
   if (isPassTotal) return normalized / 2;
   return Math.max(0, Math.min(ICT_EXAM_MAX, normalized));
 }
 
-export function getIctInputMaxForContext(
-  classNumber?: string | number | null,
-  createdAt?: string | Date | null,
-  cutoff: Date = ICT_PRACTICAL_CUTOFF,
-): number {
+export function getScienceStoredTotalFromExam(examMark: number | null | undefined, isAbsent: boolean): number {
+  return computeSciencePractical(examMark, isAbsent).total;
+}
+
+export function getScienceExamFromStoredTotal(storedTotal: number | null | undefined, isAbsent: boolean): number | null {
+  if (isAbsent) return null;
+  const total = Number(storedTotal);
+  if (!Number.isFinite(total) || total <= 0) return null;
+  const normalized = Math.max(0, Math.min(SCIENCE_FULL_MARKS, total));
+  if (normalized >= SCIENCE_EXAM_PASS_MARK + SCIENCE_PRACTICAL_ADDED && normalized <= SCIENCE_EXAM_MAX + SCIENCE_PRACTICAL_ADDED) {
+    return normalized - SCIENCE_PRACTICAL_ADDED;
+  }
+  return Math.max(0, Math.min(SCIENCE_EXAM_MAX, normalized));
+}
+
+export function getPracticalStoredTotalFromExam(subjectName: string | null | undefined, group: string | null | undefined, classNumber: string | number | null | undefined, examMark: number | null | undefined, isAbsent: boolean): number {
+  const slot = getPracticalSubjectSlot(subjectName, group, classNumber);
+  return computePractical(slot, group, classNumber, examMark, isAbsent).total;
+}
+
+export function getPracticalExamFromStoredTotal(subjectName: string | null | undefined, group: string | null | undefined, classNumber: string | number | null | undefined, storedTotal: number | null | undefined, isAbsent: boolean): number | null {
+  const slot = getPracticalSubjectSlot(subjectName, group, classNumber);
+  if (slot === "ict") return getIctExamFromStoredTotal(storedTotal, isAbsent);
+  if (slot && slot.startsWith("science-")) return getScienceExamFromStoredTotal(storedTotal, isAbsent);
+  if (isAbsent) return null;
+  const total = Number(storedTotal);
+  return Number.isFinite(total) ? total : null;
+}
+
+export function getIctInputMaxForContext(classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): number {
   return isIctPracticalApplicable(classNumber, createdAt, cutoff) ? ICT_EXAM_MAX : ICT_FULL_MARKS;
 }
 
