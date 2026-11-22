@@ -14,7 +14,29 @@ import {
 export const ICT_PRACTICAL_CUTOFF: Date = new Date("2026-11-22T00:00:00+06:00");
 export const ICT_FULL_MARKS = 50;
 export const ICT_EXAM_MAX = 25;
-export const ICT_PRACTICAL_MARKS = 25;
+export const ICT_EXAM_PASS_MARK = 9; // exam >= 9: practical mirrors exam; below: no practical
+
+export interface IctComputedMarks {
+  exam: number;
+  practical: number;
+  total: number;
+}
+
+/**
+ * ICT rule for class 9/10 monthly exams (max 25).
+ * - absent: 0/0/0
+ * - exam >= ICT_EXAM_PASS_MARK: practical = exam, total = exam*2
+ * - exam < ICT_EXAM_PASS_MARK: practical = 0, total = exam
+ */
+export function computeIct(
+  examMark: number | null | undefined,
+  isAbsent: boolean,
+): IctComputedMarks {
+  if (isAbsent) return { exam: 0, practical: 0, total: 0 };
+  const exam = Math.max(0, Math.min(ICT_EXAM_MAX, Number(examMark) || 0));
+  if (exam >= ICT_EXAM_PASS_MARK) return { exam, practical: exam, total: exam * 2 };
+  return { exam, practical: 0, total: exam };
+}
 
 export interface MonthlyResultSubjectLike {
   id?: string | null;
@@ -120,19 +142,35 @@ export function isSubjectAbsent(row: any): boolean {
   return false;
 }
 
-export function getIctStoredTotalFromExam(examMark: number | null | undefined, isAbsent: boolean): number {
-  if (isAbsent) return 0;
-  const exam = Number(examMark);
-  if (!Number.isFinite(exam)) return 0;
-  return Math.max(0, Math.min(ICT_EXAM_MAX, exam)) + ICT_PRACTICAL_MARKS;
+export function getIctStoredTotalFromExam(
+  examMark: number | null | undefined,
+  isAbsent: boolean,
+): number {
+  return computeIct(examMark, isAbsent).total;
 }
 
-export function getIctExamFromStoredTotal(storedTotal: number | null | undefined, isAbsent: boolean): number | null {
+/**
+ * Infer ICT exam mark from stored total. Ambiguous because old "+25" totals and
+ * new failed totals can overlap (e.g. old 30 => exam 5, new 30 impossible as fail
+ * but possible as pass? pass totals are even 18..50; 30 not possible). Rule:
+ * - absent/0 => null/0
+ * - if total is an even number in [2*PASS, 2*MAX], treat as pass (exam=total/2)
+ * - otherwise treat stored total as exam mark (failed/no-practical case), clamped
+ */
+export function getIctExamFromStoredTotal(
+  storedTotal: number | null | undefined,
+  isAbsent: boolean,
+): number | null {
   if (isAbsent) return null;
   const total = Number(storedTotal);
-  if (!Number.isFinite(total)) return null;
-  if (total <= 0) return null;
-  return Math.max(0, Math.min(ICT_EXAM_MAX, total - ICT_PRACTICAL_MARKS));
+  if (!Number.isFinite(total) || total <= 0) return null;
+  const normalized = Math.max(0, Math.min(ICT_FULL_MARKS, total));
+  const isPassTotal =
+    normalized % 2 === 0 &&
+    normalized >= ICT_EXAM_PASS_MARK * 2 &&
+    normalized <= ICT_EXAM_MAX * 2;
+  if (isPassTotal) return normalized / 2;
+  return Math.max(0, Math.min(ICT_EXAM_MAX, normalized));
 }
 
 export function getIctInputMaxForContext(

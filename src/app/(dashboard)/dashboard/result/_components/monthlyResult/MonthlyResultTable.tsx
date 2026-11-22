@@ -7,10 +7,10 @@ import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
 import {
+  computeIct,
   computeMonthlyResultSummary,
   getDefaultFullMarksForSubject,
-  getIctInputMaxForContext,
-  getIctStoredTotalFromExam,
+  ICT_EXAM_PASS_MARK,
   isIctPracticalApplicable,
   isIctSubject,
 } from "@/src/utils/monthlyResultSummary";
@@ -111,6 +111,8 @@ interface MonthlyResultTableProps {
   studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
   month: string;
+  year?: string | number;
+  publishedDate?: Date | string | null;
   monthlyExamName?: string;
   subjectHighestMarks?: Record<string, string>;
   studentRegNo?: string;
@@ -122,6 +124,8 @@ export default function MonthlyResultTable({
   studentName,
   subjects,
   month,
+  year,
+  publishedDate,
   monthlyExamName,
   subjectHighestMarks = {},
   studentRegNo,
@@ -169,20 +173,12 @@ export default function MonthlyResultTable({
     setSummary(INITIAL_SUMMARY);
   }, [studentId]);
 
-  const getRowInputMax = useCallback((row: SubjectRow) => {
-    const ict = isIctSubject(row.name);
-    if (ict && ictApplicableForNewClass910) return 25;
-    const fm = parseFloat(row.fullMarks);
-    if (ict) return 50;
-    return !isNaN(fm) && fm > 0 ? fm : 100;
-  }, [ictApplicableForNewClass910]);
-
   const getRowStoredMarks = useCallback((row: SubjectRow) => {
     const ict = isIctSubject(row.name);
     if (row.isAbsent) return 0;
     const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
     if (Number.isNaN(entered)) return NaN;
-    if (ict && ictApplicableForNewClass910) return getIctStoredTotalFromExam(entered, false);
+    if (ict && ictApplicableForNewClass910) return computeIct(entered, false).total;
     return entered;
   }, [ictApplicableForNewClass910]);
 
@@ -225,8 +221,8 @@ export default function MonthlyResultTable({
         if (!Number.isNaN(entered)) {
           const clamped = Math.max(0, Math.min(maxInput, entered));
           row.marksObtained = String(clamped);
-          const storedMarks = ictNew ? getIctStoredTotalFromExam(clamped, false) : clamped;
-          const { gradePoint, letterGrade } = getGradeFromMarks(storedMarks, 50 * 0 + fullMarksNum);
+          const storedMarks = ictNew ? computeIct(clamped, false).total : clamped;
+          const { gradePoint, letterGrade } = getGradeFromMarks(storedMarks, fullMarksNum);
           row.point = gradePoint.toFixed(2);
           row.grade = letterGrade;
         } else {
@@ -248,7 +244,7 @@ export default function MonthlyResultTable({
         const ict = isIctSubject(r.name);
         const ictNew = ict && ictApplicableForNewClass910;
         const entered = r.marksObtained === "" ? null : Number(r.marksObtained);
-        const storedMarks = r.isAbsent ? 0 : (ictNew ? getIctStoredTotalFromExam(entered, false) : entered);
+        const storedMarks = r.isAbsent ? 0 : (ictNew ? computeIct(entered, false).total : entered);
         return {
           subjectName: r.name,
           marks: storedMarks,
@@ -273,31 +269,30 @@ export default function MonthlyResultTable({
     }));
   }, [rows, subjects, studentGroup, classNumber, ictApplicableForNewClass910]);
 const handleSubmit = async () => {
-  // Contract: for NEW class 9/10 ICT, client sends EXAM mark (0-25); server adds 25 practical.
-  // For other/old cases, marks is the stored total.
+  // Contract: for NEW class 9/10 ICT, client sends EXAM mark (0-25) in marks/ictExamMark;
+  // server computes practical/total via computeIct exactly once. Old/non-ICT send stored marks.
+  const yearNum = year === undefined || year === null || String(year).trim() === "" ? undefined : Number(year);
   const payload = {
     studentId,
-
     monthlyExamName,
-
     totalMarks: Number(summary.totalMarks),
     gpa: Number(summary.gpa),
     grade: summary.grade,
     position: summary.position || "",
-
     present: Number(summary.present),
     absent: Number(summary.absent),
-
     month,
-
+    ...(Number.isInteger(yearNum) ? { year: yearNum } : {}),
+    ...(publishedDate ? { publishedDate: new Date(publishedDate).toISOString() } : {}),
     results: rows.map((r) => {
       const ict = isIctSubject(r.name);
       const ictNew = ict && ictApplicableForNewClass910;
       const entered = r.marksObtained === "" ? 0 : Number(r.marksObtained);
-      const marks = ictNew ? entered : (r.isAbsent ? 0 : entered);
+      const exam = ictNew ? (r.isAbsent ? 0 : entered) : (r.isAbsent ? 0 : entered);
       return {
         subjectName: r.name,
-        marks: r.isAbsent && !ictNew ? 0 : marks,
+        marks: ictNew ? exam : exam,
+        ...(ictNew ? { ictExamMark: exam } : {}),
         fullMarks: ict ? 50 : Number(r.fullMarks),
         highestMark: r.highestMark === "" ? 0 : Number(r.highestMark),
         point: r.point === "" ? 0 : Number(r.point),
@@ -405,7 +400,7 @@ const handleSubmit = async () => {
                               updateRow(idx, "marksObtained", n);
                             }}
                             placeholder={ictNew ? "0-25" : "0"}
-                            title={ictNew ? "ICT exam mark (max 25). 25 practical added by server." : undefined}
+                            title={ictNew ? `ICT exam (max 25). ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.` : undefined}
                             className={`w-full min-w-16 ${inputBase} ${row.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
                           />
                         );

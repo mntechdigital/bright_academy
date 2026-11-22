@@ -5,10 +5,12 @@ import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
 import {
+  computeIct,
   computeMonthlyResultSummary,
   getDefaultFullMarksForSubject,
   getIctExamFromStoredTotal,
-  getIctStoredTotalFromExam,
+  ICT_EXAM_MAX,
+  ICT_EXAM_PASS_MARK,
   isIctPracticalApplicable,
   isIctSubject,
 } from "@/src/utils/monthlyResultSummary";
@@ -113,10 +115,11 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
         const ict = isIctSubject(r.subjectName);
         const ictNew = ict && ictApplicable;
         const absent = !!r.isAbsent;
-        // Contract: for NEW class 9/10 ICT, form shows exam mark (total-25), not stored total.
+        // Contract: NEW class 9/10 ICT form shows exam mark. Old results are ambiguous:
+        // pass totals are even 18..50 => exam=total/2; other totals treated as failed exam mark.
         const marks = ictNew ? (getIctExamFromStoredTotal(r.marks, absent) ?? 0) : (absent ? 0 : r.marks);
         const fullMarks = ict ? 50 : (getDefaultFullMarksForSubject(r.subjectName) !== 100 ? getDefaultFullMarksForSubject(r.subjectName) : r.fullMarks);
-        const storedMarks = ictNew ? getIctStoredTotalFromExam(marks, absent) : (absent ? 0 : marks);
+        const storedMarks = ictNew ? computeIct(marks, absent).total : (absent ? 0 : marks);
         const gradeInfo = (!absent && storedMarks >= 0 && fullMarks > 0) ? getGradeFromMarks(storedMarks, fullMarks) : { gradePoint: 0, letterGrade: "F" };
         return {
           id: r.id,
@@ -141,7 +144,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
     resultSubjects: (watchedResults || []).map((r: any) => {
       const ict = isIctSubject(r.subjectName);
       const ictNew = ict && ictApplicable;
-      const storedMarks = r.isAbsent ? 0 : (ictNew ? getIctStoredTotalFromExam(Number(r.marks), false) : Number(r.marks));
+      const storedMarks = r.isAbsent ? 0 : (ictNew ? computeIct(Number(r.marks), false).total : Number(r.marks));
       return { ...r, marks: storedMarks, fullMarks: ict ? 50 : Number(r.fullMarks), isAbsent: !!r.isAbsent };
     }) as any,
     classSubjects, group: studentGroup, classNumber: studentClassName, fallbackTotalMarks: result.totalMarks, createdAt: result.createdAt,
@@ -156,7 +159,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
     const fullMarks = ict ? 50 : (Number(row.fullMarks) || 100);
     const absent = !!row.isAbsent;
     const entered = Number(row.marks);
-    const storedMarks = absent ? 0 : (ictNew ? getIctStoredTotalFromExam(entered, false) : entered);
+    const storedMarks = absent ? 0 : (ictNew ? computeIct(entered, false).total : entered);
     if (absent || !Number.isFinite(storedMarks)) {
       setValue(`results.${index}.grade`, absent ? "F" : "", { shouldDirty: true });
       setValue(`results.${index}.point`, absent ? 0 : 0, { shouldDirty: true });
@@ -193,7 +196,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
   }, [watchedResults, summary, setValue]);
 
   const onSubmit = async (data: FormValues) => {
-    // Contract: for NEW class 9/10 ICT, client sends EXAM mark (max 25); server adds 25.
+    // Contract: for NEW class 9/10 ICT, client sends EXAM mark (max 25); server computes total.
     const payload = {
       id: result.id,
       studentId: result.studentId,
@@ -207,11 +210,12 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
       results: data.results.map((r) => {
         const ict = isIctSubject(r.subjectName);
         const ictNew = ict && ictApplicable;
-        const marks = r.isAbsent ? 0 : Number(r.marks);
+        const exam = r.isAbsent ? 0 : Number(r.marks);
         return {
           id: r.id,
           fullMarks: ict ? 50 : Number(r.fullMarks),
-          marks: ictNew ? marks : (r.isAbsent ? 0 : marks),
+          marks: ictNew ? exam : (r.isAbsent ? 0 : exam),
+          ...(ictNew ? { ictExamMark: exam } : {}),
           highestMark: Number(r.highestMark),
           grade: r.grade,
           point: Number(r.point),
@@ -333,7 +337,9 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                   <p className="text-sm font-medium text-gray-800">
                     {getGroupSubjectLabel(field.subjectName, studentGroup, studentClassName)}
                     {isIctSubject(field.subjectName) && ictApplicable ? (
-                      <span className="ml-1 text-[10px] text-orange-600">(exam+25 practical)</span>
+                      <span className="ml-1 text-[10px] text-orange-600" title={`Exam 0-25. ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.`}>
+                        (exam/practical)
+                      </span>
                     ) : null}
                   </p>
                   {isIctSubject(field.subjectName) && isOldClass910Result ? (() => {
@@ -341,15 +347,21 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                     const original = ictOriginalById.get(field.id) ?? 0;
                     const current = Number(row?.marks ?? 0);
                     const absent = !!row?.isAbsent;
-                    const canAdd = !ictPracticalAdded && !absent && current <= 25 && current + 25 <= 50;
-                    const blockedAbove25 = !ictPracticalAdded && !absent && current > 25;
+                    // Old-result ICT: add practical = current exam marks. Allowed only for 9-25.
+                    const canAdd =
+                      !ictPracticalAdded &&
+                      !absent &&
+                      current >= ICT_EXAM_PASS_MARK &&
+                      current <= ICT_EXAM_MAX;
                     const title = ictPracticalAdded
                       ? "Practical already added"
                       : absent
                         ? "Cannot add practical for absent ICT"
-                        : blockedAbove25
-                          ? "marks already above 25, practical may be included"
-                          : "Add 25 practical marks";
+                        : current < ICT_EXAM_PASS_MARK
+                          ? "Below pass mark; no practical"
+                          : current > ICT_EXAM_MAX
+                            ? "marks already above 25, practical may be included"
+                            : "Add practical marks equal to exam marks";
                     return (
                       <div className="mt-1 flex items-center gap-2">
                         <button
@@ -358,7 +370,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                           title={title}
                           onClick={() => {
                             if (!canAdd) return;
-                            const next = Math.min(50, current + 25);
+                            const next = Math.min(50, current * 2);
                             setValue(`results.${index}.marks`, next, { shouldDirty: true });
                             recomputeRow(index, { marks: next });
                             setIctPracticalAdded(true);
@@ -366,7 +378,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                           }}
                           className={`px-2 py-0.5 rounded text-[11px] border ${canAdd ? "border-orange-300 text-orange-700 hover:bg-orange-50" : "border-gray-200 text-gray-400 cursor-not-allowed"}`}
                         >
-                          {ictPracticalAdded ? "Practical added" : "Add 25 practical"}
+                          {ictPracticalAdded ? "Practical added" : "Add practical"}
                         </button>
                         {ictPracticalJustAdded ? (
                           <button
@@ -419,6 +431,9 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                   <label className="text-xs text-gray-500 mb-1 block">
                     {isIctSubject(field.subjectName) && ictApplicable ? "ICT Exam (0-25)" : "Marks"}
                   </label>
+                  {isIctSubject(field.subjectName) && ictApplicable ? (
+                    <p className="text-[10px] text-gray-400 -mt-1 mb-1">{`Pass ${ICT_EXAM_PASS_MARK}+: practical=exam; fail: no practical`}</p>
+                  ) : null}
                   <Controller
                     control={control}
                     name={`results.${index}.marks`}
