@@ -91,7 +91,7 @@ export default function ViewMonthlyResultForm({ result, classSubjects = [] }: Pr
         format: "a4",
       });
 
-      const generatedOn = new Date().toLocaleDateString("en-US", {
+      const generatedOn = new Date(result.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -183,7 +183,7 @@ export default function ViewMonthlyResultForm({ result, classSubjects = [] }: Pr
           </h1>
           <p className="text-xs text-gray-400 mt-0.5">
             Generated on{" "}
-            {new Date().toLocaleDateString("en-US", {
+            {new Date(result.createdAt).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",

@@ -99,6 +99,11 @@ const ResultOverviewPage = async (props: {
   const filter: Record<string, string> = {};
   if (classId) filter.classId = classId;
   if (batchId) filter.batchId = batchId;
+  const monthParam = searchParams.month || "";
+  const yearParam = searchParams.year || "";
+  if (monthParam) filter.month = monthParam;
+  // Year is temporary createdAt-based filter; only apply when explicitly selected.
+  if (yearParam && yearParam !== "all") filter.year = yearParam;
 
   if (Object.keys(filter).length > 0) {
     query.push({ key: "filter", value: JSON.stringify(filter) });

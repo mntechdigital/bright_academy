@@ -76,11 +76,13 @@ export const deleteMonthlyResult = async (id: string | undefined) => {
 
 export const calculatePositionsByClass = async (
   classId: string,
-  month?: string,
+  month: string,
+  year?: string | number,
+  examName?: string,
 ) => {
   const response = await apiRequest("monthly-results/calculate-positions", {
     method: "POST",
-    body: JSON.stringify({ classId, month }),
+    body: JSON.stringify({ classId, month, year, examName }),
     authRequired: true,
   });
 
