@@ -131,6 +131,7 @@ interface ClassData {
 interface Props {
   monthlyResultsData: MonthlyResult[];
   classesData: ClassData[];
+  currentYear: string;
 }
 
 const MONTHS = [
@@ -149,6 +150,9 @@ const MONTHS = [
 ];
 
 const getResultYear = (result: MonthlyResult) => {
+  if (result.year !== null && result.year !== undefined && Number.isFinite(Number(result.year))) {
+    return String(result.year);
+  }
   const d = new Date(result.createdAt);
   const y = d.getFullYear();
   return Number.isFinite(y) ? String(y) : "";
@@ -157,6 +161,7 @@ const getResultYear = (result: MonthlyResult) => {
 export default function ShowMonthlyResultTable({
   monthlyResultsData = [],
   classesData = [],
+  currentYear,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -175,7 +180,7 @@ export default function ShowMonthlyResultTable({
     searchParams.get("batchId") || "",
   );
   const [selectedMonth, setSelectedMonth] = useState(searchParams.get("month") || "");
-  const [selectedYear, setSelectedYear] = useState(searchParams.get("year") || "all");
+  const [selectedYear, setSelectedYear] = useState(searchParams.get("year") || currentYear);
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
   const updateFilters = (next: {
@@ -201,6 +206,12 @@ export default function ShowMonthlyResultTable({
     params.set("page", "1");
     router.push(`${pathname}?${params.toString()}`);
   };
+
+  useEffect(() => {
+    const urlYear = searchParams.get("year") || currentYear;
+    if (urlYear !== selectedYear) setSelectedYear(urlYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, currentYear]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -243,9 +254,9 @@ export default function ShowMonthlyResultTable({
   const selectedClassName = classesData.find((c) => c.id === selectedClassId)?.className;
   const availableBatches = classesData.find((c) => c.id === selectedClassId)?.batches ?? [];
   const yearOptions = useMemo(() => {
-    const current = new Date().getFullYear();
+    const current = Number(currentYear) || new Date().getFullYear();
     return ["all", ...Array.from({ length: 7 }, (_, i) => String(current - 3 + i))];
-  }, []);
+  }, [currentYear]);
 
   const normalizeMonth = (m?: string | null) => {
     const raw = String(m || "").trim().toLowerCase();
@@ -341,16 +352,16 @@ export default function ShowMonthlyResultTable({
     updateFilters({ batchId });
   };
 
-  const hasActiveFilters = !!(selectedClassId || selectedBatchId || search || selectedMonth || (selectedYear && selectedYear !== "all"));
+  const hasActiveFilters = !!(selectedClassId || selectedBatchId || search || selectedMonth || selectedYear !== currentYear);
 
   const clearFilters = () => {
     setSelectedClassId("");
     setSelectedBatchId("");
     setSelectedMonth("");
-    setSelectedYear("all");
+    setSelectedYear(currentYear);
     setSearch("");
     setShowConfirm(false);
-    router.push(pathname);
+    router.push(`${pathname}?year=${encodeURIComponent(currentYear)}`);
   };
 
   const studentRegNoMap = new Map<string, string>();
@@ -493,7 +504,7 @@ export default function ShowMonthlyResultTable({
               const year = e.target.value;
               setSelectedYear(year);
               setShowConfirm(false);
-              updateFilters({ year: year === "all" ? "" : year });
+              updateFilters({ year });
             }}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-28"
           >
@@ -618,7 +629,7 @@ export default function ShowMonthlyResultTable({
               <div className="mt-3 space-y-1 text-sm text-gray-700">
                 <p><span className="font-medium text-gray-900">Class:</span> {selectedClassName || selectedClassId}</p>
                 <p><span className="font-medium text-gray-900">Month:</span> {selectedMonth}</p>
-                <p><span className="font-medium text-gray-900">Year:</span> {selectedYear === "all" ? "All years (temporary: saved date rule not applied)" : `${selectedYear} (temporary: saved date)`}</p>
+                <p><span className="font-medium text-gray-900">Year:</span> {selectedYear === "all" ? "All years" : selectedYear}</p>
                 <p><span className="font-medium text-gray-900">Results to rank:</span> {scopedResultsCount}</p>
               </div>
 
