@@ -89,6 +89,7 @@ const ResultOverviewPage = async (props: {
     );
   }
 
+  const currentYear = String(new Date().getFullYear());
   const query: TQuery[] = [
     { key: "orderBy", value: JSON.stringify({ createdAt: "desc" }) },
     { key: "searchTerm", value: search },
@@ -99,6 +100,12 @@ const ResultOverviewPage = async (props: {
   const filter: Record<string, string> = {};
   if (classId) filter.classId = classId;
   if (batchId) filter.batchId = batchId;
+  const monthParam = searchParams.month || "";
+  const rawYearParam = searchParams.year;
+  const yearParam = rawYearParam === undefined ? currentYear : rawYearParam;
+  if (monthParam) filter.month = monthParam;
+  // Default to current year when no year param; year=all disables year filter.
+  if (yearParam && yearParam !== "all") filter.year = yearParam;
 
   if (Object.keys(filter).length > 0) {
     query.push({ key: "filter", value: JSON.stringify(filter) });
@@ -112,6 +119,7 @@ const ResultOverviewPage = async (props: {
       <ShowMonthlyResultTable
         monthlyResultsData={monthlyResultsData}
         classesData={classesData}
+        currentYear={currentYear}
       />
       {monthlyResultsRes?.data?.meta?.totalPages > 1 && (
         <PaginationWrapper

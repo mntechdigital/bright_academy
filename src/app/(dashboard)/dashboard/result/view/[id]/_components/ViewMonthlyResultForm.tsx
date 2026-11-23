@@ -1,8 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download } from "lucide-react";
 import { getStudentGroup } from "@/src/utils/studentGroup";
+import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
+import { computeMonthlyResultSummary } from "@/src/utils/monthlyResultSummary";
 
 // ---- Types ----
 interface ResultSubject {
@@ -26,6 +28,9 @@ interface Student {
 }
 
 export interface MonthlyResult {
+  month?: string | null;
+  year?: number | null;
+  publishedDate?: string | null;
   id: string;
   studentId: string;
   student: Student;
@@ -46,19 +51,34 @@ export interface MonthlyResult {
 
 interface Props {
   result: MonthlyResult;
+  classSubjects?: { id?: string; subjectName?: string; name?: string; fullMarks?: number }[];
 }
 
-export default function ViewMonthlyResultForm({ result }: Props) {
+export default function ViewMonthlyResultForm({ result, classSubjects = [] }: Props) {
   const router = useRouter();
   const [generatingPdf, setGeneratingPdf] = useState(false);
-
-  const totalAchieved =
-    result.results?.reduce((sum, r) => sum + Number(r.marks), 0) ?? 0;
 
   const studentClassName =
     result.student?.stdClass?.className || result.className || "N/A";
   const studentBatchName =
     result.student?.batch?.name || result.batchName || "N/A";
+  const studentGroup = getStudentGroup(result.student?.stdRegNo || "");
+
+  const summary = useMemo(
+    () =>
+      computeMonthlyResultSummary({
+        resultSubjects: result.results || [],
+        classSubjects,
+        group: studentGroup,
+        classNumber: studentClassName,
+        fallbackTotalMarks: result.totalMarks,
+        createdAt: result.createdAt,
+      }),
+    [result.results, result.totalMarks, classSubjects, studentGroup, studentClassName, result.createdAt],
+  );
+
+  const totalAchieved = summary.obtained;
+  const totalFull = summary.full;
 
   const handleDownloadPdf = async () => {
     setGeneratingPdf(true);
@@ -74,22 +94,19 @@ export default function ViewMonthlyResultForm({ result }: Props) {
         format: "a4",
       });
 
-      const generatedOn = new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
       pdf.setFontSize(16);
       pdf.text(result.monthlyExamName || "Monthly Result Report", 14, 16);
 
       pdf.setFontSize(10);
-      pdf.text(`Generated on: ${generatedOn}`, 14, 22);
+      pdf.text(`${result.month || ""}${result.year ? ` ${result.year}` : ""}`.trim(), 14, 22);
+      if (result.publishedDate) {
+        const pd = new Date(result.publishedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+        pdf.text(`Published: ${pd}`, 14, 27);
+      }
 
       pdf.text(`Student: ${result.student?.name || "N/A"}`, 14, 30);
       pdf.text(`Class: ${studentClassName}`, 14, 36);
 
-      const studentGroup = getStudentGroup(result.student?.stdRegNo || "");
       if (studentGroup) {
         pdf.text(`Group: ${studentGroup}`, 14, 42);
         pdf.text(`Parent Phone: ${result.student?.parentPhone || "N/A"}`, 14, 48);
@@ -97,20 +114,20 @@ export default function ViewMonthlyResultForm({ result }: Props) {
         pdf.text(`Parent Phone: ${result.student?.parentPhone || "N/A"}`, 14, 42);
       }
 
-      pdf.text(`Total Marks: ${totalAchieved}/${result.totalMarks}`, 120, 30);
-      pdf.text(`Grade: ${result.grade}`, 120, 36);
-      pdf.text(`GPA: ${result.gpa}`, 120, 42);
+      pdf.text(`Total Marks: ${totalAchieved}/${totalFull}`, 120, 30);
+      pdf.text(`Grade: ${summary.grade}`, 120, 36);
+      pdf.text(`GPA: ${summary.gpa}`, 120, 42);
       pdf.text(`Position: ${result.position}`, 120, 48);
       pdf.text(`Present: ${result.present}  Absent: ${result.absent}`, 120, 54);
 
       autoTable(pdf, {
         startY: 60,
         head: [["Subject", "Marks Obtained", "Full Marks", "Highest Mark"]],
-        body: result.results.map((subject) => [
-          subject.subjectName,
-          String(subject.marks),
+        body: summary.rows.map((subject) => [
+          subject.displayLabel,
+          subject.marks == null ? "" : String(subject.marks),
           String(subject.fullMarks),
-          String(subject.highestMark),
+          subject.highestMark == null ? "" : String(subject.highestMark),
         ]),
         styles: {
           fontSize: 10,
@@ -165,14 +182,10 @@ export default function ViewMonthlyResultForm({ result }: Props) {
           <h1 className="text-lg font-bold text-gray-800">
             {result.monthlyExamName || "Monthly Result Report"}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Generated on{" "}
-            {new Date().toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
+          <p className="text-xs text-gray-500 mt-0.5">{result.month}{result.year ? ` ${result.year}` : ""}</p>
+          {result.publishedDate && (
+            <p className="text-xs text-gray-400 mt-0.5">Published: {new Date(result.publishedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
+          )}
         </div>
 
         {/* Student Info Card */}
@@ -209,12 +222,17 @@ export default function ViewMonthlyResultForm({ result }: Props) {
             </div>
             <div className="ml-auto text-right">
               <p className="text-xs text-gray-400">Total Marks</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {totalAchieved}
-                <span className="text-sm font-normal text-gray-400">
-                  /{result.totalMarks}
-                </span>
-              </p>
+              <div className="flex items-center justify-end gap-1.5">
+                <p className="text-2xl font-bold text-gray-900">
+                  {totalAchieved}
+                  <span className="text-sm font-normal text-gray-400">
+                    /{totalFull}
+                  </span>
+                </p>
+                {summary.excludedRows?.length ? (
+                  <span title={`${summary.excludedRows.length} subject(s) outside this student's group were ignored`} className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold cursor-help">!</span>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -225,14 +243,14 @@ export default function ViewMonthlyResultForm({ result }: Props) {
             Subject Results
           </h3>
           <div className="space-y-3">
-            {result.results.map((subject) => (
+            {summary.rows.map((subject, idx) => (
               <div
-                key={subject.id}
+                key={subject.id ?? `${subject.subjectName}-${idx}`}
                 className="grid grid-cols-12 items-center gap-3 py-2 border-b border-gray-50 last:border-0"
               >
                 <div className="col-span-4">
                   <p className="text-sm font-medium text-gray-800">
-                    {subject.subjectName}
+                    {subject.displayLabel}
                   </p>
                   <p className="text-xs text-gray-400">Full: {subject.fullMarks}</p>
                 </div>
@@ -240,14 +258,14 @@ export default function ViewMonthlyResultForm({ result }: Props) {
                 <div className="col-span-4">
                   <p className="text-xs text-gray-500 mb-1">Marks Obtained</p>
                   <p className="text-sm font-semibold text-gray-800 bg-gray-50 rounded-lg px-3 py-2">
-                    {subject.marks}
+                    {subject.marks ?? ""}
                   </p>
                 </div>
 
                 <div className="col-span-4">
                   <p className="text-xs text-gray-500 mb-1">Highest Mark</p>
                   <p className="text-sm font-semibold text-gray-800 bg-gray-50 rounded-lg px-3 py-2">
-                    {subject.highestMark}
+                    {subject.highestMark ?? ""}
                   </p>
                 </div>
               </div>
@@ -264,14 +282,14 @@ export default function ViewMonthlyResultForm({ result }: Props) {
             <div>
               <p className="text-xs font-medium text-gray-500 mb-1">Grade</p>
               <p className="text-sm font-semibold text-gray-800 bg-gray-50 rounded-lg px-3 py-2">
-                {result.grade}
+                {summary.grade}
               </p>
             </div>
 
             <div>
               <p className="text-xs font-medium text-gray-500 mb-1">GPA</p>
               <p className="text-sm font-semibold text-gray-800 bg-gray-50 rounded-lg px-3 py-2">
-                {result.gpa}
+                {summary.gpa}
               </p>
             </div>
 

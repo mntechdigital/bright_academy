@@ -11,6 +11,7 @@ function MonthlyResultsTable({
   displayMonthlyPosition,
   group = "",
   classNumber,
+  summary,
 }: {
   monthlyResults: MonthlyResult[];
   activeMonthly: MonthlyResult | undefined;
@@ -18,6 +19,7 @@ function MonthlyResultsTable({
   displayMonthlyPosition: string | null;
   group?: string;
   classNumber?: string | number | null;
+  summary?: { obtained: number; full: number; gpa: number; grade: string };
 }) {
   return (
     <>
@@ -60,7 +62,7 @@ function MonthlyResultsTable({
                   >
                     <td className="py-4 px-4 font-medium text-gray-800">
 
-                      {getGroupSubjectLabel(row.subjectName, group, classNumber)}
+                      {row.displayLabel || getGroupSubjectLabel(row.subjectName, group, classNumber)}
 
                     </td>
                     <td className="py-4 px-4 text-center text-gray-600 bg-slate-100">
@@ -119,15 +121,15 @@ function MonthlyResultsTable({
                 <tbody>
                   <tr>
                     <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                      {activeMonthly?.totalMarks ?? "-"}
+                      {summary ? `${summary.obtained}/${summary.full}` : (activeMonthly?.totalMarks ?? "-")}
                     </td>
                     <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                      {activeMonthly?.gpa ?? "-"}
+                      {summary ? summary.gpa : (activeMonthly?.gpa ?? "-")}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      {activeMonthly?.grade &&
-                      activeMonthly.grade.toUpperCase() !== "F" ? (
-                        <GradeBadge grade={activeMonthly.grade} />
+                      {(summary ? summary.grade : activeMonthly?.grade) &&
+                      String(summary ? summary.grade : activeMonthly?.grade).toUpperCase() !== "F" ? (
+                        <GradeBadge grade={(summary ? summary.grade : activeMonthly?.grade) as string} />
                       ) : null}
                     </td>
                     <td className="py-4 px-4 text-center font-bold text-orange-600 text-base">

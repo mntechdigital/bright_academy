@@ -3,11 +3,22 @@
 import { createMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
 import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
-import { getGradeFromMarks, calculateGPAFromPoints, getGradeFromGPA } from "@/src/utils/gradeUtils";
+import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
+import {
+  computeMonthlyResultSummary,
+  computePractical,
+  getDefaultFullMarksForSubject,
+  getPracticalSubjectSlot,
+  ICT_EXAM_PASS_MARK,
+  ICT_FULL_MARKS,
+  isPracticalApplicable,
+  SCIENCE_EXAM_PASS_MARK,
+  SCIENCE_FULL_MARKS,
+} from "@/src/utils/monthlyResultSummary";
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 type SubjectRow = {
   name: string;
@@ -16,6 +27,7 @@ type SubjectRow = {
   marksObtained: string;
   point: string;
   grade: string;
+  isAbsent: boolean;
 };
 
 type Summary = {
@@ -27,7 +39,7 @@ type Summary = {
   absent: string;
 };
 
-// â”€â”€â”€ Initial data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Initial data Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 const INITIAL_ROWS: SubjectRow[] = [
   "Bangla First Paper",
@@ -42,6 +54,7 @@ const INITIAL_ROWS: SubjectRow[] = [
   marksObtained: "",
   point: "",
   grade: "",
+  isAbsent: false,
 }));
 
 const INITIAL_SUMMARY: Summary = {
@@ -53,12 +66,12 @@ const INITIAL_SUMMARY: Summary = {
   absent: "",
 };
 
-// â”€â”€â”€ Shared input styles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Shared input styles Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 const inputBase =
   "rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-center text-sm text-gray-800 placeholder:text-gray-300 outline-none tabular-nums transition-all duration-150 hover:border-gray-300 hover:bg-white focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100";
 
-// â”€â”€â”€ Reusable inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Reusable inputs Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 type TextInputProps = {
   value: string;
@@ -94,13 +107,15 @@ function TextInput({
   );
 }
 
-// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 interface MonthlyResultTableProps {
   studentName: string;
   studentId: string;
   subjects: { id?: string; subjectName?: string; name?: string }[];
   month: string;
+  year?: string | number;
+  publishedDate?: Date | string | null;
   monthlyExamName?: string;
   subjectHighestMarks?: Record<string, string>;
   studentRegNo?: string;
@@ -112,6 +127,8 @@ export default function MonthlyResultTable({
   studentName,
   subjects,
   month,
+  year,
+  publishedDate,
   monthlyExamName,
   subjectHighestMarks = {},
   studentRegNo,
@@ -125,15 +142,24 @@ export default function MonthlyResultTable({
           name: s.subjectName || s.name || "",
         }))
       : INITIAL_ROWS.map((r) => ({ id: "", name: r.name }));
+  const ictCutoff = undefined; // use default shared constant
   const [rows, setRows] = useState<SubjectRow[]>(
-    subjectItems.map(({ id, name }) => ({
-      name,
-      fullMarks: "100",
-      highestMark: subjectHighestMarks[id] ?? subjectHighestMarks[name] ?? "",
-      marksObtained: "",
-      point: "",
-      grade: "",
-    })),
+    subjectItems.map(({ id, name }) => {
+      const slot = getPracticalSubjectSlot(name, studentGroup, classNumber);
+      const full =
+        slot === "ict" ? String(ICT_FULL_MARKS) :
+        slot && slot.startsWith("science-") ? String(SCIENCE_FULL_MARKS) :
+        String(getDefaultFullMarksForSubject(name));
+      return {
+        name,
+        fullMarks: full,
+        highestMark: subjectHighestMarks[id] ?? subjectHighestMarks[name] ?? "",
+        marksObtained: "",
+        point: "",
+        grade: "",
+        isAbsent: false,
+      };
+    }),
   );
   const [summary, setSummary] = useState<Summary>(INITIAL_SUMMARY);
 
@@ -146,107 +172,151 @@ export default function MonthlyResultTable({
         marksObtained: "",
         point: "",
         grade: "",
+        isAbsent: false,
       }))
     );
     setSummary(INITIAL_SUMMARY);
   }, [studentId]);
 
-  const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string) => {
+  const getRowStoredMarks = useCallback((row: SubjectRow) => {
+    if (row.isAbsent) return 0;
+    const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
+    if (Number.isNaN(entered)) return NaN;
+    const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
+    const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
+    if (applicable) return computePractical(slot, studentGroup, classNumber, entered, false).total;
+    return entered;
+  }, [classNumber, ictCutoff, studentGroup]);
+
+  const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string | boolean) => {
     setRows((prev) => {
-      const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row));
-      // Validate: Highest Mark cannot exceed Full Marks
+      const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value as any } : row));
+      const row = newRows[idx];
+      const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
+      const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
+      const fullMarksNum =
+        slot === "ict" ? ICT_FULL_MARKS :
+        slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+        (parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name));
+      row.fullMarks = String(fullMarksNum);
+
+      if (field === "isAbsent" && value === true) {
+        row.marksObtained = "";
+        row.point = "0.00";
+        row.grade = "F";
+        return newRows;
+      }
+      if (field === "isAbsent" && value === false) {
+        row.point = "";
+        row.grade = "";
+      }
+
       if (field === "highestMark") {
-        const fullMarks = parseFloat(newRows[idx].fullMarks);
-        const highestMark = parseFloat(value);
-        if (!isNaN(fullMarks) && fullMarks > 0 && !isNaN(highestMark) && highestMark > fullMarks) {
-          // Reset highest mark if it exceeds full marks
-          newRows[idx] = { ...newRows[idx], highestMark: "" };
-          return newRows;
+        const highestMark = parseFloat(row.highestMark);
+        if (!isNaN(highestMark) && highestMark > fullMarksNum) {
+          row.highestMark = String(fullMarksNum);
         }
       }
 
-      // Validate: Marks Obtained cannot exceed Highest Mark
-      if (field === "marksObtained") {
-        const highestMark = parseFloat(newRows[idx].highestMark);
-        const marks = parseFloat(value);
-        if (!isNaN(highestMark) && highestMark > 0 && !isNaN(marks) && marks > highestMark) {
-          // If marks exceed highest mark, reset marksObtained to empty
-          newRows[idx] = { ...newRows[idx], marksObtained: "", point: "", grade: "" };
+      if (field === "marksObtained" || field === "fullMarks" || field === "isAbsent") {
+        if (row.isAbsent) {
+          row.marksObtained = "";
+          row.point = "0.00";
+          row.grade = "F";
           return newRows;
         }
-      }
-
-      // Auto-calculate point & grade when marksObtained or fullMarks changes
-      if (field === "marksObtained" || field === "fullMarks") {
-        const marks = parseFloat(newRows[idx].marksObtained);
-        const fullMarks = parseFloat(newRows[idx].fullMarks);
-        if (!isNaN(marks) && !isNaN(fullMarks) && fullMarks > 0 && marks >= 0) {
-          // getGradeFromMarks automatically uses 50-mark system when fullMarks === 50
-          const { gradePoint, letterGrade } = getGradeFromMarks(marks, fullMarks);
-          newRows[idx] = {
-            ...newRows[idx],
-            point: gradePoint.toFixed(2),
-            grade: letterGrade,
-          };
+        const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
+        const maxInput = applicable ? computePractical(slot, studentGroup, classNumber, 0, false).examMax : fullMarksNum;
+        if (!Number.isNaN(entered)) {
+          const clamped = Math.max(0, Math.min(maxInput, entered));
+          row.marksObtained = String(clamped);
+          const storedMarks = applicable ? computePractical(slot, studentGroup, classNumber, clamped, false).total : clamped;
+          const { gradePoint, letterGrade } = getGradeFromMarks(storedMarks, fullMarksNum);
+          row.point = gradePoint.toFixed(2);
+          row.grade = letterGrade;
         } else {
-          newRows[idx] = {
-            ...newRows[idx],
-            point: "",
-            grade: "",
-          };
+          row.point = "";
+          row.grade = "";
         }
       }
       return newRows;
     });
-  }, []);
+  }, [classNumber, ictCutoff, studentGroup]);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
 
   // Auto-recalculate summary whenever subject rows change
   useEffect(() => {
-    const allMarks = rows.map((r) => parseFloat(r.marksObtained)).filter((v) => !isNaN(v));
-    const totalMarks = allMarks.reduce((sum, m) => sum + m, 0);
-    const points = rows.map((r) => parseFloat(r.point)).filter((v) => !isNaN(v));
-    const gpa = points.length > 0 ? calculateGPAFromPoints(points) : 0;
-
-    const present = rows.filter((r) => r.marksObtained.trim() !== "").length;
-    const absent = rows.length - present;
-
+    const resultSummary = computeMonthlyResultSummary({
+      resultSubjects: rows.map((r) => {
+        const slot = getPracticalSubjectSlot(r.name, studentGroup, classNumber);
+        const applicable = !!slot && isPracticalApplicable(r.name, studentGroup, classNumber, new Date(), ictCutoff);
+        const entered = r.marksObtained === "" ? null : Number(r.marksObtained);
+        const storedMarks = r.isAbsent ? 0 : (applicable ? computePractical(slot, studentGroup, classNumber, entered, false).total : (entered ?? 0));
+        const fullMarks =
+          slot === "ict" ? ICT_FULL_MARKS :
+          slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+          (r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name) : Number(r.fullMarks));
+        return {
+          subjectName: r.name,
+          marks: storedMarks,
+          fullMarks,
+          isAbsent: r.isAbsent,
+        };
+      }),
+      classSubjects: subjects || [],
+      group: studentGroup,
+      classNumber,
+      createdAt: new Date(),
+    });
+    const present = rows.filter((r) => !r.isAbsent && r.marksObtained.trim() !== "").length;
+    const absent = Math.max(0, resultSummary.subjectCount - present);
     setSummary((prev) => ({
       ...prev,
-      totalMarks: totalMarks > 0 ? totalMarks.toString() : "",
-      gpa: gpa > 0 ? gpa.toFixed(2) : "",
-      grade: gpa > 0 ? getGradeFromGPA(gpa) : "",
-      present: present > 0 ? present.toString() : "",
-      absent: absent > 0 ? absent.toString() : "",
+      totalMarks: String(resultSummary.obtained),
+      gpa: String(resultSummary.gpa),
+      grade: resultSummary.grade,
+      present: String(present),
+      absent: String(absent),
     }));
-  }, [rows]);
-
+  }, [rows, subjects, studentGroup, classNumber, ictCutoff]);
 const handleSubmit = async () => {
+  // Contract: for NEW class 9/10 practical subjects, client sends EXAM mark (ICT 0-25, Science 0-75)
+  // in marks/examMark; server computes practical/total via computePractical exactly once.
+  const yearNum = year === undefined || year === null || String(year).trim() === "" ? undefined : Number(year);
   const payload = {
     studentId,
-
     monthlyExamName,
-
     totalMarks: Number(summary.totalMarks),
     gpa: Number(summary.gpa),
     grade: summary.grade,
     position: summary.position || "",
-
     present: Number(summary.present),
     absent: Number(summary.absent),
-
     month,
-
-    results: rows.map((r) => ({
-      subjectName: r.name,
-      marks: Number(r.marksObtained),
-      fullMarks: Number(r.fullMarks),
-      highestMark: Number(r.highestMark),
-      point: Number(r.point),
-      grade: r.grade,
-    })),
+    ...(Number.isInteger(yearNum) ? { year: yearNum } : {}),
+    ...(publishedDate ? { publishedDate: new Date(publishedDate).toISOString() } : {}),
+    results: rows.map((r) => {
+      const slot = getPracticalSubjectSlot(r.name, studentGroup, classNumber);
+      const applicable = !!slot && isPracticalApplicable(r.name, studentGroup, classNumber, new Date(), ictCutoff);
+      const entered = r.marksObtained === "" ? 0 : Number(r.marksObtained);
+      const exam = r.isAbsent ? 0 : entered;
+      const fullMarks =
+        slot === "ict" ? ICT_FULL_MARKS :
+        slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
+        Number(r.fullMarks);
+      return {
+        subjectName: r.name,
+        marks: applicable ? exam : exam,
+        ...(applicable ? { examMark: exam, ...(slot === "ict" ? { ictExamMark: exam } : {}) } : {}),
+        fullMarks,
+        highestMark: r.highestMark === "" ? 0 : Number(r.highestMark),
+        point: r.point === "" ? 0 : Number(r.point),
+        grade: r.grade || "F",
+        isAbsent: !!r.isAbsent,
+      };
+    }),
   };
 
   const res = await createMonthlyResult(payload);
@@ -265,7 +335,7 @@ const handleSubmit = async () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-full space-y-4">
-        {/* â”€â”€ Main Card â”€â”€ */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Main Card Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Card Header */}
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -287,7 +357,8 @@ const handleSubmit = async () => {
                   <th className="px-4 py-3 text-left">Subject</th>
                   <th className="px-3 py-3 text-center">Full Marks</th>
                   <th className="px-3 py-3 text-center">Highest Mark</th>
-                  <th className="px-3 py-3 text-center">Marks Obtained</th>
+                  <th className="px-3 py-3 text-center">Marks</th>
+                  <th className="px-3 py-3 text-center">Absent</th>
                   <th className="px-3 py-3 text-center">Point</th>
                   <th className="px-3 py-3 text-center">Grade</th>
                 </tr>
@@ -330,16 +401,53 @@ const handleSubmit = async () => {
                       />
                     </td>
                     <td className="px-3 py-3">
+                      {(() => {
+                        const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
+                        const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
+                        const conf = applicable ? computePractical(slot, studentGroup, classNumber, 0, false) : null;
+                        const max = conf ? conf.examMax : (parseFloat(row.fullMarks) || 100);
+                        const title = conf
+                          ? (slot === "ict"
+                            ? `ICT exam (max 25). ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.`
+                            : `Exam (max 75). ${SCIENCE_EXAM_PASS_MARK}+ pass: exam+20 practical; below ${SCIENCE_EXAM_PASS_MARK}: no practical.`)
+                          : undefined;
+                        return (
+                          <div>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={row.isAbsent ? "" : row.marksObtained}
+                              disabled={row.isAbsent}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9.]/g, "");
+                                const n = val === "" ? "" : String(Math.min(max, Number(val)));
+                                updateRow(idx, "marksObtained", n);
+                              }}
+                              placeholder={conf ? `0-${conf.examMax}` : "0"}
+                              title={title}
+                              className={`w-full min-w-16 ${inputBase} ${row.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
+                            />
+                            {conf ? (
+                              <div className="text-[10px] text-gray-400 mt-0.5 text-center">
+                                {row.isAbsent ? "absent" : (() => {
+                                  const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
+                                  if (Number.isNaN(entered)) return `max ${conf.examMax}`;
+                                  const c = computePractical(slot, studentGroup, classNumber, entered, false);
+                                  return c.practical > 0 ? `exam ${c.exam} + practical ${c.practical}` : (entered >= conf.passMark ? `exam ${c.exam}` : "failed: no practical");
+                                })()}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-3 py-3 text-center">
                       <input
-                        type="text"
-                        inputMode="decimal"
-                        value={row.marksObtained}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, "");
-                          updateRow(idx, "marksObtained", val);
-                        }}
-                        placeholder="0"
-                        className={`w-full min-w-16 ${inputBase}`}
+                        type="checkbox"
+                        checked={row.isAbsent}
+                        onChange={(e) => updateRow(idx, "isAbsent", e.target.checked)}
+                        className="h-4 w-4 accent-orange-500 cursor-pointer"
+                        title="Mark subject as absent"
                       />
                     </td>
                     <td className="px-3 py-3">
@@ -347,12 +455,8 @@ const handleSubmit = async () => {
                         type="text"
                         inputMode="decimal"
                         value={row.point}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, "");
-                          updateRow(idx, "point", val);
-                        }}
-                        placeholder="0.00"
                         readOnly
+                        placeholder="0.00"
                         className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
                       />
                     </td>
@@ -373,7 +477,7 @@ const handleSubmit = async () => {
             </table>
           </div>
 
-          {/* â”€â”€ Exam Summary â”€â”€ */}
+          {/* Ã¢â€â‚¬Ã¢â€â‚¬ Exam Summary Ã¢â€â‚¬Ã¢â€â‚¬ */}
           <div className="border-t border-gray-100">
             <div className="py-3 text-center border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 tracking-wide">
@@ -467,7 +571,7 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        {/* â”€â”€ Submit Button â”€â”€ */}
+        {/* Ã¢â€â‚¬Ã¢â€â‚¬ Submit Button Ã¢â€â‚¬Ã¢â€â‚¬ */}
         <button
           onClick={handleSubmit}
           className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white tracking-wide transition-all duration-150 hover:bg-orange-600 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"

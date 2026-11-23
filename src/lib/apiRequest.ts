@@ -100,11 +100,18 @@ export const apiRequest = async (
     
     try {
       const errorJson = JSON.parse(errorText);
-      return errorJson;
+      const first = errorJson?.errorSources?.[0];
+      const fieldMessage =
+        first?.path && first?.message ? `${first.path}: ${first.message}` : first?.message;
+      return {
+        ...errorJson,
+        statusCode: errorJson.statusCode ?? response.status,
+        message: fieldMessage || errorJson.message || `Server error: ${response.statusText}`,
+      };
     } catch {
-      return { 
-        statusCode: response.status, 
-        message: `Server error: ${response.statusText}` 
+      return {
+        statusCode: response.status,
+        message: errorText || `Server error: ${response.statusText}`,
       };
     }
   }

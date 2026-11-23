@@ -1,15 +1,14 @@
 "use client";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import DeleteMonthlyResultDialog from "./DeleteMonthlyResultDialog";
 import { downloadCSV } from "@/src/utils/downloadCSV";
-import {
-  updateMonthlyResult,
-  calculatePositionsByClass, // 👈 নতুন import
-} from "@/src/services/monthlyResult";
+import { calculatePositionsByClass } from "@/src/services/monthlyResult";
 import { showSuccessToast, showErrorToast } from "@/src/utils/toastMessage";
 import ResultModeSwitch from "../ResultModeSwitch";
+import { getStudentGroup } from "@/src/utils/studentGroup";
+import { computeMonthlyResultSummary } from "@/src/utils/monthlyResultSummary";
 
 const GradeIcon = () => (
   <svg
@@ -71,7 +70,6 @@ const PencilIcon = () => (
   </svg>
 );
 
-// ---- Types ----
 interface ResultSubject {
   id: string;
   subjectName: string;
@@ -79,6 +77,7 @@ interface ResultSubject {
   marks: number;
   fullMarks: number;
   highestMark: number;
+  isAbsent?: boolean;
 }
 
 interface Student {
@@ -109,6 +108,11 @@ export interface MonthlyResult {
   present: number;
   absent: number;
   subjectId: string | null;
+  month?: string | null;
+  year?: number | null;
+  publishedDate?: string | null;
+  monthlyExamName?: string | null;
+  classId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,11 +131,37 @@ interface ClassData {
 interface Props {
   monthlyResultsData: MonthlyResult[];
   classesData: ClassData[];
+  currentYear: string;
 }
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const getResultYear = (result: MonthlyResult) => {
+  if (result.year !== null && result.year !== undefined && Number.isFinite(Number(result.year))) {
+    return String(result.year);
+  }
+  const d = new Date(result.createdAt);
+  const y = d.getFullYear();
+  return Number.isFinite(y) ? String(y) : "";
+};
 
 export default function ShowMonthlyResultTable({
   monthlyResultsData = [],
   classesData = [],
+  currentYear,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -139,25 +169,26 @@ export default function ShowMonthlyResultTable({
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const [isCalculating, setIsCalculating] = useState(false); // 👈 নতুন loading state
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [examNameChoice, setExamNameChoice] = useState("");
 
-  // These are now synced with the URL (?classId=&batchId=&search=) so the
-  // server can filter+paginate correctly instead of filtering only the
-  // 20 rows already loaded on the current page.
   const [selectedClassId, setSelectedClassId] = useState(
     searchParams.get("classId") || "",
   );
   const [selectedBatchId, setSelectedBatchId] = useState(
     searchParams.get("batchId") || "",
   );
+  const [selectedMonth, setSelectedMonth] = useState(searchParams.get("month") || "");
+  const [selectedYear, setSelectedYear] = useState(searchParams.get("year") || currentYear);
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
-  // Pushes filter changes into the URL. Always resets to page 1, since the
-  // previous page number may no longer be valid for the new filter set.
   const updateFilters = (next: {
     classId?: string;
     batchId?: string;
     search?: string;
+    month?: string;
+    year?: string;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -169,12 +200,19 @@ export default function ShowMonthlyResultTable({
     if ("classId" in next) apply("classId", next.classId);
     if ("batchId" in next) apply("batchId", next.batchId);
     if ("search" in next) apply("search", next.search);
+    if ("month" in next) apply("month", next.month);
+    if ("year" in next) apply("year", next.year);
 
     params.set("page", "1");
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  // Debounce the search box before pushing to the URL / hitting the backend
+  useEffect(() => {
+    const urlYear = searchParams.get("year") || currentYear;
+    if (urlYear !== selectedYear) setSelectedYear(urlYear);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, currentYear]);
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (search !== (searchParams.get("search") || "")) {
@@ -197,50 +235,114 @@ export default function ShowMonthlyResultTable({
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const getAchievedMarks = (results: ResultSubject[]) =>
-    results.reduce((sum, r) => sum + r.marks, 0);
-
-  // 👇 পুরনো client-side loop বাদ দিয়ে নতুন class-wise backend calculation
-  const calculatePositions = async () => {
-    if (!selectedClassId) {
-      showErrorToast("Position calculate করার আগে একটা Class সিলেক্ট করুন।");
-      return;
+  const summaryById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof computeMonthlyResultSummary>>();
+    for (const result of monthlyResultsData) {
+      const classId = (result.student as any)?.classId || (result as any).classId;
+      const classData = classesData.find((c) => c.id === classId);
+      const classSubjects = classData?.subjects || [];
+      const group = getStudentGroup((result.student as any)?.stdRegNo || "");
+      const classNumber = classData?.className || (result.student as any)?.stdClass?.className;
+      map.set(result.id, computeMonthlyResultSummary({ resultSubjects: result.results || [], classSubjects, group, classNumber, fallbackTotalMarks: result.totalMarks, createdAt: (result as any).createdAt }));
     }
+    return map;
+  }, [monthlyResultsData, classesData]);
+  const getResultSummary = (result: MonthlyResult) => summaryById.get(result.id) || computeMonthlyResultSummary({ resultSubjects: result.results || [], fallbackTotalMarks: result.totalMarks, createdAt: (result as any).createdAt });
+  const getAchievedMarks = (result: MonthlyResult) => getResultSummary(result).obtained;
+  const getFullMarks = (result: MonthlyResult) => getResultSummary(result).full;
 
+  const selectedClassName = classesData.find((c) => c.id === selectedClassId)?.className;
+  const availableBatches = classesData.find((c) => c.id === selectedClassId)?.batches ?? [];
+  const yearOptions = useMemo(() => {
+    const current = Number(currentYear) || new Date().getFullYear();
+    return ["all", ...Array.from({ length: 7 }, (_, i) => String(current - 3 + i))];
+  }, [currentYear]);
+
+  const normalizeMonth = (m?: string | null) => {
+    const raw = String(m || "").trim().toLowerCase();
+    const map: Record<string, string> = {
+      "1":"january","01":"january","jan":"january","january":"january",
+      "2":"february","02":"february","feb":"february","february":"february",
+      "3":"march","03":"march","mar":"march","march":"march",
+      "4":"april","04":"april","apr":"april","april":"april",
+      "5":"may","05":"may","may":"may",
+      "6":"june","06":"june","jun":"june","june":"june",
+      "7":"july","07":"july","jul":"july","july":"july",
+      "8":"august","08":"august","aug":"august","august":"august",
+      "9":"september","09":"september","sep":"september","sept":"september","september":"september",
+      "10":"october","oct":"october","october":"october",
+      "11":"november","nov":"november","november":"november",
+      "12":"december","dec":"december","december":"december",
+    };
+    return map[raw] || raw;
+  };
+
+  const matchingResults = useMemo(() => {
+    if (!selectedClassId || !selectedMonth) return [];
+    const targetMonth = normalizeMonth(selectedMonth);
+    return monthlyResultsData.filter((r) => {
+      const classId = r.student?.classId || r.classId;
+      if (classId !== selectedClassId) return false;
+      if (normalizeMonth(r.month) !== targetMonth) return false;
+      if (selectedYear && selectedYear !== "all" && getResultYear(r) !== selectedYear) return false;
+      return true;
+    });
+  }, [monthlyResultsData, selectedClassId, selectedMonth, selectedYear]);
+
+  const examNamesInScope = useMemo(() => {
+    const names = Array.from(
+      new Set(
+        matchingResults
+          .map((r) => String(r.monthlyExamName || "").trim())
+          .filter(Boolean),
+      ),
+    );
+    return names.sort((a, b) => a.localeCompare(b));
+  }, [matchingResults]);
+
+  const scopedResultsCount = useMemo(() => {
+    if (!selectedClassId || !selectedMonth) return 0;
+    if (examNamesInScope.length > 1 && examNameChoice) {
+      return matchingResults.filter((r) => String(r.monthlyExamName || "").trim() === examNameChoice).length;
+    }
+    return matchingResults.length;
+  }, [selectedClassId, selectedMonth, examNamesInScope.length, examNameChoice, matchingResults]);
+
+  const canCalculate = !!selectedClassId && !!selectedMonth && !isCalculating;
+
+  const openCalculateConfirm = () => {
+    if (!selectedClassId) { showErrorToast("Select a class first"); return; }
+    if (!selectedMonth) { showErrorToast("Select class and month first"); return; }
+    setExamNameChoice(examNamesInScope.length > 1 ? "__ALL__" : (examNamesInScope[0] || ""));
+    setShowConfirm(true);
+  };
+
+  const calculatePositions = async () => {
+    if (!canCalculate) { showErrorToast("Select class and month first"); return; }
+    const examName = examNamesInScope.length > 1 && examNameChoice !== "__ALL__" ? examNameChoice : undefined;
     setIsCalculating(true);
     try {
-      const res = await calculatePositionsByClass(selectedClassId);
-
+      const yearArg = selectedYear && selectedYear !== "all" ? selectedYear : undefined;
+      const res = await calculatePositionsByClass(selectedClassId, selectedMonth, yearArg, examName);
       if (!res || res?.statusCode >= 400) {
         showErrorToast(res?.message || "Failed to calculate positions");
         return;
       }
-
-      showSuccessToast(
-        `Positions calculated for ${res.data.totalStudents} students.`,
-      );
+      showSuccessToast(`Positions calculated for ${res?.data?.totalStudents ?? res?.totalStudents ?? 0} students.`);
+      setShowConfirm(false);
       router.refresh();
-    } catch (error) {
+    } catch {
       showErrorToast("Something went wrong while calculating positions");
     } finally {
       setIsCalculating(false);
     }
   };
 
-  const getFullMarks = (results: ResultSubject[], fallback: number) =>
-    results.length > 0
-      ? results.reduce((sum, r) => sum + r.fullMarks, 0)
-      : fallback;
-
-  // Batches for the selected class
-  const availableBatches =
-    classesData.find((c) => c.id === selectedClassId)?.batches ?? [];
-
-  // Handle class change — reset batch when class changes
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const classId = e.target.value;
     setSelectedClassId(classId);
     setSelectedBatchId("");
+    setShowConfirm(false);
     updateFilters({ classId, batchId: "" });
   };
 
@@ -250,16 +352,18 @@ export default function ShowMonthlyResultTable({
     updateFilters({ batchId });
   };
 
-  const hasActiveFilters = !!(selectedClassId || selectedBatchId || search);
+  const hasActiveFilters = !!(selectedClassId || selectedBatchId || search || selectedMonth || selectedYear !== currentYear);
 
   const clearFilters = () => {
     setSelectedClassId("");
     setSelectedBatchId("");
+    setSelectedMonth("");
+    setSelectedYear(currentYear);
     setSearch("");
-    router.push(pathname);
+    setShowConfirm(false);
+    router.push(`${pathname}?year=${encodeURIComponent(currentYear)}`);
   };
 
-  // Build a lookup map for student regNo from classesData
   const studentRegNoMap = new Map<string, string>();
   for (const cls of classesData) {
     for (const s of cls.students ?? []) {
@@ -269,13 +373,9 @@ export default function ShowMonthlyResultTable({
     }
   }
 
-  // Look up batch name from classesData
   const getBatchName = (result: MonthlyResult): string => {
-    // First, try the populated batch relation
     if (result.student?.batch?.name) return result.student.batch.name;
-    // Fallback: look up from classesData using batchId
     if (result.student?.batchId) {
-      // Search across all classes for the matching batch
       for (const cls of classesData) {
         const batch = cls.batches?.find(
           (b) => b.id === result.student.batchId,
@@ -286,28 +386,17 @@ export default function ShowMonthlyResultTable({
     return "—";
   };
 
-  // Look up student registration number
   const getStudentRegNo = (result: MonthlyResult): string => {
-    // First, try the top-level stdRegNo on the result
     if (result.stdRegNo) return result.stdRegNo;
-    // Then, try the student's stdRegNo field
     if (result.student?.stdRegNo) return result.student.stdRegNo;
-    // Then, try the student's username
     if (result.student?.username) return result.student.username;
-    // Then, look up from classesData students array
     if (result.student?.id && studentRegNoMap.has(result.student.id)) {
       return studentRegNoMap.get(result.student.id)!;
     }
     return "—";
   };
 
-  // The server already applies search/classId/batchId filtering and pagination
-  // (see updateFilters + page.tsx), so monthlyResultsData is used directly.
   const results = monthlyResultsData;
-
-  const selectedClassName = classesData.find(
-    (c) => c.id === selectedClassId,
-  )?.className;
 
   const handleDownloadCSV = () => {
     const headers = [
@@ -322,8 +411,9 @@ export default function ShowMonthlyResultTable({
     ];
 
     const rows = results.map((result) => {
-      const achievedMarks = getAchievedMarks(result.results);
-      const fullMarks = getFullMarks(result.results, result.totalMarks);
+      const s = getResultSummary(result);
+      const achievedMarks = s.obtained;
+      const fullMarks = s.full;
       const batchName = getBatchName(result);
       return [
         result.student?.name || "",
@@ -331,8 +421,8 @@ export default function ShowMonthlyResultTable({
         batchName,
         fullMarks,
         achievedMarks,
-        result.grade,
-        result.gpa,
+        s.grade,
+        s.gpa,
         result.position,
       ];
     });
@@ -343,7 +433,6 @@ export default function ShowMonthlyResultTable({
 
   return (
     <div>
-      {/* Page Header */}
       <div className="flex items-center gap-2 mb-5">
         <h1 className="text-xl font-bold text-gray-900">Monthly Result</h1>
         {selectedClassName && (
@@ -353,12 +442,9 @@ export default function ShowMonthlyResultTable({
         )}
       </div>
 
-      {/* Card */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <ResultModeSwitch />
-        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
-          {/* Search */}
           <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-white w-52">
             <svg
               className="w-4 h-4 text-gray-400 shrink-0"
@@ -383,7 +469,6 @@ export default function ShowMonthlyResultTable({
             />
           </div>
 
-          {/* Select Class */}
           <select
             value={selectedClassId}
             onChange={handleClassChange}
@@ -397,7 +482,38 @@ export default function ShowMonthlyResultTable({
             ))}
           </select>
 
-          {/* Select Batch — only show batches of selected class */}
+          <select
+            value={selectedMonth}
+            onChange={(e) => {
+              const month = e.target.value;
+              setSelectedMonth(month);
+              setShowConfirm(false);
+              updateFilters({ month });
+            }}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-32.5"
+          >
+            <option value="">Select Month</option>
+            {MONTHS.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => {
+              const year = e.target.value;
+              setSelectedYear(year);
+              setShowConfirm(false);
+              updateFilters({ year });
+            }}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600 bg-white cursor-pointer outline-none min-w-28"
+          >
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>{y === "all" ? "All years" : y}</option>
+            ))}
+          </select>
+          
+
           <select
             value={selectedBatchId}
             onChange={handleBatchChange}
@@ -412,7 +528,6 @@ export default function ShowMonthlyResultTable({
             ))}
           </select>
 
-          {/* Clear Filter — only shown when a filter is active */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
@@ -435,34 +550,37 @@ export default function ShowMonthlyResultTable({
             </button>
           )}
 
-          {/* Calculate Position */}
-          <button
-            onClick={calculatePositions}
-            disabled={!selectedClassId || isCalculating}
-            title={
-              !selectedClassId
-                ? "Select a class first"
-                : "Calculate positions for this class"
-            }
-            className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
+          <div className="flex flex-col items-start gap-1">
+            <button
+              onClick={openCalculateConfirm}
+              disabled={!selectedClassId || !selectedMonth || isCalculating}
+              title={
+                !selectedClassId || !selectedMonth
+                  ? "Select class and month first"
+                  : "Calculate positions for this class/month"
+              }
+              className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-            {isCalculating ? "Calculating..." : "Calculate Position"}
-          </button>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              {isCalculating ? "Calculating..." : "Calculate Position"}
+            </button>
+            {(!selectedClassId || !selectedMonth) && (
+              <span className="text-xs text-amber-600">Select class and month first</span>
+            )}
+          </div>
 
-          {/* Download CSV */}
           <button
             onClick={handleDownloadCSV}
             className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -483,7 +601,6 @@ export default function ShowMonthlyResultTable({
             Download CSV
           </button>
 
-          {/* Give Result */}
           <Link
             href="/dashboard/result/give-result"
             className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
@@ -505,7 +622,54 @@ export default function ShowMonthlyResultTable({
           </Link>
         </div>
 
-        {/* Table */}
+        {showConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl">
+              <h3 className="text-base font-semibold text-gray-900">Confirm position calculation</h3>
+              <div className="mt-3 space-y-1 text-sm text-gray-700">
+                <p><span className="font-medium text-gray-900">Class:</span> {selectedClassName || selectedClassId}</p>
+                <p><span className="font-medium text-gray-900">Month:</span> {selectedMonth}</p>
+                <p><span className="font-medium text-gray-900">Year:</span> {selectedYear === "all" ? "All years" : selectedYear}</p>
+                <p><span className="font-medium text-gray-900">Results to rank:</span> {scopedResultsCount}</p>
+              </div>
+
+              {examNamesInScope.length > 1 && (
+                <div className="mt-4">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Exam name</label>
+                  <select
+                    value={examNameChoice}
+                    onChange={(e) => setExamNameChoice(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
+                  >
+                    <option value="__ALL__">All exam names in this month</option>
+                    {examNamesInScope.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Multiple exam names found for this month. Choose one, or rank all names in this month/year.</p>
+                </div>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  disabled={isCalculating}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={calculatePositions}
+                  disabled={isCalculating || scopedResultsCount === 0}
+                  className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {isCalculating ? "Calculating..." : "Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto whitespace-nowrap">
           <table className="w-full text-sm">
             <thead>
@@ -605,11 +769,9 @@ export default function ShowMonthlyResultTable({
                 </tr>
               ) : (
                 results.map((result) => {
-                  const achievedMarks = getAchievedMarks(result.results);
-                  const fullMarks = getFullMarks(
-                    result.results,
-                    result.totalMarks,
-                  );
+                  const s = getResultSummary(result);
+                  const achievedMarks = s.obtained;
+                  const fullMarks = s.full;
                   const batchName = getBatchName(result);
 
                   return (
@@ -626,7 +788,6 @@ export default function ShowMonthlyResultTable({
                         />
                       </td>
 
-                      {/* Name + Avatar */}
                       <td className="px-3 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <div>
@@ -641,7 +802,6 @@ export default function ShowMonthlyResultTable({
                         </div>
                       </td>
 
-                      {/* Student ID / Reg No */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -649,7 +809,6 @@ export default function ShowMonthlyResultTable({
                         </span>
                       </td>
 
-                      {/* Batch */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1 rounded-full">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
@@ -658,27 +817,30 @@ export default function ShowMonthlyResultTable({
                       </td>
 
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
-                        {fullMarks}
+                        <div className="inline-flex items-center gap-1.5">
+                          <span>{fullMarks}</span>
+                          {s.excludedRows?.length ? (
+                            <span title={`${s.excludedRows.length} subject(s) outside this student's group were ignored`} className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold cursor-help">!</span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
                         {achievedMarks}
                       </td>
 
-                      {/* Grade */}
                       <td className="px-3 py-3.5">
                         <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-                          {result.grade}
+                          {s.grade}
                         </span>
                       </td>
 
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
-                        {result.gpa}
+                        {s.gpa}
                       </td>
                       <td className="px-3 py-3.5 text-gray-700 font-medium">
                         #{result.position}
                       </td>
 
-                      {/* Actions */}
                       <td className="px-3 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <Link
