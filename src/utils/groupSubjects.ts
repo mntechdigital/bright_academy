@@ -263,3 +263,78 @@ export function hasMeaningfulMarks(row: any): boolean {
   if (grade != null && String(grade).trim() !== "" && String(grade).trim().toUpperCase() !== "F") return true;
   return false;
 }
+
+export const CANONICAL_ORDER_3_4_5 = [
+  "bangla",
+  "english",
+  "mathematics",
+  "science",
+  "bangladesh and global studies",
+  "religion and moral education",
+];
+
+export const CANONICAL_ORDER_6_7_8 = [
+  "bangla 1st paper",
+  "bangla 2nd paper",
+  "english 1st paper",
+  "english 2nd paper",
+  "mathematics",
+  "ict",
+  "science",
+  "bangladesh and global studies",
+  "religion and moral education",
+  "agriculture / home science",
+];
+
+export const CANONICAL_ORDER_9_10 = [
+  "bangla 1st paper",
+  "bangla 2nd paper",
+  "english 1st paper",
+  "english 2nd paper",
+  "mathematics",
+  "ict",
+  "physics/geography and environment/accounting",
+  "chemistry/history/finance and banking",
+  "biology/economics / civics/business entrepreneurship",
+  "general science /bangladesh and global studies",
+  "religion and moral education",
+  "h. math/agriculture/h. science",
+];
+
+export function sortSubjectsForClass<T extends { subjectName?: string; name?: string; sortOrder?: number }>(
+  subjects: T[],
+  classNumber?: string | number | null,
+): T[] {
+  if (!Array.isArray(subjects) || subjects.length === 0) return [];
+  const classStr = String(classNumber ?? "").trim().toLowerCase();
+  const match = classStr.match(/\d+/);
+  const classNum = match ? parseInt(match[0], 10) : null;
+
+  let canonicalList: string[] | null = null;
+  if (classNum === 9 || classNum === 10) canonicalList = CANONICAL_ORDER_9_10;
+  else if (classNum === 6 || classNum === 7 || classNum === 8) canonicalList = CANONICAL_ORDER_6_7_8;
+  else if (classNum === 3 || classNum === 4 || classNum === 5) canonicalList = CANONICAL_ORDER_3_4_5;
+
+  return [...subjects].sort((a, b) => {
+    const aOrder = typeof a.sortOrder === "number" ? a.sortOrder : undefined;
+    const bOrder = typeof b.sortOrder === "number" ? b.sortOrder : undefined;
+
+    if (canonicalList) {
+      const aName = normalizeSubjectName(String(a.subjectName ?? a.name ?? ""));
+      const bName = normalizeSubjectName(String(b.subjectName ?? b.name ?? ""));
+      const aIdx = canonicalList.findIndex((item) => item === aName || aName.replace(/[\/\s]/g, "") === item.replace(/[\/\s]/g, ""));
+      const bIdx = canonicalList.findIndex((item) => item === bName || bName.replace(/[\/\s]/g, "") === item.replace(/[\/\s]/g, ""));
+      if (aIdx >= 0 && bIdx >= 0) return aIdx - bIdx;
+      if (aIdx >= 0) return -1;
+      if (bIdx >= 0) return 1;
+    }
+
+    if (aOrder !== undefined && bOrder !== undefined) return aOrder - bOrder;
+    if (aOrder !== undefined) return -1;
+    if (bOrder !== undefined) return 1;
+
+    const aName = String(a.subjectName ?? a.name ?? "");
+    const bName = String(b.subjectName ?? b.name ?? "");
+    return aName.localeCompare(bName);
+  });
+}

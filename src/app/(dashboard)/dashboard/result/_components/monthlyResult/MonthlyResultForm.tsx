@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import MonthlyResultTable from "./MonthlyResultTable";
 import { compareByRegNoAsc } from "@/src/utils/sortStudents";
+import { sortSubjectsForClass } from "@/src/utils/groupSubjects";
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -271,7 +272,10 @@ export default function MonthlyResultForm({ classesData = [] }: MonthlyResultFor
 
   const selectedClass = classesData.find((c) => c.id === selectedClassId);
   const batches = selectedClass?.batches ?? [];
-  const subjects = selectedClass?.subjects ?? [];
+  const subjects = useMemo(
+    () => sortSubjectsForClass(selectedClass?.subjects ?? [], selectedClass?.className),
+    [selectedClass]
+  );
 
   // Reset dependent state when class changes
   const handleClassChange = (classId: string) => {
