@@ -414,7 +414,7 @@ export function computeMonthlyResultSummary(args: {
   }) => {
     usedKeys.add(base.key);
     const result = base.result;
-    const fullMarks = getResultFullMarks((base.classSubject as any) || result?.raw, base.name);
+    const fullMarks = result ? result.fullMarks : getResultFullMarks(base.classSubject as any, base.name);
     const marks = result ? result.marks : 0;
     rows.push({
       ...(result?.raw || {}),
