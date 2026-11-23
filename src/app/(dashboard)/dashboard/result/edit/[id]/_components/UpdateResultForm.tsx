@@ -358,7 +358,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
                   {(() => {
                     const slot = getPracticalSubjectSlot(field.subjectName, studentGroup, studentClassName);
                     if (!slot || !isOldClass910Result) return null;
-                    if (slot.startsWith("science-") && studentGroup !== "Science") return null;
+                    if (slot.startsWith("science-") && studentGroup !== "Science" && slot !== "science-agriculture" && slot !== "science-home-science") return null;
                     const row = watchedResults?.[index];
                     const original = originalMarksById.get(field.id) ?? 0;
                     const current = Number(row?.marks ?? 0);
