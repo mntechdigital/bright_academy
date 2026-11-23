@@ -2,7 +2,7 @@
 
 import { createMonthlyResult } from "@/src/services/monthlyResult";
 import { showErrorToast, showSuccessToast } from "@/src/utils/toastMessage";
-import { getGroupSubjectLabel } from "@/src/utils/groupSubjects";
+import { getGroupSubjectLabel, sortSubjectsForClass } from "@/src/utils/groupSubjects";
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
@@ -135,9 +135,10 @@ export default function MonthlyResultTable({
   classNumber,
 }: MonthlyResultTableProps) {
   const studentGroup = studentRegNo ? getStudentGroup(studentRegNo) : "";
+  const sortedSubjects = sortSubjectsForClass(subjects || [], classNumber);
   const subjectItems =
-    subjects && subjects.length > 0
-      ? subjects.map((s) => ({
+    sortedSubjects && sortedSubjects.length > 0
+      ? sortedSubjects.map((s) => ({
           id: s.id || "",
           name: s.subjectName || s.name || "",
         }))
