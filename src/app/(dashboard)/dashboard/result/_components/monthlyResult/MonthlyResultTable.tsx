@@ -150,7 +150,7 @@ export default function MonthlyResultTable({
       const full =
         slot === "ict" ? String(ICT_FULL_MARKS) :
         slot && slot.startsWith("science-") ? String(SCIENCE_FULL_MARKS) :
-        String(getDefaultFullMarksForSubject(name));
+        String(getDefaultFullMarksForSubject(name, classNumber));
       return {
         name,
         fullMarks: full,
@@ -198,7 +198,7 @@ export default function MonthlyResultTable({
       const fullMarksNum =
         slot === "ict" ? ICT_FULL_MARKS :
         slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
-        (parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name));
+        (parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name, classNumber));
       row.fullMarks = String(fullMarksNum);
 
       if (field === "isAbsent" && value === true) {
@@ -258,7 +258,7 @@ export default function MonthlyResultTable({
         const fullMarks =
           slot === "ict" ? ICT_FULL_MARKS :
           slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
-          (r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name) : Number(r.fullMarks));
+          (r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name, classNumber) : Number(r.fullMarks));
         return {
           subjectName: r.name,
           marks: storedMarks,
