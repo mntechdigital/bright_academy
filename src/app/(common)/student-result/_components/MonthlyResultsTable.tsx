@@ -21,6 +21,21 @@ function MonthlyResultsTable({
   classNumber?: string | number | null;
   summary?: { obtained: number; full: number; gpa: number; grade: string };
 }) {
+  const hasFailOrAbsentSubject = subjectRows.some((row) => {
+    const isAbsent =
+      (row as any).isAbsent === true ||
+      (row as any).isAbsent === "true" ||
+      (row as any).isAbsent === 1;
+    const isGradeF = String(row.grade ?? "").trim().toUpperCase() === "F";
+    const isPointZero =
+      row.point !== null &&
+      row.point !== undefined &&
+      Number(row.point) === 0 &&
+      row.marks !== null &&
+      row.marks !== undefined;
+    return isAbsent || isGradeF || isPointZero;
+  });
+
   return (
     <>
       {monthlyResults.length === 0 ? (
@@ -129,7 +144,8 @@ function MonthlyResultsTable({
                         : (activeMonthly?.gpa !== undefined && activeMonthly?.gpa !== null ? Number(activeMonthly.gpa).toFixed(2) : "-")}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      {(summary ? summary.grade : activeMonthly?.grade) &&
+                      {!hasFailOrAbsentSubject &&
+                      (summary ? summary.grade : activeMonthly?.grade) &&
                       String(summary ? summary.grade : activeMonthly?.grade).toUpperCase() !== "F" ? (
                         <GradeBadge grade={(summary ? summary.grade : activeMonthly?.grade) as string} />
                       ) : null}
