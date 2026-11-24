@@ -1,4 +1,4 @@
-import { getGradeFromMarks } from "./gradeUtils";
+import { getGradeFromMarks, getGradeFromGPA } from "./gradeUtils";
 import {
   COMBINED_SUBJECT_ROWS,
   getCanonicalCombinedName,
@@ -494,6 +494,7 @@ export function computeMonthlyResultSummary(args: {
   const studentClassSubjects = resolveStudentGroupSubjects(classSubjects || [], group || "", classNumber);
   const rows: MonthlyResultSummaryRow[] = [];
   const usedKeys = new Set<string>();
+  const countedPoints: number[] = [];
 
   const pushRow = (base: {
     key: string;
@@ -507,6 +508,17 @@ export function computeMonthlyResultSummary(args: {
     const result = base.result;
     const fullMarks = result ? result.fullMarks : getResultFullMarks(base.classSubject as any, base.name, classNumber);
     const marks = result ? result.marks : 0;
+    const absent = result ? isSubjectAbsent(result.raw) : false;
+    const gradeInfo = (!absent && result && result.marks !== null && result.marks !== undefined && fullMarks > 0)
+      ? getGradeFromMarks(result.marks, fullMarks)
+      : { gradePoint: 0, letterGrade: "F" };
+    const point = (result?.point != null && !Number.isNaN(Number(result.point)))
+      ? Number(result.point)
+      : (result && result.marks !== null ? gradeInfo.gradePoint : null);
+    const grade = (result?.grade != null && String(result.grade).trim() !== "")
+      ? String(result.grade)
+      : (result && result.marks !== null ? gradeInfo.letterGrade : null);
+
     rows.push({
       ...(result?.raw || {}),
       id: (result?.raw?.id as string | undefined) ?? (base.classSubject?.id as string | undefined) ?? null,
@@ -514,12 +526,12 @@ export function computeMonthlyResultSummary(args: {
       marks: result ? result.marks : null,
       fullMarks,
       highestMark: result?.highestMark ?? null,
-      point: result?.point ?? null,
-      grade: result?.grade ?? null,
+      point,
+      grade,
       displayLabel: base.displayLabel,
       isReportedCrossGroup: base.isReportedCrossGroup,
     });
-    return { marks, fullMarks };
+    return { marks, fullMarks, point: point ?? 0 };
   };
 
   let obtained = 0;
@@ -541,6 +553,7 @@ export function computeMonthlyResultSummary(args: {
       full += isIctSubject(name) && isIctPracticalApplicable(classNumber, createdAt, ictCutoff)
         ? ICT_FULL_MARKS
         : totals.fullMarks;
+      countedPoints.push(totals.point);
     }
 
     // Class 9/10 known-group rule: denominator is ALWAYS group slots x fullMarks.
@@ -562,6 +575,16 @@ export function computeMonthlyResultSummary(args: {
       for (const row of normalizedResults) {
         if (usedKeys.has(row.key)) continue;
         if (!row.meaningful) continue;
+        const absent = isSubjectAbsent(row.raw);
+        const gradeInfo = (!absent && row.marks !== null && row.marks !== undefined && row.fullMarks > 0)
+          ? getGradeFromMarks(row.marks, row.fullMarks)
+          : { gradePoint: 0, letterGrade: "F" };
+        const point = (row.point != null && !Number.isNaN(Number(row.point)))
+          ? Number(row.point)
+          : gradeInfo.gradePoint;
+        const grade = (row.grade != null && String(row.grade).trim() !== "")
+          ? String(row.grade)
+          : gradeInfo.letterGrade;
         rows.push({
           ...row.raw,
           id: (row.raw.id as string | undefined) ?? null,
@@ -569,13 +592,14 @@ export function computeMonthlyResultSummary(args: {
           marks: row.marks,
           fullMarks: row.fullMarks,
           highestMark: row.highestMark,
-          point: row.point,
-          grade: row.grade,
+          point,
+          grade,
           displayLabel: row.originalName,
           isReportedCrossGroup: true,
         });
         obtained += row.marks;
         full += row.fullMarks;
+        countedPoints.push(point);
         usedKeys.add(row.key);
       }
     }
@@ -593,6 +617,7 @@ export function computeMonthlyResultSummary(args: {
       });
       obtained += totals.marks;
       full += totals.fullMarks;
+      countedPoints.push(totals.point);
     }
     if (full === 0 && fallbackTotalMarks && fallbackTotalMarks > 0) {
       full = fallbackTotalMarks;
@@ -601,19 +626,25 @@ export function computeMonthlyResultSummary(args: {
 
   const safeFull = full > 0 ? full : 0;
   const percentage = safeFull > 0 ? Math.min(100, Math.floor((obtained / safeFull) * 100)) : 0;
-  const { gradePoint, letterGrade } = safeFull > 0
-    ? getGradeFromMarks(percentage, 100)
-    : { gradePoint: 0, letterGrade: "F" };
+
+  // Monthly overall GPA is average of each counted subject's point
+  const subjectCount = studentClassSubjects.length > 0
+    ? studentClassSubjects.length
+    : (countedPoints.length || rows.length || 1);
+  const totalPoints = countedPoints.reduce((sum, p) => sum + p, 0);
+  const avgGpa = subjectCount > 0 ? totalPoints / subjectCount : 0;
+  const gpa = Number(avgGpa.toFixed(2));
+  const grade = getGradeFromGPA(gpa);
 
   return {
     obtained,
     full: safeFull,
     percentage,
-    gpa: safeFull > 0 ? gradePoint : 0,
-    grade: safeFull > 0 ? letterGrade : "F",
+    gpa,
+    grade,
     rows,
     excludedRows,
-    subjectCount: studentClassSubjects.length > 0 ? studentClassSubjects.length : rows.length,
+    subjectCount,
   };
 }
 
