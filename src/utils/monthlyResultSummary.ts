@@ -495,6 +495,7 @@ export function computeMonthlyResultSummary(args: {
   const rows: MonthlyResultSummaryRow[] = [];
   const usedKeys = new Set<string>();
   const countedPoints: number[] = [];
+  let hasFailedOrAbsentSubject = false;
 
   const pushRow = (base: {
     key: string;
@@ -519,6 +520,14 @@ export function computeMonthlyResultSummary(args: {
       ? String(result.grade)
       : (result && result.marks !== null ? gradeInfo.letterGrade : null);
 
+    const isFailedOrAbsent =
+      absent ||
+      String(grade ?? "").trim().toUpperCase() === "F" ||
+      point === 0 ||
+      !result ||
+      result.marks === null ||
+      result.marks === undefined;
+
     rows.push({
       ...(result?.raw || {}),
       id: (result?.raw?.id as string | undefined) ?? (base.classSubject?.id as string | undefined) ?? null,
@@ -531,7 +540,7 @@ export function computeMonthlyResultSummary(args: {
       displayLabel: base.displayLabel,
       isReportedCrossGroup: base.isReportedCrossGroup,
     });
-    return { marks, fullMarks, point: point ?? 0 };
+    return { marks, fullMarks, point: point ?? 0, isFailedOrAbsent };
   };
 
   let obtained = 0;
@@ -554,6 +563,9 @@ export function computeMonthlyResultSummary(args: {
         ? ICT_FULL_MARKS
         : totals.fullMarks;
       countedPoints.push(totals.point);
+      if (totals.isFailedOrAbsent) {
+        hasFailedOrAbsentSubject = true;
+      }
     }
 
     // Class 9/10 known-group rule: denominator is ALWAYS group slots x fullMarks.
@@ -601,6 +613,9 @@ export function computeMonthlyResultSummary(args: {
         full += row.fullMarks;
         countedPoints.push(point);
         usedKeys.add(row.key);
+        if (absent || point === 0 || String(grade ?? "").trim().toUpperCase() === "F") {
+          hasFailedOrAbsentSubject = true;
+        }
       }
     }
   } else {
@@ -618,6 +633,9 @@ export function computeMonthlyResultSummary(args: {
       obtained += totals.marks;
       full += totals.fullMarks;
       countedPoints.push(totals.point);
+      if (totals.isFailedOrAbsent) {
+        hasFailedOrAbsentSubject = true;
+      }
     }
     if (full === 0 && fallbackTotalMarks && fallbackTotalMarks > 0) {
       full = fallbackTotalMarks;
@@ -634,7 +652,7 @@ export function computeMonthlyResultSummary(args: {
   const totalPoints = countedPoints.reduce((sum, p) => sum + p, 0);
   const avgGpa = subjectCount > 0 ? totalPoints / subjectCount : 0;
   const gpa = Number(avgGpa.toFixed(2));
-  const grade = getGradeFromGPA(gpa);
+  const grade = hasFailedOrAbsentSubject ? "" : getGradeFromGPA(gpa);
 
   return {
     obtained,
