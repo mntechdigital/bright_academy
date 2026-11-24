@@ -276,7 +276,7 @@ export default function MonthlyResultTable({
     setSummary((prev) => ({
       ...prev,
       totalMarks: String(resultSummary.obtained),
-      gpa: String(resultSummary.gpa),
+      gpa: typeof resultSummary.gpa === "number" ? resultSummary.gpa.toFixed(2) : String(resultSummary.gpa),
       grade: resultSummary.grade,
       present: String(present),
       absent: String(absent),

@@ -124,7 +124,9 @@ function MonthlyResultsTable({
                       {summary ? `${summary.obtained}/${summary.full}` : (activeMonthly?.totalMarks ?? "-")}
                     </td>
                     <td className="py-4 px-4 text-center font-bold text-gray-800 text-base">
-                      {summary ? summary.gpa : (activeMonthly?.gpa ?? "-")}
+                      {summary
+                        ? (typeof summary.gpa === "number" ? summary.gpa.toFixed(2) : summary.gpa)
+                        : (activeMonthly?.gpa !== undefined && activeMonthly?.gpa !== null ? Number(activeMonthly.gpa).toFixed(2) : "-")}
                     </td>
                     <td className="py-4 px-4 text-center">
                       {(summary ? summary.grade : activeMonthly?.grade) &&
