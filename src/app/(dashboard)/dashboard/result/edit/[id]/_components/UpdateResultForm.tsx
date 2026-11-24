@@ -125,7 +125,7 @@ export default function UpdateResultForm({ result, classSubjects = [] }: Props) 
         const fullMarks =
           slot === "ict" ? ICT_FULL_MARKS :
           slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
-          (getDefaultFullMarksForSubject(r.subjectName) !== 100 ? getDefaultFullMarksForSubject(r.subjectName) : r.fullMarks);
+          (getDefaultFullMarksForSubject(r.subjectName, studentClassName) !== 100 ? getDefaultFullMarksForSubject(r.subjectName, studentClassName) : r.fullMarks);
         const storedMarks = applicable ? computePractical(slot, studentGroup, studentClassName, marks, absent).total : (absent ? 0 : marks);
         const gradeInfo = (!absent && storedMarks >= 0 && fullMarks > 0) ? getGradeFromMarks(storedMarks, fullMarks) : { gradePoint: 0, letterGrade: "F" };
         return {

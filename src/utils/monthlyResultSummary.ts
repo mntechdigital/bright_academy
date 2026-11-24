@@ -236,8 +236,57 @@ export const SUBJECT_FULL_MARKS_BY_NORMALIZED_NAME: Readonly<Record<string, numb
   ict: ICT_FULL_MARKS,
 };
 
-export function getDefaultFullMarksForSubject(subjectName?: string | null): number {
+export function isClass6To8(classNumber?: string | number | null): boolean {
+  if (classNumber === undefined || classNumber === null || classNumber === "") return false;
+  const match = String(classNumber).match(/\d+/);
+  if (!match) return false;
+  const num = Number(match[0]);
+  return num >= 6 && num <= 8;
+}
+
+export function isClass6To8FiftyMarkSubject(subjectName?: string | null): boolean {
   const key = normalizeSubjectName(String(subjectName ?? ""));
+  if (
+    key === "bangla 2nd paper" ||
+    key === "bangla 2nd" ||
+    key === "bangla second paper" ||
+    key.includes("bangla 2nd") ||
+    key.includes("bangla second")
+  ) {
+    return true;
+  }
+  if (
+    key === "english 2nd paper" ||
+    key === "english 2nd" ||
+    key === "english second paper" ||
+    key.includes("english 2nd") ||
+    key.includes("english second")
+  ) {
+    return true;
+  }
+  if (
+    key === "agriculture / home science" ||
+    key === "agriculture/home science" ||
+    key === "agriculture" ||
+    key === "home science" ||
+    key === "agriculture studies" ||
+    key === "krishi" ||
+    key === "garhasthya"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function getDefaultFullMarksForSubject(
+  subjectName?: string | null,
+  classNumber?: string | number | null,
+): number {
+  const key = normalizeSubjectName(String(subjectName ?? ""));
+  if (key === "ict") return ICT_FULL_MARKS;
+  if (isClass6To8(classNumber) && isClass6To8FiftyMarkSubject(subjectName)) {
+    return 50;
+  }
   return SUBJECT_FULL_MARKS_BY_NORMALIZED_NAME[key] ?? DEFAULT_SUBJECT_FULL_MARKS;
 }
 
@@ -325,10 +374,11 @@ const getResultMarks = (row: MonthlyResultSubjectLike): number => {
 const getResultFullMarks = (
   row: MonthlyResultSubjectLike | undefined,
   subjectName?: string | null,
+  classNumber?: string | number | null,
 ): number => {
-  const subjectDefault = getDefaultFullMarksForSubject(subjectName ?? row?.subjectName);
-  // ICT (and any configured subject) override stored fullMarks so all results agree.
-  if (subjectDefault !== DEFAULT_SUBJECT_FULL_MARKS) return subjectDefault;
+  const subjectDefault = getDefaultFullMarksForSubject(subjectName ?? row?.subjectName, classNumber);
+  const key = normalizeSubjectName(String(subjectName ?? row?.subjectName ?? ""));
+  if (key === "ict") return ICT_FULL_MARKS;
   const fm = row?.fullMarks;
   const num = Number(fm);
   return Number.isFinite(num) && num > 0 ? num : subjectDefault;
@@ -348,7 +398,7 @@ const normalizeResultRow = (
     isGroupAware && isCrossGroupLeftover(originalName, group, classNumber);
   const meaningful = hasMeaningfulMarks(row);
   const marks = getResultMarks(row);
-  const fullMarks = getResultFullMarks(row, canonicalName || originalName);
+  const fullMarks = getResultFullMarks(row, canonicalName || originalName, classNumber);
   const displayName = isGroupAware
     ? getGroupSubjectLabel(canonicalName, group, classNumber)
     : canonicalName;
@@ -455,7 +505,7 @@ export function computeMonthlyResultSummary(args: {
   }) => {
     usedKeys.add(base.key);
     const result = base.result;
-    const fullMarks = result ? result.fullMarks : getResultFullMarks(base.classSubject as any, base.name);
+    const fullMarks = result ? result.fullMarks : getResultFullMarks(base.classSubject as any, base.name, classNumber);
     const marks = result ? result.marks : 0;
     rows.push({
       ...(result?.raw || {}),
