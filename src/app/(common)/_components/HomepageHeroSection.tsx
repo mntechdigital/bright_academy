@@ -1,6 +1,4 @@
-import Image from "next/image";
-import heroCollage from "../../../../public/Union__1_.png";
-import aboutImage from "../../../../public/brightacademyposter.jpeg";
+import HeroPosterSlider from "./HeroPosterSlider";
 
 const stats = [
   { icon: "🎓", value: "৭০০ +", label: "সফল শিক্ষার্থী" },
@@ -67,15 +65,9 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Right — Hero Collage Image */}
-        <div className="relative flex items-center justify-center h-95 lg:h-105">
-          <Image
-            src={aboutImage}
-            alt="Bright Academy Students"
-            fill
-            className="object-contain"
-            priority
-          />
+        {/* Right — Hero Poster Slider */}
+        <div className="relative flex items-center justify-center">
+          <HeroPosterSlider />
         </div>
       </div>
     </section>
