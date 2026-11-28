@@ -87,54 +87,48 @@ export function getPracticalSubjectSlot(
   group: string | null | undefined,
   classNumber?: string | number | null,
 ): PracticalSubjectSlot {
-  if (!isGroupClass(classNumber)) return null;
-  const resolved = getGroupResolvedSubjectName(subjectName, group, classNumber);
-  const key = normalizeSubjectName(resolved);
-  if (key === "ict") return "ict";
-  if (group === "Science") {
-    if (SCIENCE_PRACTICAL_SUBJECT_KEYS.has(key)) return `science-${key}` as PracticalSubjectSlot;
-    if (
-      key === "higher mathematics" ||
-      key === "higher math" ||
-      key === "h. math" ||
-      key === "h. math/agriculture/h. science"
-    ) {
-      return "science-higher-math";
-    }
-  }
-  if (isAgriculturePracticalKey(key) || key === "h. math/agriculture/h. science") {
-    return "science-agriculture";
-  }
-  if (isHomeSciencePracticalKey(key)) {
-    return "science-home-science";
-  }
+  void subjectName;
+  void group;
+  void classNumber;
   return null;
 }
 
 export function isSciencePracticalSubject(subjectName: string | null | undefined, group: string | null | undefined, classNumber?: string | number | null): boolean {
-  const slot = getPracticalSubjectSlot(subjectName, group, classNumber);
-  return !!slot && slot !== "ict";
+  void subjectName;
+  void group;
+  void classNumber;
+  return false;
 }
 
 export function isMonthlyResultNewForPractical(createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
-  if (!createdAt) return false;
-  const t = createdAt instanceof Date ? createdAt.getTime() : new Date(createdAt).getTime();
-  return Number.isFinite(t) && t >= cutoff.getTime();
+  void createdAt;
+  void cutoff;
+  return false;
 }
 
 export function isIctPracticalApplicable(classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
-  return isGroupClass(classNumber) && isMonthlyResultNewForPractical(createdAt, cutoff);
+  void classNumber;
+  void createdAt;
+  void cutoff;
+  return false;
 }
 
 export function isSciencePracticalApplicable(subjectName: string | null | undefined, group: string | null | undefined, classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
-  return isSciencePracticalSubject(subjectName, group, classNumber) && isMonthlyResultNewForPractical(createdAt, cutoff);
+  void subjectName;
+  void group;
+  void classNumber;
+  void createdAt;
+  void cutoff;
+  return false;
 }
 
 export function isPracticalApplicable(subjectName: string | null | undefined, group: string | null | undefined, classNumber?: string | number | null, createdAt?: string | Date | null, cutoff: Date = ICT_PRACTICAL_CUTOFF): boolean {
-  const slot = getPracticalSubjectSlot(subjectName, group, classNumber);
-  if (!slot) return false;
-  if (slot === "ict") return isIctPracticalApplicable(classNumber, createdAt, cutoff);
-  return isSciencePracticalApplicable(subjectName, group, classNumber, createdAt, cutoff);
+  void subjectName;
+  void group;
+  void classNumber;
+  void createdAt;
+  void cutoff;
+  return false;
 }
 
 export function computeIct(examMark: number | null | undefined, isAbsent: boolean): PracticalComputedMarks {
@@ -559,7 +553,7 @@ export function computeMonthlyResultSummary(args: {
         : name;
       const totals = pushRow({ key, name, displayLabel, classSubject, result });
       obtained += totals.marks;
-      full += isIctSubject(name) && isIctPracticalApplicable(classNumber, createdAt, ictCutoff)
+      full += isIctSubject(name)
         ? ICT_FULL_MARKS
         : totals.fullMarks;
       countedPoints.push(totals.point);

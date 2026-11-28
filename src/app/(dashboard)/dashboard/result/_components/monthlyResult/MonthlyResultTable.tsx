@@ -6,16 +6,10 @@ import { getGroupSubjectLabel, sortSubjectsForClass } from "@/src/utils/groupSub
 import { getGradeFromMarks } from "@/src/utils/gradeUtils";
 import { getStudentGroup } from "@/src/utils/studentGroup";
 import { useState, useCallback, useEffect } from "react";
+import { AlertCircle } from "lucide-react";
 import {
   computeMonthlyResultSummary,
-  computePractical,
   getDefaultFullMarksForSubject,
-  getPracticalSubjectSlot,
-  ICT_EXAM_PASS_MARK,
-  ICT_FULL_MARKS,
-  isPracticalApplicable,
-  SCIENCE_EXAM_PASS_MARK,
-  SCIENCE_FULL_MARKS,
 } from "@/src/utils/monthlyResultSummary";
 
 // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
@@ -146,11 +140,7 @@ export default function MonthlyResultTable({
   const ictCutoff = undefined; // use default shared constant
   const [rows, setRows] = useState<SubjectRow[]>(
     subjectItems.map(({ id, name }) => {
-      const slot = getPracticalSubjectSlot(name, studentGroup, classNumber);
-      const full =
-        slot === "ict" ? String(ICT_FULL_MARKS) :
-        slot && slot.startsWith("science-") ? String(SCIENCE_FULL_MARKS) :
-        String(getDefaultFullMarksForSubject(name, classNumber));
+      const full = String(getDefaultFullMarksForSubject(name, classNumber));
       return {
         name,
         fullMarks: full,
@@ -183,22 +173,14 @@ export default function MonthlyResultTable({
     if (row.isAbsent) return 0;
     const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
     if (Number.isNaN(entered)) return NaN;
-    const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
-    const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
-    if (applicable) return computePractical(slot, studentGroup, classNumber, entered, false).total;
     return entered;
-  }, [classNumber, ictCutoff, studentGroup]);
+  }, []);
 
   const updateRow = useCallback((idx: number, field: keyof SubjectRow, value: string | boolean) => {
     setRows((prev) => {
       const newRows = prev.map((row, i) => (i === idx ? { ...row, [field]: value as any } : row));
       const row = newRows[idx];
-      const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
-      const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
-      const fullMarksNum =
-        slot === "ict" ? ICT_FULL_MARKS :
-        slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
-        (parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name, classNumber));
+      const fullMarksNum = parseFloat(row.fullMarks) || getDefaultFullMarksForSubject(row.name, classNumber);
       row.fullMarks = String(fullMarksNum);
 
       if (field === "isAbsent" && value === true) {
@@ -227,12 +209,10 @@ export default function MonthlyResultTable({
           return newRows;
         }
         const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
-        const maxInput = applicable ? computePractical(slot, studentGroup, classNumber, 0, false).examMax : fullMarksNum;
         if (!Number.isNaN(entered)) {
-          const clamped = Math.max(0, Math.min(maxInput, entered));
+          const clamped = Math.max(0, Math.min(fullMarksNum, entered));
           row.marksObtained = String(clamped);
-          const storedMarks = applicable ? computePractical(slot, studentGroup, classNumber, clamped, false).total : clamped;
-          const { gradePoint, letterGrade } = getGradeFromMarks(storedMarks, fullMarksNum);
+          const { gradePoint, letterGrade } = getGradeFromMarks(clamped, fullMarksNum);
           row.point = gradePoint.toFixed(2);
           row.grade = letterGrade;
         } else {
@@ -242,7 +222,7 @@ export default function MonthlyResultTable({
       }
       return newRows;
     });
-  }, [classNumber, ictCutoff, studentGroup]);
+  }, [classNumber]);
 
   const updateSummary = (field: keyof Summary, value: string) =>
     setSummary((prev) => ({ ...prev, [field]: value }));
@@ -251,14 +231,9 @@ export default function MonthlyResultTable({
   useEffect(() => {
     const resultSummary = computeMonthlyResultSummary({
       resultSubjects: rows.map((r) => {
-        const slot = getPracticalSubjectSlot(r.name, studentGroup, classNumber);
-        const applicable = !!slot && isPracticalApplicable(r.name, studentGroup, classNumber, new Date(), ictCutoff);
         const entered = r.marksObtained === "" ? null : Number(r.marksObtained);
-        const storedMarks = r.isAbsent ? 0 : (applicable ? computePractical(slot, studentGroup, classNumber, entered, false).total : (entered ?? 0));
-        const fullMarks =
-          slot === "ict" ? ICT_FULL_MARKS :
-          slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
-          (r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name, classNumber) : Number(r.fullMarks));
+        const storedMarks = r.isAbsent ? 0 : (entered ?? 0);
+        const fullMarks = r.fullMarks === "" ? getDefaultFullMarksForSubject(r.name, classNumber) : Number(r.fullMarks);
         return {
           subjectName: r.name,
           marks: storedMarks,
@@ -282,7 +257,27 @@ export default function MonthlyResultTable({
       absent: String(absent),
     }));
   }, [rows, subjects, studentGroup, classNumber, ictCutoff]);
-const handleSubmit = async () => {
+
+  // Check if any row has marksObtained > highestMark
+  const checkRowHasMarkExceedsHighest = (row: SubjectRow) => {
+    if (row.isAbsent) return false;
+    const markStr = row.marksObtained.trim();
+    const highestStr = row.highestMark.trim();
+    if (!markStr || !highestStr) return false;
+    const markNum = Number(markStr);
+    const highestNum = Number(highestStr);
+    return !isNaN(markNum) && !isNaN(highestNum) && markNum > highestNum;
+  };
+
+  const hasExceedingMarks = rows.some(checkRowHasMarkExceedsHighest);
+
+  const handleSubmit = async () => {
+    if (hasExceedingMarks) {
+      showErrorToast(
+        "Marks cannot be greater than highest mark. Please correct the marks before submitting."
+      );
+      return;
+    }
   // Contract: for NEW class 9/10 practical subjects, client sends EXAM mark (ICT 0-25, Science 0-75)
   // in marks/examMark; server computes practical/total via computePractical exactly once.
   const yearNum = year === undefined || year === null || String(year).trim() === "" ? undefined : Number(year);
@@ -299,18 +294,12 @@ const handleSubmit = async () => {
     ...(Number.isInteger(yearNum) ? { year: yearNum } : {}),
     ...(publishedDate ? { publishedDate: new Date(publishedDate).toISOString() } : {}),
     results: rows.map((r) => {
-      const slot = getPracticalSubjectSlot(r.name, studentGroup, classNumber);
-      const applicable = !!slot && isPracticalApplicable(r.name, studentGroup, classNumber, new Date(), ictCutoff);
       const entered = r.marksObtained === "" ? 0 : Number(r.marksObtained);
       const exam = r.isAbsent ? 0 : entered;
-      const fullMarks =
-        slot === "ict" ? ICT_FULL_MARKS :
-        slot && slot.startsWith("science-") ? SCIENCE_FULL_MARKS :
-        Number(r.fullMarks);
+      const fullMarks = Number(r.fullMarks) || getDefaultFullMarksForSubject(r.name, classNumber);
       return {
         subjectName: r.name,
-        marks: applicable ? exam : exam,
-        ...(applicable ? { examMark: exam, ...(slot === "ict" ? { ictExamMark: exam } : {}) } : {}),
+        marks: exam,
         fullMarks,
         highestMark: r.highestMark === "" ? 0 : Number(r.highestMark),
         point: r.point === "" ? 0 : Number(r.point),
@@ -358,122 +347,109 @@ const handleSubmit = async () => {
                   <th className="px-4 py-3 text-left">Subject</th>
                   <th className="px-3 py-3 text-center">Full Marks</th>
                   <th className="px-3 py-3 text-center">Highest Mark</th>
-                  <th className="px-3 py-3 text-center">Marks</th>
+                  <th className="px-3 py-3 text-center min-w-36">Marks</th>
                   <th className="px-3 py-3 text-center">Absent</th>
                   <th className="px-3 py-3 text-center">Point</th>
                   <th className="px-3 py-3 text-center">Grade</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, idx) => (
-                  <tr
-                    key={row.name}
-                    className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100"
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-
-                      {getGroupSubjectLabel(row.name, studentGroup, classNumber)}
-
-                    </td>
-                    <td className="px-3 py-3">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={row.fullMarks}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, "");
-                          updateRow(idx, "fullMarks", val);
-                        }}
-                        placeholder="100"
-                        className={`w-full min-w-16 ${inputBase}`}
-                      />
-                    </td>
-                    <td className="px-3 py-3">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={row.highestMark}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, "");
-                          updateRow(idx, "highestMark", val);
-                        }}
-                        placeholder="100"
-                        className={`w-full min-w-16 ${inputBase}`}
-                      />
-                    </td>
-                    <td className="px-3 py-3">
-                      {(() => {
-                        const slot = getPracticalSubjectSlot(row.name, studentGroup, classNumber);
-                        const applicable = !!slot && isPracticalApplicable(row.name, studentGroup, classNumber, new Date(), ictCutoff);
-                        const conf = applicable ? computePractical(slot, studentGroup, classNumber, 0, false) : null;
-                        const max = conf ? conf.examMax : (parseFloat(row.fullMarks) || 100);
-                        const title = conf
-                          ? (slot === "ict"
-                            ? `ICT exam (max 25). ${ICT_EXAM_PASS_MARK}+ pass: practical=exam; below ${ICT_EXAM_PASS_MARK}: no practical.`
-                            : `Exam (max 75). ${SCIENCE_EXAM_PASS_MARK}+ pass: exam+20 practical; below ${SCIENCE_EXAM_PASS_MARK}: no practical.`)
-                          : undefined;
-                        return (
-                          <div>
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              value={row.isAbsent ? "" : row.marksObtained}
-                              disabled={row.isAbsent}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9.]/g, "");
-                                const n = val === "" ? "" : String(Math.min(max, Number(val)));
-                                updateRow(idx, "marksObtained", n);
-                              }}
-                              placeholder={conf ? `0-${conf.examMax}` : "0"}
-                              title={title}
-                              className={`w-full min-w-16 ${inputBase} ${row.isAbsent ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""}`}
-                            />
-                            {conf ? (
-                              <div className="text-[10px] text-gray-400 mt-0.5 text-center">
-                                {row.isAbsent ? "absent" : (() => {
-                                  const entered = row.marksObtained === "" ? NaN : Number(row.marksObtained);
-                                  if (Number.isNaN(entered)) return `max ${conf.examMax}`;
-                                  const c = computePractical(slot, studentGroup, classNumber, entered, false);
-                                  return c.practical > 0 ? `exam ${c.exam} + practical ${c.practical}` : (entered >= conf.passMark ? `exam ${c.exam}` : "failed: no practical");
-                                })()}
-                              </div>
-                            ) : null}
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={row.isAbsent}
-                        onChange={(e) => updateRow(idx, "isAbsent", e.target.checked)}
-                        className="h-4 w-4 accent-orange-500 cursor-pointer"
-                        title="Mark subject as absent"
-                      />
-                    </td>
-                    <td className="px-3 py-3">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={row.point}
-                        readOnly
-                        placeholder="0.00"
-                        className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-center">
-                      <TextInput
-                        value={row.grade}
-                        onChange={(v) => updateRow(idx, "grade", v)}
-                        placeholder="A+"
-                        width="w-16"
-                        uppercase
-                        maxLength={2}
-                        readOnly
-                      />
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((row, idx) => {
+                  const isMarkExceeding = checkRowHasMarkExceedsHighest(row);
+                  return (
+                    <tr
+                      key={row.name}
+                      className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors duration-100"
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
+                        {getGroupSubjectLabel(row.name, studentGroup, classNumber)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={row.fullMarks}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9.]/g, "");
+                            updateRow(idx, "fullMarks", val);
+                          }}
+                          placeholder="100"
+                          className={`w-full min-w-16 ${inputBase}`}
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={row.highestMark}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9.]/g, "");
+                            updateRow(idx, "highestMark", val);
+                          }}
+                          placeholder="100"
+                          className={`w-full min-w-16 ${inputBase}`}
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={row.isAbsent ? "" : row.marksObtained}
+                          disabled={row.isAbsent}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9.]/g, "");
+                            const max = parseFloat(row.fullMarks) || 100;
+                            const n = val === "" ? "" : String(Math.min(max, Number(val)));
+                            updateRow(idx, "marksObtained", n);
+                          }}
+                          placeholder="0"
+                          className={`w-full min-w-16 ${inputBase} ${
+                            row.isAbsent
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : isMarkExceeding
+                              ? "!border-red-500 !bg-red-50/50 text-red-700 focus:!border-red-500 focus:!ring-red-200"
+                              : ""
+                          }`}
+                        />
+                        {isMarkExceeding && (
+                          <p className="text-[11px] text-red-500 font-medium mt-1 leading-tight text-center">
+                            Marks cannot be greater than highest mark ({row.highestMark})
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={row.isAbsent}
+                          onChange={(e) => updateRow(idx, "isAbsent", e.target.checked)}
+                          className="h-4 w-4 accent-orange-500 cursor-pointer"
+                          title="Mark subject as absent"
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={row.point}
+                          readOnly
+                          placeholder="0.00"
+                          className={`w-full min-w-16 ${inputBase} bg-gray-100 text-gray-500 cursor-not-allowed`}
+                        />
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <TextInput
+                          value={row.grade}
+                          onChange={(v) => updateRow(idx, "grade", v)}
+                          placeholder="A+"
+                          width="w-16"
+                          uppercase
+                          maxLength={2}
+                          readOnly
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -573,9 +549,23 @@ const handleSubmit = async () => {
         </div>
 
         {/* Ã¢â€â‚¬Ã¢â€â‚¬ Submit Button Ã¢â€â‚¬Ã¢â€â‚¬ */}
+        {/* Validation Error Banner */}
+        {hasExceedingMarks && (
+          <div className="flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-medium text-red-600">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>Marks cannot be greater than highest mark. Please correct the highlighted errors to submit.</span>
+          </div>
+        )}
+
+        {/* Submit Button */}
         <button
           onClick={handleSubmit}
-          className="w-full rounded-xl bg-orange-500 py-3.5 text-sm font-semibold text-white tracking-wide transition-all duration-150 hover:bg-orange-600 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2"
+          disabled={hasExceedingMarks}
+          className={`w-full rounded-xl py-3.5 text-sm font-semibold tracking-wide transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            hasExceedingMarks
+              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+              : "bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.99] focus:ring-orange-400"
+          }`}
         >
           Submit
         </button>
